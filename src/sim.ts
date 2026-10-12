@@ -11,9 +11,9 @@ export function buy(c:Company,item:Purchase):Company|null{
  return {...c,credits:c.credits-cost(c,item),...(item==='drone'?{drones:c.drones+1}:{[item]:true})};
 }
 export type Rock={id:number;x:number;y:number;r:number;hp:number;max:number;shape:number[]};
-export type Ore={id:number;x:number;y:number;value:number};
-export type Drone={id:number;x:number;y:number;angle:number;hp:number;maxHp:number;cargo:number;cooldown:number;targetX:number;targetY:number;wander:number;vx:number;vy:number;recoil:number;armed:boolean;lastRock:number;path:Point[];pathKey:string;pathAge:number;state:'mine'|'return'|'docked'|'dead'};
-export type Effect={type:'hit'|'laser'|'ore'|'deposit'|'dead';x:number;y:number;tx?:number;ty?:number;life:number;max:number;amount?:number};
+export type Ore={id:number;x:number;y:number;value:number;originX?:number;originY?:number;age?:number};
+export type Drone={id:number;x:number;y:number;angle:number;hp:number;maxHp:number;cargo:number;cooldown:number;targetX:number;targetY:number;wander:number;vx:number;vy:number;recoil:number;armed:boolean;lastRock:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;state:'mine'|'unload'|'return'|'docked'|'dead'};
+export type Effect={type:'transfer'|'hit'|'laser'|'ore'|'deposit'|'dead';x:number;y:number;tx?:number;ty?:number;life:number;max:number;amount?:number};
 export type World={time:number;phase:'mining'|'recall'|'done';company:Company;rocks:Rock[];ores:Ore[];drones:Drone[];effects:Effect[];delivered:number;lost:number;collisions:number;shots:number;mined:number;rng:()=>number;nextId:number};
 export function random(seed:number){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
 export function createWorld(company:Company,seed=7):World{
@@ -34,17 +34,17 @@ export function createWorld(company:Company,seed=7):World{
  }
  for(let i=0;i<company.drones;i++){
   const maxHp=company.hull?7:4;
-  w.drones.push({id:i,x:HOME.x+(i-(company.drones-1)/2)*18,y:HOME.y-27,angle:-Math.PI/2,hp:maxHp,maxHp,cargo:0,cooldown:0,targetX:200+i*25,targetY:90,wander:3.5,vx:0,vy:0,recoil:0,armed:true,lastRock:-1,path:[],pathKey:'',pathAge:0,state:'mine'});
+  w.drones.push({id:i,x:HOME.x+(i-(company.drones-1)/2)*18,y:HOME.y-27,angle:-Math.PI/2,hp:maxHp,maxHp,cargo:0,cooldown:0,targetX:200+i*25,targetY:90,wander:3.5,vx:0,vy:0,recoil:0,armed:true,lastRock:-1,path:[],pathKey:'',pathAge:0,unloadTime:0,unloadCargo:0,state:'mine'});
  }
  return w;
 }
 const distance=(a:Point,b:Point)=>Math.hypot(a.x-b.x,a.y-b.y);
 function effect(w:World,e:Omit<Effect,'life'|'max'>,life=.5){w.effects.push({...e,life,max:life});}
 function hit(w:World,r:Rock,d:Drone){
- r.hp--;w.mined++;effect(w,{type:'hit',x:r.x,y:r.y});
+ r.hp--;w.mined++;effect(w,{type:'hit',x:r.x,y:r.y,tx:d.x,ty:d.y,amount:r.hp<=0?2:1},.45);
  for(let j=0;j<2;j++){
   const a=Math.atan2(d.y-r.y,d.x-r.x)+(j?.17:-.17);
-  w.ores.push({id:w.nextId++,x:r.x+Math.cos(a)*(r.r+24),y:r.y+Math.sin(a)*(r.r+24),value:2});
+  w.ores.push({id:w.nextId++,x:r.x+Math.cos(a)*(r.r+24),y:r.y+Math.sin(a)*(r.r+24),value:2,originX:r.x,originY:r.y,age:0});
  }
 }
 function waypoint(w:World,d:Drone,target:Point,key:string,ignore=-1){
@@ -57,14 +57,26 @@ function waypoint(w:World,d:Drone,target:Point,key:string,ignore=-1){
 }
 export function step(w:World,dt=STEP){
  if(w.phase==='done')return;
- w.time+=dt;w.effects.forEach(e=>e.life-=dt);w.effects=w.effects.filter(e=>e.life>0);
+ w.time+=dt;w.effects.forEach(e=>{e.life-=dt;if(e.type==='transfer'&&e.life<=0){w.delivered+=e.amount??0;}});w.effects=w.effects.filter(e=>e.life>0);
+ for(const o of w.ores)o.age=(o.age??1)+dt;
  if(w.time>=ROUND_TIME)w.phase='recall';
  for(const d of w.drones){
   if(d.state==='dead'||d.state==='docked')continue;
+  if(d.state==='unload'){
+   d.unloadTime+=dt;
+   const duration=.7, sent=Math.min(d.unloadCargo,Math.floor(d.unloadTime/duration*d.unloadCargo/2)*2);
+   const amount=d.cargo-(d.unloadCargo-sent);
+   if(amount>0){d.cargo-=amount;effect(w,{type:'transfer',x:d.x,y:d.y,tx:HOME.x,ty:HOME.y+7,amount},.35);}
+   if(d.unloadTime>=1.15){
+    if(w.phase==='recall'||!w.rocks.some(r=>r.hp>0)&&!w.ores.length)d.state='docked';
+    else{d.state='mine';d.wander=0;d.pathKey='';}
+   }
+   continue;
+  }
   d.cooldown=Math.max(0,d.cooldown-dt);
   if(w.phase==='recall'||d.cargo>=CAPACITY||(!w.rocks.some(r=>r.hp>0)&&!w.ores.length))d.state='return';
   let target:Point,controlled=false;
-  if(d.state==='return'){target=waypoint(w,d,HOME,'home');controlled=true;}
+  if(d.state==='return'){target=waypoint(w,d,{x:HOME.x+(d.id-(w.drones.length-1)/2)*25,y:HOME.y-62},'home');controlled=true;}
   else{
    const ore=w.ores.filter(o=>distance(d,o)<130).sort((a,b)=>distance(d,a)-distance(d,b))[0];
    if(ore){target=waypoint(w,d,ore,'ore'+ore.id);controlled=true;}
@@ -95,8 +107,9 @@ export function step(w:World,dt=STEP){
    const speed=(d.state==='return'?82:controlled?67:58)*Math.max(controlled?.12:.4,Math.cos(delta));
    const desiredSpeed=Math.min(speed,distance(d,target)*4);
    const response=controlled?8:2.2;
-   d.vx+=(Math.cos(d.angle)*desiredSpeed-d.vx)*Math.min(1,response*dt);
-   d.vy+=(Math.sin(d.angle)*desiredSpeed-d.vy)*Math.min(1,response*dt);
+   const docking=d.state==='return'&&distance(d,target)<24;
+   d.vx+=((docking?(target.x-d.x)*2:Math.cos(d.angle)*desiredSpeed)-d.vx)*Math.min(1,response*dt);
+   d.vy+=((docking?(target.y-d.y)*2:Math.sin(d.angle)*desiredSpeed)-d.vy)*Math.min(1,response*dt);
   }
   if(!d.armed&&d.recoil===0&&w.rocks.every(r=>r.id!==d.lastRock||r.hp<=0||distance(d,r)>r.r+25))d.armed=true;
   d.x+=d.vx*dt;d.y+=d.vy*dt;
@@ -118,11 +131,10 @@ export function step(w:World,dt=STEP){
   }
   if(d.state==='dead')continue;
   // Pickup continues while recalling, but never adds cargo after destruction.
-  for(let i=w.ores.length-1;i>=0;i--){const ore=w.ores[i];if(distance(d,ore)<18&&d.cargo+ore.value<=CAPACITY){d.cargo+=ore.value;effect(w,{type:'ore',x:ore.x,y:ore.y,amount:ore.value},.7);w.ores.splice(i,1);}}
-  if(d.state==='return'&&distance(d,HOME)<20){
-   w.delivered+=d.cargo;if(d.cargo)effect(w,{type:'deposit',x:HOME.x,y:HOME.y-35,amount:d.cargo},1.2);d.cargo=0;
-   if(w.phase==='recall'||!w.rocks.some(r=>r.hp>0)&&!w.ores.length)d.state='docked';
-   else{d.state='mine';d.angle=-Math.PI/2;d.y=HOME.y-29;d.vx=0;d.vy=-20;d.wander=0;d.pathKey='';}
+  for(let i=w.ores.length-1;i>=0;i--){const ore=w.ores[i];if(distance(d,ore)<18&&d.cargo+ore.value<=CAPACITY){d.cargo+=ore.value;effect(w,{type:'ore',x:ore.x,y:ore.y,amount:ore.value,tx:(ore.age??1)<STEP*2?ore.originX:undefined,ty:ore.originY},.7);w.ores.splice(i,1);}}
+  const berth={x:HOME.x+(d.id-(w.drones.length-1)/2)*25,y:HOME.y-62};
+  if(d.state==='return'&&distance(d,berth)<2&&Math.hypot(d.vx,d.vy)<8){
+   d.state='unload';d.unloadTime=0;d.unloadCargo=d.cargo;d.vx=0;d.vy=0;
   }
  }
  if(w.drones.every(d=>d.state==='dead'||d.state==='docked'))w.phase='done';

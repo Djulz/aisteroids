@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.3.0
+# AIsteroid Mining · Alpha 0.4.0
 Mobile-first autonomous mining game. Persistent company, 45-second shifts, up to six drones, fleet-wide hull, scanner and mining laser upgrades. Strict overhead industrial art rendered in Canvas 2D. English UI.
 
 ## Run
@@ -41,3 +41,6 @@ Art is original code-generated geometry. Fonts: bundled Barlow / Barlow Condense
 
 ## Larger-map camera test (0.3.0)
 800 × 930 world (three original screen areas), with home and outer asteroid clusters. Fleet follow pans smoothly; drag with touch or mouse for manual exploration, use Overview for the whole field and +/− for zoom. Follow fleet resumes tracking. A small radar shows drones, home and the current viewport. Controls and selection use camera-transformed coordinates. The camera never changes simulation state. The 45-second shift, economy, saves and upgrades remain; return travel can take longer with greater distances. No outposts, combat, persistent depletion or new sectors yet.
+
+## Mining feedback and docking (0.4.0)
+The field fills the mission width with an aspect-correct responsive camera. Drones brake at individual berths beside HQ, hold still while cargo particles travel into the station, and resume from the same position and heading. Minerals are credited on arrival; recall waits for unloading to finish. Mining adds a brief asteroid flash, impact displacement, expanding rings and debris. Ore visuals fan out from the rock center with exponential deceleration toward their collectible positions; presentation does not consume simulation randomness.

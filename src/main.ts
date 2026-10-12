@@ -1,4 +1,4 @@
-import {newCamera,panCamera,zoomCamera,overview,followCamera,screenToWorld,VIEW_W,VIEW_H} from './camera.ts';
+import {newCamera,panCamera,zoomCamera,overview,followCamera,screenToWorld,resizeCamera} from './camera.ts';
 import '@fontsource/barlow/400.css';
 import '@fontsource/barlow/600.css';
 import '@fontsource/barlow-condensed/500.css';
@@ -18,7 +18,7 @@ const fmt=(n:number)=>n.toLocaleString('en-US');
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(company));}catch{storageOK=false;} }
 function spriteIcon(kind:string){return kind==='drone'?'⬡':kind==='hull'?'▣':kind==='scanner'?'◎':'↗';}
 function mount(){
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">AI<span>↗</span></div><div><h1><em>AI</em>steroid <span>Mining</span></h1><p>AUTONOMOUS MINING DIVISION</p></div><span class="version">ALPHA<br>0.3.0</span></header><section id="content"></section><footer class="legal">INDEPENDENT OPERATIONS <span>EST. 2086</span></footer></main>`;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">AI<span>↗</span></div><div><h1><em>AI</em>steroid <span>Mining</span></h1><p>AUTONOMOUS MINING DIVISION</p></div><span class="version">ALPHA<br>0.4.0</span></header><section id="content"></section><footer class="legal">INDEPENDENT OPERATIONS <span>EST. 2086</span></footer></main>`;
  showWorkshop();
 }
 function showWorkshop(result=false){
@@ -49,7 +49,7 @@ function launch(){
  document.querySelector('#content')!.innerHTML=`<div class="mission"><div class="mission-hud"><div><span>MISSION</span><b>${String(company.rounds+1).padStart(2,'0')}</b></div><div class="time"><span id="phase">SHIFT TIME</span><b id="timer">00:45</b></div><div class="ore-count"><span>DELIVERED</span><b>◆ <span id="delivered">0</span></b></div></div><div class="field"><canvas id="field" aria-label="Autonomous drones mine asteroids. Drag to pan. Tap a drone for status."></canvas><div id="pause-overlay" hidden>PAUSED<span>The fleet is taking a well-earned microbreak.</span></div><div class="camera-controls"><button id="follow" aria-pressed="true">Follow fleet</button><button id="overview">Overview</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-in" aria-label="Zoom in">+</button></div><div class="field-caption">LIVE TELEMETRY <span>●</span></div></div><div class="telemetry"><div><small>FLEET</small><b id="fleet">${company.drones}/${company.drones}</b></div><div><small>CARGO</small><b id="cargo">0 / ${company.drones*12}</b></div><button id="pause" aria-label="Pause mission">Ⅱ</button><button id="speed" aria-label="Change game speed">1×</button></div><div class="status"><span class="status-dot"></span><p id="status">${company.scanner?'Asteroids located. This looks suspiciously like work.':'Headbutting efficiency: acceptable.'}</p></div><button class="text-button mission-back" id="abort">Abort mission</button></div>`;
  canvas=document.querySelector<HTMLCanvasElement>('#field')!;resize();
  let drag:{id:number;x:number;y:number;startX:number;startY:number;moved:boolean}|null=null;
- const coords=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*VIEW_W,y:(e.clientY-r.top)/r.height*VIEW_H};};
+ const coords=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*camera.width,y:(e.clientY-r.top)/r.height*camera.height};};
  const refreshCamera=()=>{document.querySelector('#follow')!.setAttribute('aria-pressed',String(camera.follow));};
  canvas.onpointerdown=e=>{if(drag)return;const p=coords(e);drag={id:e.pointerId,x:p.x,y:p.y,startX:p.x,startY:p.y,moved:false};canvas.setPointerCapture(e.pointerId);};
  canvas.onpointermove=e=>{if(!drag||drag.id!==e.pointerId)return;const p=coords(e);if(Math.hypot(p.x-drag.startX,p.y-drag.startY)>5)drag.moved=true;if(drag.moved){panCamera(camera,p.x-drag.x,p.y-drag.y);refreshCamera();}drag.x=p.x;drag.y=p.y;};
@@ -63,7 +63,7 @@ function launch(){
  document.querySelector('#speed')!.addEventListener('click',()=>{speed=speed===1?2:1;document.querySelector('#speed')!.textContent=speed+'×';});
  document.querySelector('#abort')!.addEventListener('click',()=>{paused=true;updateHUD();if(confirm('Abort this mission? All minerals from this mission will be lost.'))showWorkshop();else {paused=false;updateHUD();}});
 }
-function resize(){if(!canvas||screen!=='mission')return;const r=canvas.getBoundingClientRect();const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);}
+function resize(){if(!canvas||screen!=='mission')return;const r=canvas.getBoundingClientRect();resizeCamera(camera,r.width,r.height);const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);}
 window.addEventListener('resize',resize);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&screen==='mission'){paused=true;accumulator=0;updateHUD();}});
 function updateHUD(){if(screen!=='mission')return;
@@ -77,7 +77,7 @@ function updateHUD(){if(screen!=='mission')return;
  document.querySelector('#pause')!.setAttribute('aria-label',paused?'Resume mission':'Pause mission');
  (document.querySelector('#pause-overlay') as HTMLElement).hidden=!paused;
  const drone=world.drones.find(d=>d.id===selected);
- if(drone) document.querySelector('#status')!.textContent=`DRONE ${String(drone.id+1).padStart(2,'0')} · ${Math.round(drone.hp/drone.maxHp*100)}% hull · Cargo ${drone.cargo}/12 · ${{mine:'Mining',return:'Returning',docked:'Docked',dead:'Destroyed'}[drone.state]}`;
+ if(drone) document.querySelector('#status')!.textContent=`DRONE ${String(drone.id+1).padStart(2,'0')} · ${Math.round(drone.hp/drone.maxHp*100)}% hull · Cargo ${drone.cargo}/12 · ${{mine:'Mining',return:'Returning',unload:'Unloading',docked:'Docked',dead:'Destroyed'}[drone.state]}`;
  else if(world.phase==='recall')document.querySelector('#status')!.textContent='Shift over. The fleet is returning with its cargo.';
 }
 let hudTime=0;
