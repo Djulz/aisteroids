@@ -1,14 +1,14 @@
 import { HOME, W, H, type World } from './sim.ts';
 const gold = '#f5b743', cream = '#e7e2cf';
 function polygon(c: CanvasRenderingContext2D, pts: number[][]) { c.beginPath(); pts.forEach(([x,y], i) => i ? c.lineTo(x,y) : c.moveTo(x,y)); c.closePath(); }
-export function drawDrone(c: CanvasRenderingContext2D, x: number, y: number, angle: number, cargo = 0, blaster = false, time = 0) {
+export function drawDrone(c: CanvasRenderingContext2D, x: number, y: number, angle: number, cargo = 0, laser = false, time = 0) {
  c.save(); c.translate(x,y); c.rotate(angle + Math.PI / 2);
  c.fillStyle = '#83caca'; c.globalAlpha = .7; polygon(c,[[-4,12],[0,21 + Math.sin(time*30)*3],[4,12]]); c.fill(); c.globalAlpha = 1;
  c.fillStyle='#182b36'; c.strokeStyle=gold; c.lineWidth=1.4; c.fillRect(-12,-4,6,15); c.strokeRect(-12,-4,6,15); c.fillRect(6,-4,6,15); c.strokeRect(6,-4,6,15);
  c.fillStyle=gold; polygon(c,[[-7,10],[-8,-5],[-4,-11],[4,-11],[8,-5],[7,10]]); c.fill();
  c.fillStyle='#14232b'; c.fillRect(-4,-6,8,6); c.fillStyle=cream; c.fillRect(-3,3,6,3);
  c.fillStyle='#68c4c1'; for(let i=0;i<Math.ceil(cargo/4);i++) c.fillRect(-5+i*4,7,3,3);
- if(blaster){ c.fillStyle=cream; c.fillRect(-11,-13,3,9); c.fillRect(8,-13,3,9); }
+ if(laser){ c.fillStyle=cream; c.fillRect(-11,-13,3,9); c.fillRect(8,-13,3,9); }
  c.restore();
 }
 export function drawMother(c: CanvasRenderingContext2D, t:number) {
@@ -46,11 +46,11 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1) {
    if(d.state==='docked') continue;
    if(d.state==='dead'){ c.strokeStyle='#7d5350';c.lineWidth=2;c.beginPath();c.moveTo(d.x-5,d.y-5);c.lineTo(d.x+5,d.y+5);c.moveTo(d.x-5,d.y+5);c.lineTo(d.x+5,d.y-5);c.stroke();continue;}
    if(selected===d.id){c.strokeStyle='#f5b74388';c.lineWidth=1;c.beginPath();c.arc(d.x,d.y,21,0,7);c.stroke();}
-   drawDrone(c,d.x,d.y,d.angle,d.cargo,w.company.blaster,w.time);
-   if(d.hp<100){c.fillStyle='#1a2933';c.fillRect(d.x-10,d.y+24,20,2);c.fillStyle=d.hp>40?'#72b5a4':'#db795c';c.fillRect(d.x-10,d.y+24,20*d.hp/100,2);}
+   drawDrone(c,d.x,d.y,d.angle,d.cargo,w.company.laser,w.time);
+   if(d.hp<d.maxHp){c.fillStyle='#1a2933';c.fillRect(d.x-10,d.y+24,20,2);c.fillStyle=d.hp/d.maxHp>.4?'#72b5a4':'#db795c';c.fillRect(d.x-10,d.y+24,20*d.hp/d.maxHp,2);}
  }
  for(const e of w.effects){const a=e.life/e.max;c.globalAlpha=a;
-   if(e.type==='shot'){c.strokeStyle='#ffc868';c.lineWidth=2;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();}
+   if(e.type==='laser'){c.strokeStyle='#67d9ce';c.lineWidth=4;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.strokeStyle='#eaffec';c.lineWidth=1.2;c.stroke();}
    else if(e.type==='deposit'||e.type==='ore'){c.font=`bold ${e.type==='deposit'?16:10}px monospace`;c.textAlign='center';c.fillStyle=e.type==='deposit'?'#a4e0cc':gold;c.fillText(`+${e.amount}`,e.x,e.y-(1-a)*23);c.textAlign='left';}
    else {c.strokeStyle=e.type==='dead'?'#ee845e':gold;c.lineWidth=1.5;for(let i=0;i<7;i++){const angle=i*.898;const r=(1-a)*25+5;c.beginPath();c.moveTo(e.x+Math.cos(angle)*r,e.y+Math.sin(angle)*r);c.lineTo(e.x+Math.cos(angle)*(r+5),e.y+Math.sin(angle)*(r+5));c.stroke();}}
    c.globalAlpha=1;

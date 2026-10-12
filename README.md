@@ -1,5 +1,5 @@
-# AIsteroid Mining · Alpha 0.1.0
-Mobile-first autonomous mining game. Persistent company, 60-second shifts, a fleet of up to six drones, scanner and blaster research. Strict overhead industrial art rendered natively in Canvas 2D.
+# AIsteroid Mining · Alpha 0.2.0
+Mobile-first autonomous mining game. Persistent company, 45-second shifts, up to six drones, fleet-wide hull, scanner and mining laser upgrades. Strict overhead industrial art rendered in Canvas 2D. English UI.
 
 ## Run
 Node 24 recommended.
@@ -11,24 +11,30 @@ npm run build
 ```
 Open the Vite URL ending in `/aisteroids/`.
 
-## Design
-- Unresearched drones wander and ram rocks. All drones can collect nearby mineral chips and find home.
-- 12 units cargo capacity. Loaded drones deliver and return to work.
-- Every mining hit produces four units of mineral. Only delivered cargo earns currency.
-- After 60 simulation seconds all drones return. Pause and 2× speed supported; backgrounding pauses.
-- Hull, technology and roster persist; damaged/destroyed drones repair free after each mission.
-- Extra drone: 45, then +35 per owned drone. Scanner: 60. Blaster: 160. Technology applies fleet-wide.
-- Storage: versioned validated localStorage, saved on purchases and settlement. Aborted/reloaded missions award nothing. No backend or account.
-- No enemies, escorts, active abilities or additional resources in this MVP.
+## Current rules
+- Unresearched drones wander, oversteer and ram rocks. Baseline collection and return navigation remain reliable.
+- A mining impact requires an armed drone approaching faster than 30 world units/second. Impact causes a 145-unit/second outward impulse and 0.55 seconds without motor control. Another impact requires leaving the contact area and a new approach; stationary contact never ticks damage.
+- Basic hull survives 3 impacts and breaks on the 4th. Reinforced hull survives 6 and breaks on the 7th.
+- Each hit releases 4 minerals; cargo holds 12. Full drones return, unload, then resume mining.
+- Cargo and recall use grid routes with line-of-sight smoothing. Physical asteroid collisions apply in every active state. Only mining impacts damage the hull.
+- At 45 seconds all survivors return with cargo; this can take a few extra seconds. Missions finish early when all drones are destroyed or docked.
+- Only delivered minerals are banked. Destroyed drones lose carried cargo. Repairs are free and the roster persists.
+- Additional drones cost 10, 20, 30, 40, 50. Reinforced Hull: 10. Asteroid Scanner: 30. Mining Laser: 40. Technology applies to the entire fleet.
+- Scanner chooses nearby asteroids. Mining Laser is asteroid-only extraction, not a combat weapon.
+- Pause and 2× speed supported. Backgrounding pauses the mission.
+- Versioned localStorage preserves existing v1 companies and migrates Blaster ownership to Mining Laser. Old mineral balances are preserved, not rebased. Reset Company allows testing the new early progression.
+- No enemies, escorts, active abilities or additional resources in this pass.
 
 ## Structure
 `src/sim.ts`: seeded fixed-step simulation, no browser dependencies.
+`src/navigation.ts`: obstacle-aware route planning and exact segment checks.
 `src/render.ts`: Canvas industrial sprites and effects.
 `src/main.ts`: UI, mission lifecycle and input.
-`src/storage.ts`: save validation.
-`tests/`: deterministic behavioral checks and balance sampling.
+`src/storage.ts`: save validation and v1 → v2 migration.
+`tests/`: impact, hull, routing, recall, economy, migration and fleet simulation regressions.
 
 ## Publishing
-Workflow builds/tests `main` and deploys `dist` to GitHub Pages. Repository Settings → Pages must use **GitHub Actions** if automatic enablement is unavailable. Expected URL: https://djulz.github.io/aisteroids/
+GitHub Actions tests/builds `main` and deploys `dist` to GitHub Pages.
+https://djulz.github.io/aisteroids/
 
-Art is original code-generated geometry. Fonts: locally bundled Barlow / Barlow Condensed (SIL Open Font License), with system fallbacks. No generated-image dependency or external gameplay assets.
+Art is original code-generated geometry. Fonts: bundled Barlow / Barlow Condensed (SIL Open Font License). No external gameplay assets or backend.
