@@ -41,3 +41,5 @@ Open the Vite URL ending in `/aisteroids/`. Published at https://djulz.github.io
 - `tests/`: simulation, persistence, economy, navigation and camera checks.
 
 Artwork is original code-generated geometry. Bundled Barlow and Barlow Condensed fonts use the SIL Open Font License.
+
+Each Pages build runs the automated tests before publication.
