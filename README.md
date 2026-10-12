@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.6.0
+# AIsteroid Mining · Alpha 0.6.1
 
 Mobile-first autonomous asteroid mining game. Run a growing company in one persistent overhead world. Each shift lasts 45 seconds; between shifts, purchase fleet upgrades and choose a survey priority. The English interface and industrial artwork use Canvas 2D.
 
@@ -18,10 +18,10 @@ Open the Vite URL ending in `/aisteroids/`. Published at https://djulz.github.io
 ## The world and progression
 
 - The 800 × 930 field has a home pocket, a Far Belt with rich teal deposits, and an Outer Reach outpost site. Pan, zoom, follow the fleet, or show the whole map; the radar marks visible points of interest.
-- Rock positions and remaining health persist across completed shifts. Rocks take many impacts to destroy and never regenerate. Loose minerals, including cargo dropped by destroyed drones, also remain on the map for later collection. A mission abort rolls back its changes.
+- Rock positions and remaining health persist across completed shifts. Rocks take many impacts to destroy and never regenerate. Loose minerals, including cargo dropped by destroyed drones, also remain on the map for later collection. Miners ignore ore that cannot fit in their remaining cargo and return to unload when nothing collectable remains. A mission abort rolls back its changes.
 - The first trip can fund a second drone (10 minerals) or Reinforced Hull (10). Asteroid Scanner costs 30 and Mining Laser costs 40. Scanner enables the Far Belt survey directive. Miner drones remain autonomous during a shift.
 - Deliver a rich sample to unlock Expanded Cargo (60), Deep Prospecting (90, requires Scanner) and Ion Drive (110). Rich rocks yield eight minerals per impact; ordinary rocks yield four.
-- A rival scout appears after a rich sample is delivered. Once encountered, autonomous Bodyguard Drones are available (100, then 160). Mining lasers extract ore and cannot shoot enemies. Survey the Outer Reach site to unlock the Outer Outpost (220), then select the launch and unloading location for the next shift.
+- A rival scout appears after a rich sample is delivered. It patrols the outer field, destroys a basic miner in three clear shots, and leaves the home field as a safe route to fund an escort. Once encountered, autonomous Bodyguard Drones are available (100, then 160). Mining lasers extract ore and cannot shoot enemies. Survey the Outer Reach site to unlock the Outer Outpost (220), then select the launch and unloading location for the next shift.
 - Discoveries and unlocks depend on exploration and actions in the world, never the number of missions played. Survey directives give the fleet a priority between shifts; after completion they revert to free mining.
 
 ## Shift rules

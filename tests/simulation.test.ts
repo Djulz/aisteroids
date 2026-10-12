@@ -68,7 +68,7 @@ test('far outpost changes spawn and unloading destination without changing HQ sa
  assert.equal(w.phase,'done');assert.equal(w.delivered,12);
 });
 test('bodyguards reduce incoming fire in a full contested shift',()=>{
- const base={...freshCompany(),progress:{...freshCompany().progress,richSampled:true},drones:3,scanner:true,hull:true,laser:true};
+ const base={...freshCompany(),progress:{...freshCompany().progress,richSampled:true,outpostSurveyed:true},outpost:true,launchSite:'far' as const,drones:3,scanner:true,hull:true,laser:true};
  const unguarded=createWorld(base),escorted=createWorld({...base,guards:1});
  for(const w of [unguarded,escorted])for(let n=0;n<4500&&w.phase!=='done';n++)step(w);
  assert.equal(unguarded.phase,'done');assert.equal(escorted.phase,'done');
@@ -92,6 +92,33 @@ test('rock damage, depletion and loose minerals persist across completed shifts'
  assert.equal(later.rocks[0].hp,next.rockHp[0]);assert.equal(later.rocks[1].hp,0);
  assert.deepEqual(later.rocks.map(r=>({id:r.id,x:r.x,y:r.y,max:r.max})),original);
  assert.equal(later.ores.at(-1)?.value,4);assert.equal(later.ores.at(-1)?.rich,true);
+});
+test('a miner with two free cargo slots stops circling rich ore worth four',()=>{
+ const c={...freshCompany(),scanner:true,cargoBay:true},w=createWorld(c),d=w.drones[0];
+ w.rocks.forEach(r=>r.hp=0);w.ores=[{id:400,x:490,y:810,value:4,rich:true,age:1}];
+ Object.assign(d,{x:490,y:810,cargo:16,richCargo:16});
+ step(w);assert.equal(d.state,'return');assert.equal(w.ores.length,1);
+ for(let n=0;n<750&&w.delivered<16;n++)step(w);
+ assert.ok(w.delivered>=16,'the partial load must reach HQ rather than orbit the ore');
+});
+test('scanner and mining laser ignore deposits that cannot fit the remaining cargo',()=>{
+ const c={...freshCompany(),scanner:true,laser:true,cargoBay:true},w=createWorld(c),d=w.drones[0];
+ w.rocks.forEach(r=>r.hp=0);
+ const rich=w.rocks.find(r=>r.rich)!,ordinary=w.rocks[0];rich.hp=20;ordinary.hp=20;
+ Object.assign(d,{x:rich.x,y:rich.y+rich.r+60,cargo:16,richCargo:16,cooldown:0});
+ w.ores=[{id:999,x:d.x+10,y:d.y,value:4,rich:true,age:1}];
+ step(w);assert.equal(rich.hp,20);assert.equal(w.shots,0);assert.equal(d.pathKey,'rock'+ordinary.id);
+});
+test('an unescorted scout destroys a basic miner in three clear shots',()=>{
+ const c={...freshCompany(),laser:true,progress:{...freshCompany().progress,richSampled:true}},w=createWorld(c),d=w.drones[0];
+ w.rocks=[{id:77,x:700,y:800,r:25,hp:50,max:50,shape:[]}];w.time=11;
+ Object.assign(d,{x:450,y:180,cargo:4,angle:Math.PI});
+ for(let n=0;n<1400&&d.state!=='dead';n++)step(w);
+ assert.equal(d.state,'dead');assert.equal(w.attacks,3);assert.ok(w.lost>=4);
+});
+test('the home field remains a viable way to earn a bodyguard after the rival appears',()=>{
+ const c={...freshCompany(),drones:2,scanner:true,hull:true,progress:{...freshCompany().progress,richSampled:true,rivalSeen:true}};
+ const w=run(c);assert.ok(w.enemies.length>0);assert.equal(w.attacks,0);assert.ok(w.delivered>=20);
 });
 test('survey priorities lead to discoveries without mission count gates',()=>{
  let c={...freshCompany(),scanner:true,hull:true,drones:2,directive:'surveyFar' as const};

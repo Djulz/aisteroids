@@ -85,27 +85,31 @@ function dropCargo(w:World,d:Drone){
  }
  d.cargo=0;d.richCargo=0;
 }
+const inContestedField=(p:Point)=>p.x>405||p.y>680;
 function updateRivals(w:World,dt:number){
  if(w.phase==='recall')return;
  if(w.progress.richSampled&&w.time>=11&&w.wave===0 || w.progress.outpostSurveyed&&w.time>=30&&w.wave===1){
-  const side=w.wave%2;w.enemies.push({id:w.wave++,x:side?W-55:W-65,y:side?H-75:110,vx:0,vy:0,hp:3,cooldown:1.5,path:[],pathKey:'',pathAge:0});
+  const miners=w.drones.filter(d=>(d.state==='mine'||d.state==='return')&&inContestedField(d));
+  const target=miners.sort((a,b)=>b.x-a.x)[0];
+  const side=w.wave%2?1:-1;
+  w.enemies.push({id:w.wave++,x:Math.max(430,Math.min(W-25,(target?.x??620)+side*140)),y:Math.max(90,Math.min(H-25,(target?.y??360)-70)),vx:0,vy:0,hp:3,cooldown:1.1,path:[],pathKey:'',pathAge:0});
   w.progress.rivalSeen=true;
  }
  for(const e of w.enemies){
   if(e.hp<=0)continue;
-  const miners=w.drones.filter(d=>d.state==='mine'||d.state==='return');
-  if(!miners.length)continue;
+  const miners=w.drones.filter(d=>(d.state==='mine'||d.state==='return')&&inContestedField(d));
+  if(!miners.length){e.vx*=.96;e.vy*=.96;continue;}
   const target=miners.reduce((best,d)=>distance(d,e)<distance(best,e)?d:best);
   const dist=distance(e,target),point=clearSegment(e,target,w.rocks,-1,10)?target:waypoint(w,e,target,'pursue'+target.id);
   const pathDist=distance(e,point),dx=(point.x-e.x)/Math.max(1,pathDist),dy=(point.y-e.y)/Math.max(1,pathDist);
-  const desired=dist>105?58:dist<70?-35:0;
+  const desired=dist>105?82:dist<70?-35:0;
   e.vx+=(dx*desired-e.vx)*Math.min(1,dt*2);e.vy+=(dy*desired-e.vy)*Math.min(1,dt*2);
   e.x=Math.max(12,Math.min(W-12,e.x+e.vx*dt));e.y=Math.max(12,Math.min(H-12,e.y+e.vy*dt));separateRock(w,e);
   e.cooldown-=dt;
   if(dist<145&&e.cooldown<=0&&clearSegment(e,target,w.rocks,-1,0)){
    effect(w,{type:'enemyShot',x:e.x,y:e.y,tx:target.x,ty:target.y},.3);w.attacks++;
-   target.hp--;if(target.hp<=0){target.hp=0;dropCargo(w,target);target.state='dead';effect(w,{type:'dead',x:target.x,y:target.y},1);}
-   e.cooldown=3.2;
+   target.hp-=1.5;if(target.hp<=0){target.hp=0;dropCargo(w,target);target.state='dead';effect(w,{type:'dead',x:target.x,y:target.y},1);}
+   e.cooldown=2.1;
   }
  }
  for(const g of w.guards){
@@ -148,15 +152,18 @@ export function step(w:World,dt=STEP){
    continue;
   }
   d.cooldown=Math.max(0,d.cooldown-dt);
-  if(w.phase==='recall'||d.cargo>=capacity(w.company)||(!w.rocks.some(r=>r.hp>0)&&!w.ores.length))d.state='return';
+  const room=capacity(w.company)-d.cargo;
+  const extractable=w.rocks.some(r=>r.hp>0&&(r.rich?4:2)<=room);
+  const collectable=w.ores.some(o=>o.value<=room);
+  if(w.phase==='recall'||room===0||d.cargo>0&&!extractable&&!collectable||!w.rocks.some(r=>r.hp>0)&&!w.ores.length)d.state='return';
   let target:Point,controlled=false;
   if(d.state==='return'){target=waypoint(w,d,{x:w.base.x+(d.id-(w.drones.length-1)/2)*25,y:w.base.y-62},'home');controlled=true;}
    else{
    const surveyOutpost=w.company.directive==='surveyOutpost'&&!w.progress.outpostSurveyed;
    const surveyFar=w.company.directive==='surveyFar'&&!w.progress.richSampled;
-   const richRocks=surveyFar?w.rocks.filter(r=>r.hp>0&&r.rich):[];
-   const r=richRocks.length?richRocks.sort((a,b)=>distance(d,a)-distance(d,b))[0]:w.company.scanner?w.rocks.filter(r=>r.hp>0).sort((a,b)=>(distance(d,a)/(w.company.prospector&&a.rich?5:1))-(distance(d,b)/(w.company.prospector&&b.rich?5:1)))[0]:undefined;
-   const ore=w.ores.filter(o=>distance(d,o)<130).sort((a,b)=>distance(d,a)-distance(d,b))[0];
+   const richRocks=surveyFar?w.rocks.filter(r=>r.hp>0&&r.rich&&room>=4):[];
+   const r=richRocks.length?richRocks.sort((a,b)=>distance(d,a)-distance(d,b))[0]:w.company.scanner?w.rocks.filter(r=>r.hp>0&&(r.rich?4:2)<=room).sort((a,b)=>(distance(d,a)/(w.company.prospector&&a.rich?5:1))-(distance(d,b)/(w.company.prospector&&b.rich?5:1)))[0]:undefined;
+   const ore=w.ores.filter(o=>o.value<=room&&(distance(d,o)<130||w.company.scanner&&!r)).sort((a,b)=>distance(d,a)-distance(d,b))[0];
    if(surveyOutpost){target=waypoint(w,d,FAR,'surveyOutpost');controlled=true;}
    else if(surveyFar&&r){target=waypoint(w,d,r,'rock'+r.id,r.id);controlled=true;}
    else if(ore){target=waypoint(w,d,ore,'ore'+ore.id);controlled=true;}
@@ -168,7 +175,7 @@ export function step(w:World,dt=STEP){
     }
   }
   if(w.company.laser&&d.state==='mine'&&d.cooldown<=0){
-   const r=w.rocks.filter(r=>r.hp>0&&distance(d,r)<r.r+85&&clearSegment(d,r,w.rocks,r.id,0)).sort((a,b)=>distance(d,a)-distance(d,b))[0];
+   const r=w.rocks.filter(r=>r.hp>0&&(r.rich?4:2)<=room&&distance(d,r)<r.r+85&&clearSegment(d,r,w.rocks,r.id,0)).sort((a,b)=>distance(d,a)-distance(d,b))[0];
    if(r){hit(w,r,d);w.shots++;d.cooldown=.8;effect(w,{type:'laser',x:d.x,y:d.y,tx:r.x,ty:r.y},.35);}
   }
   if(d.recoil>0){
