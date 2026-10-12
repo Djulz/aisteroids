@@ -12,8 +12,8 @@ test('destroyed cargo falls into the field for a later shift; repairs remain fre
 function returnFixture(recall:boolean){const w=createWorld(freshCompany());w.time=recall?ROUND_TIME:0;w.rocks=[{id:42,x:200,y:400,r:48,hp:100,max:100,shape:[]}];const d=w.drones[0];Object.assign(d,{x:200,y:280,angle:Math.PI/2,cargo:recall?4:12});return w;}
 for(const recall of [false,true])test((recall?'recall':'full cargo')+' routes around an obstructing asteroid',()=>{const w=returnFixture(recall),d=w.drones[0];let side=0;for(let i=0;i<1200&&w.delivered<(recall?4:12);i++){step(w);side=Math.max(side,Math.abs(d.x-200));for(const r of w.rocks)assert.ok(Math.hypot(d.x-r.x,d.y-r.y)>=r.r+7.9,'must not pass through asteroid');}assert.ok(side>55);assert.equal(w.delivered,recall?4:12);assert.equal(w.collisions,0);assert.equal(d.hp,4);});
 test('recall starts at 45 seconds, not 60',()=>{const w=returnFixture(false);w.drones[0].cargo=2;w.time=ROUND_TIME-STEP;step(w);assert.equal(w.phase,'recall');assert.equal(w.drones[0].state,'return');});
-test('laser mines with no hull damage and uses laser effects',()=>{const w=createWorld({...freshCompany(),laser:true,scanner:true});let seen=false;for(let i=0;i<4000&&w.phase!=='done';i++){step(w);seen ||= w.effects.some(e=>e.type==='laser');}assert.ok(seen);assert.ok(w.shots>0);assert.equal(w.collisions,0);assert.equal(w.drones[0].hp,4);assert.equal(w.phase,'done');assert.ok(w.delivered>24);});
-test('new economy uses round prices and rejects duplicate/invalid purchases',()=>{const c={...freshCompany(),credits:12};assert.equal(cost(c,'drone'),10);assert.equal(cost(c,'hull'),10);assert.equal(cost(c,'scanner'),30);assert.equal(cost(c,'laser'),40);assert.equal(buy(c,'drone')!.credits,2);assert.equal(cost(buy(c,'drone')!,'drone'),20);const upgraded=buy(c,'hull')!;assert.equal(upgraded.hull,true);assert.equal(upgraded.credits,2);assert.equal(buy(upgraded,'hull'),null);assert.equal(buy(c,'scanner'),null);assert.equal(buy({...c,credits:999,drones:6},'drone'),null);});
+test('laser mines with no hull damage and uses laser effects',()=>{const w=createWorld({...freshCompany(),laser:true,scanner:true});let seen=false;for(let i=0;i<4000&&w.phase!=='done';i++){step(w);seen ||= w.effects.some(e=>e.type==='laser');}assert.ok(seen);assert.ok(w.shots>0);assert.equal(w.collisions,0);assert.equal(w.drones[0].hp,4);assert.equal(w.phase,'done');assert.ok(w.delivered>12);});
+test('new economy uses round prices and rejects duplicate/invalid purchases',()=>{const c={...freshCompany(),credits:12};assert.equal(cost(c,'drone'),10);assert.equal(cost(c,'hull'),10);assert.equal(cost(c,'scanner'),30);assert.equal(cost(c,'laser'),80);assert.equal(buy(c,'drone')!.credits,2);assert.equal(cost(buy(c,'drone')!,'drone'),30);const upgraded=buy(c,'hull')!;assert.equal(upgraded.hull,true);assert.equal(upgraded.credits,2);assert.equal(buy(upgraded,'hull'),null);assert.equal(buy(c,'scanner'),null);assert.equal(buy({...c,credits:999,drones:6},'drone'),null);});
 test('legacy saves preserve economy, drones and technology',()=>{const old={version:1,credits:73,drones:3,scanner:true,blaster:true,rounds:8,total:213};assert.deepEqual(parseSave(JSON.stringify(old)),{...freshCompany(),credits:73,drones:3,scanner:true,laser:true,rounds:8,total:213});});
 test('v3 saves round-trip; malformed saves are rejected',()=>{const c={...freshCompany(),credits:22,hull:true};assert.deepEqual(parseSave(JSON.stringify(c)),c);for(const value of ['{oops',JSON.stringify({...c,credits:-1}),JSON.stringify({...c,hull:'yes'})])assert.deepEqual(parseSave(value),freshCompany());});
 test('seeded worlds are deterministic',()=>{const a=run({},99),b=run({},99);assert.deepEqual(a.drones,b.drones);assert.equal(a.delivered,b.delivered);});
@@ -36,20 +36,38 @@ test('unloading holds position, transfers cargo once and leaves without teleport
 
 test('v2 companies migrate with existing purchases and round history',()=>{
  const v2={version:2,credits:147,drones:4,scanner:true,hull:true,laser:true,rounds:8,total:371};
- assert.deepEqual(parseSave(JSON.stringify(v2)),{...freshCompany(),...v2,version:4});
+ assert.deepEqual(parseSave(JSON.stringify(v2)),{...freshCompany(),...v2,version:5});
 });
 test('rich belt exists from the start and releases twice the ore value',()=>{
  const w=createWorld(freshCompany());const rock=w.rocks.find(r=>r.rich)!;
  const d=w.drones[0];d.x=rock.x;d.y=rock.y+rock.r+8.5;d.vy=-67;d.angle=-Math.PI/2;
  w.rocks=[rock];step(w);assert.equal(w.ores.reduce((n,o)=>n+o.value,0)+d.cargo,8);
 });
+test('laser extracts one quarter as much per pulse, while a ram retains its four mineral yield',()=>{
+ const rock=createWorld(freshCompany()).rocks[0];
+ const ram=impactFixture(),before=ram.rocks[0].hp;step(ram);
+ assert.equal(before-ram.rocks[0].hp,4);assert.equal(ram.ores.reduce((n,o)=>n+o.value,0),4);
+ const laser=createWorld({...freshCompany(),laser:true});laser.rocks=[rock];const d=laser.drones[0];d.x=rock.x;d.y=rock.y+rock.r+50;step(laser);
+ assert.equal(rock.max-rock.hp,1);assert.equal(laser.ores.reduce((n,o)=>n+o.value,0),1);
+ assert.equal(rock.max,160,'persistent ore budget remains equal to the old 40 headbutt hits');
+});
+test('odd laser cargo unloads without losing a mineral',()=>{
+ const w=returnFixture(true),d=w.drones[0];d.cargo=5;d.richCargo=2;
+ for(let n=0;n<1400&&w.phase!=='done';n++)step(w);
+ assert.equal(w.phase,'done');assert.equal(w.delivered,5);assert.equal(d.cargo,0);
+});
+test('v4 rock integrity migrates fourfold and keeps depleted deposits depleted',()=>{
+ const old={...freshCompany(),version:4,rockHp:{0:7,1:0},ores:[{x:200,y:400,value:2,rich:false}]};
+ const next=parseSave(JSON.stringify(old));assert.equal(next.version,5);assert.equal(next.rockHp[0],28);assert.equal(next.rockHp[1],0);assert.equal(createWorld(next).rocks[1].hp,0);
+ const odd={...next,ores:[{x:200,y:400,value:1,rich:false}]};assert.deepEqual(parseSave(JSON.stringify(odd)),odd);
+});
 test('technology unlocks from discoveries and costs remain meaningful',()=>{
  let c={...freshCompany(),credits:500};
  assert.equal(buy(c,'cargoBay'),null);assert.equal(buy(c,'guard'),null);
  c={...c,rounds:99};assert.equal(buy(c,'cargoBay'),null);
- c={...c,progress:{...c.progress,richSampled:true}};assert.equal(buy(c,'prospector'),null);c=buy(c,'scanner')!;assert.equal(buy(c,'prospector')!.prospector,true);assert.equal(cost(c,'cargoBay'),60);assert.equal(buy(c,'cargoBay')!.cargoBay,true);assert.equal(buy(c,'drive')!.drive,true);
- assert.equal(buy(c,'guard'),null);c={...c,progress:{...c.progress,rivalSeen:true}};assert.equal(cost(c,'guard'),100);c=buy(c,'guard')!;assert.equal(c.guards,1);assert.equal(cost(c,'guard'),160);
- assert.equal(buy(c,'outpost'),null);c={...c,progress:{...c.progress,outpostSurveyed:true}};assert.equal(cost(c,'outpost'),220);
+ c={...c,progress:{...c.progress,richSampled:true}};assert.equal(buy(c,'prospector'),null);c=buy(c,'scanner')!;assert.equal(buy(c,'prospector')!.prospector,true);assert.equal(cost(c,'cargoBay'),120);assert.equal(buy(c,'cargoBay')!.cargoBay,true);assert.equal(buy(c,'drive')!.drive,true);
+ assert.equal(buy(c,'guard'),null);c={...c,progress:{...c.progress,rivalSeen:true}};assert.equal(cost(c,'guard'),180);c=buy(c,'guard')!;assert.equal(c.guards,1);assert.equal(cost(c,'guard'),280);
+ assert.equal(buy(c,'outpost'),null);c={...c,progress:{...c.progress,outpostSurveyed:true}};assert.equal(cost(c,'outpost'),300);
 });
 test('first rival appears after the reveal and attacks miners; guards defeat it',()=>{
  const c={...freshCompany(),progress:{...freshCompany().progress,richSampled:true},drones:1};const w=createWorld(c);w.rocks=[];w.ores=[];const d=w.drones[0];d.x=730;d.y=180;d.cargo=4;w.time=10.99;
@@ -105,7 +123,7 @@ test('scanner and mining laser ignore deposits that cannot fit the remaining car
  const c={...freshCompany(),scanner:true,laser:true,cargoBay:true},w=createWorld(c),d=w.drones[0];
  w.rocks.forEach(r=>r.hp=0);
  const rich=w.rocks.find(r=>r.rich)!,ordinary=w.rocks[0];rich.hp=20;ordinary.hp=20;
- Object.assign(d,{x:rich.x,y:rich.y+rich.r+60,cargo:16,richCargo:16,cooldown:0});
+ Object.assign(d,{x:rich.x,y:rich.y+rich.r+60,cargo:17,richCargo:17,cooldown:0});
  w.ores=[{id:999,x:d.x+10,y:d.y,value:4,rich:true,age:1}];
  step(w);assert.equal(rich.hp,20);assert.equal(w.shots,0);assert.equal(d.pathKey,'rock'+ordinary.id);
 });
@@ -125,7 +143,7 @@ test('survey priorities lead to discoveries without mission count gates',()=>{
  const sample=createWorld(c);for(let n=0;n<5000&&sample.phase!=='done';n++)step(sample);
  c=settle(c,sample);assert.equal(c.progress.farSurveyed,true);assert.equal(c.progress.richSampled,true);assert.equal(c.progress.rivalSeen,true);assert.equal(c.directive,'auto');
  c={...c,directive:'surveyOutpost'};const site=createWorld(c);for(let n=0;n<5000&&site.phase!=='done';n++)step(site);
- const established=settle(c,site);assert.equal(established.progress.outpostSurveyed,true);assert.equal(established.directive,'auto');assert.ok(buy({...established,credits:220},'outpost'));
+ const established=settle(c,site);assert.equal(established.progress.outpostSurveyed,true);assert.equal(established.directive,'auto');assert.ok(buy({...established,credits:300},'outpost'));
 });
 test('v3 save migration retains existing technology and does not infer progress from round count',()=>{
  const old={version:3,credits:3,drones:3,scanner:true,hull:true,laser:true,rounds:25,total:390,cargoBay:false,prospector:false,drive:false,guards:0,outpost:false,launchSite:'home'};

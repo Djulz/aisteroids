@@ -1,7 +1,7 @@
 // Coarse route planning plus exact circle/segment checks. Shared by cargo and recall.
 export type Point = { x: number; y: number };
 export type Obstacle = Point & { r: number; hp: number; id: number };
-const CELL = 10;
+const CELL = 18;
 export function clearSegment(a: Point, b: Point, rocks: Obstacle[], ignore = -1, margin = 11) {
  const dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
  return rocks.every(r=>{
