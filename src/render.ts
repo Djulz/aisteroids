@@ -1,7 +1,19 @@
 import {type Camera,newCamera} from './camera.ts';
-import { HOME, W, H, type World } from './sim.ts';
+import { HOME, FAR, W, H, type World } from './sim.ts';
 const gold = '#f5b743', cream = '#e7e2cf';
+function drawOutpost(c:CanvasRenderingContext2D,active:boolean,t:number,bounce=0){
+ c.save();c.translate(FAR.x,FAR.y);c.scale(1+bounce,1+bounce);c.strokeStyle=active?'#83d8cf':'#598d94';c.fillStyle='#122e36';c.lineWidth=2;
+ polygon(c,[[-24,-24],[24,-24],[34,-12],[34,26],[-34,26],[-34,-12]]);c.fill();c.stroke();
+ c.fillStyle=active?'#83d8cf':'#5d8991';c.fillRect(-12,-12,24,18);c.fillStyle='#0d1f2a';c.fillRect(-8,-8,16,10);
+ c.strokeStyle=active?'#83d8cf88':'#5d899188';c.setLineDash([4,6]);c.beginPath();c.arc(0,0,42,0,Math.PI*2);c.stroke();c.setLineDash([]);
+ if(active){c.strokeStyle='#a5f3e3';c.beginPath();c.arc(0,0,14,t, t+1.7);c.stroke();}
+ c.restore();
+}
 function polygon(c: CanvasRenderingContext2D, pts: number[][]) { c.beginPath(); pts.forEach(([x,y], i) => i ? c.lineTo(x,y) : c.moveTo(x,y)); c.closePath(); }
+export function drawGuard(c:CanvasRenderingContext2D,x:number,y:number,angle:number){
+ c.save();c.translate(x,y);c.rotate(angle+Math.PI/2);c.strokeStyle='#8ee5d3';c.fillStyle='#1c4652';c.lineWidth=1.5;
+ polygon(c,[[-9,9],[0,-13],[9,9],[0,5]]);c.fill();c.stroke();c.fillStyle='#a8eee3';c.fillRect(-2,-4,4,7);c.restore();
+}
 export function drawDrone(c: CanvasRenderingContext2D, x: number, y: number, angle: number, cargo = 0, laser = false, time = 0, thrust = true) {
  c.save(); c.translate(x,y); c.rotate(angle + Math.PI / 2);
  if(thrust){c.fillStyle = '#83caca'; c.globalAlpha = .7; polygon(c,[[-4,12],[0,21 + Math.sin(time*30)*3],[4,12]]); c.fill(); c.globalAlpha = 1;}
@@ -12,8 +24,8 @@ export function drawDrone(c: CanvasRenderingContext2D, x: number, y: number, ang
  if(laser){ c.fillStyle=cream; c.fillRect(-11,-13,3,9); c.fillRect(8,-13,3,9); }
  c.restore();
 }
-export function drawMother(c: CanvasRenderingContext2D, t:number,bounce=0) {
- c.save(); c.translate(HOME.x,HOME.y);c.scale(1+bounce,1+bounce);
+export function drawMother(c: CanvasRenderingContext2D, t:number,bounce=0,base=HOME) {
+ c.save(); c.translate(base.x,base.y);c.scale(1+bounce,1+bounce);
  c.strokeStyle='#5d78834d'; c.lineWidth=1; c.setLineDash([3,6]); c.beginPath(); c.ellipse(0,0,66,52,0,0,Math.PI*2); c.stroke(); c.setLineDash([]);
  c.fillStyle='#142733'; c.strokeStyle='#596773';
  polygon(c,[[-35,-22],[-22,-35],[22,-35],[35,-22],[35,29],[22,40],[-22,40],[-35,29]]); c.fill(); c.stroke();
@@ -37,9 +49,10 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    const impact=w.effects.find(e=>e.type==='hit'&&e.x===r.x&&e.y===r.y);const pulse=impact?impact.life/impact.max:0;
    c.save();c.translate(r.x+Math.sin(pulse*24)*pulse*2,r.y+Math.cos(pulse*19)*pulse*2);c.rotate(r.id*.73);c.scale(1+pulse*.07,1+pulse*.07);
    const points=r.shape.map((n,i)=>[Math.cos(i/r.shape.length*Math.PI*2)*r.r*n,Math.sin(i/r.shape.length*Math.PI*2)*r.r*n]);
-   polygon(c,points); c.fillStyle=pulse>.75?'#ac9f7e':'#34434d';c.fill();c.strokeStyle=pulse>.4?'#efd7a0':'#71808a';c.lineWidth=1;c.stroke();
+   polygon(c,points); c.fillStyle=r.rich?(pulse>.75?'#b9d7c9':'#2b5559'):(pulse>.75?'#ac9f7e':'#34434d');c.fill();c.strokeStyle=r.rich?(pulse>.4?'#e4fff0':'#79c9bf'):(pulse>.4?'#efd7a0':'#71808a');c.lineWidth=1;c.stroke();
    for(let i=0;i<5;i++){const a=i*2.4+r.id;const radius=r.r*(i%2?.42:.2);const x=Math.cos(a)*radius,y=Math.sin(a)*radius; c.fillStyle='#23343f';c.beginPath();c.ellipse(x,y,r.r*.14,r.r*.11,a,0,7);c.fill();c.strokeStyle='#53636c';c.lineWidth=.6;c.beginPath();c.arc(x,y,r.r*.14,0,2.5);c.stroke();}
    if(r.hp<r.max){c.strokeStyle='#0a1a25';c.lineWidth=1.8;c.beginPath();c.moveTo(-r.r*.7,0);c.lineTo(-3,3);c.lineTo(3,-5);c.lineTo(r.r*.5,-r.r*.55);c.stroke();}
+   if(r.rich){c.fillStyle='#7bd4be';for(let i=0;i<3;i++){c.beginPath();c.arc(Math.cos(i*2.1)*r.r*.52,Math.sin(i*2.1)*r.r*.52,2.5,0,7);c.fill();}}
    c.restore();
  }
  for(const o of w.ores){const age=o.age??1,flight=1-Math.exp(-age*12);const x=(o.originX??o.x)+(o.x-(o.originX??o.x))*flight,y=(o.originY??o.y)+(o.y-(o.originY??o.y))*flight;
@@ -48,7 +61,8 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
   c.save();c.translate(x-Math.sin(direction)*spread,y+Math.cos(direction)*spread);c.rotate(.4+Math.min(age,.5)*5);c.shadowColor=gold;c.shadowBlur=age<.4?10:0;c.fillStyle=gold;polygon(c,[[0,-4],[4,0],[1,4],[-3,2],[-4,-1]]);c.fill();c.restore();}
  const arrivals=w.effects.filter(e=>e.type==='transfer');
  const bounce=Math.max(0,...arrivals.map(e=>{const t=e.max-e.life-.26;return t>0?Math.sin(t/.09*Math.PI)*.065:0;}));
- drawMother(c,w.time,bounce);
+ if(w.base.x===FAR.x){drawMother(c,w.time,0,HOME);drawOutpost(c,true,w.time*.6,bounce);}
+ else {drawMother(c,w.time,bounce);if(w.company.outpost)drawOutpost(c,false,w.time*.6);}
  for(const d of w.drones){
 
    if(d.state==='dead'){ c.strokeStyle='#7d5350';c.lineWidth=2;c.beginPath();c.moveTo(d.x-5,d.y-5);c.lineTo(d.x+5,d.y+5);c.moveTo(d.x-5,d.y+5);c.lineTo(d.x+5,d.y-5);c.stroke();continue;}
@@ -56,6 +70,8 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    drawDrone(c,d.x,d.y,d.angle,d.cargo,w.company.laser,w.time,d.state==='mine'||d.state==='return');
    if(d.hp<d.maxHp){c.fillStyle='#1a2933';c.fillRect(d.x-10,d.y+24,20,2);c.fillStyle=d.hp/d.maxHp>.4?'#72b5a4':'#db795c';c.fillRect(d.x-10,d.y+24,20*d.hp/d.maxHp,2);}
  }
+ for(const g of w.guards)drawGuard(c,g.x,g.y,g.angle);
+ for(const foe of w.enemies){if(foe.hp<=0)continue;c.save();c.translate(foe.x,foe.y);c.rotate(w.time*.6);c.fillStyle='#7d3d4a';c.strokeStyle='#e6747d';c.lineWidth=1.5;polygon(c,[[0,-11],[10,0],[0,11],[-10,0]]);c.fill();c.stroke();c.fillStyle='#ff9393';c.fillRect(-2,-3,4,6);c.restore();}
  for(const e of w.effects){const a=e.life/e.max;c.globalAlpha=a;
    if(e.type==='transfer'){
     const t=1-a,travel=Math.min(1,t/.78),ease=travel*travel*(3-2*travel),x=e.x+(e.tx!-e.x)*ease,y=e.y+(e.ty!-e.y)*ease-Math.sin(travel*Math.PI)*14;
@@ -63,6 +79,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
     c.save();c.translate(x,y);c.rotate(t*5);c.fillStyle=gold;c.shadowColor=gold;c.shadowBlur=12;c.fillRect(-3,-3,6,6);c.restore();
     if(travel===1){c.strokeStyle='#a4e0cc';c.beginPath();c.arc(e.tx!,e.ty!,4+(t-.78)*70,0,7);c.stroke();}
    }
+   else if(e.type==='enemyShot'||e.type==='guardShot'){c.strokeStyle=e.type==='enemyShot'?'#f5848d':'#8af0dc';c.lineWidth=3*a+1;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.fillStyle=c.strokeStyle;c.beginPath();c.arc(e.tx!,e.ty!,3+(1-a)*8,0,7);c.fill();}
    else if(e.type==='laser'){c.strokeStyle='#67d9ce';c.lineWidth=4;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.strokeStyle='#eaffec';c.lineWidth=1.2;c.stroke();}
    else if(e.type==='ore'&&e.max-e.life<.25&&e.tx!==undefined){
     const t=1-Math.exp(-(e.max-e.life)*16),x=e.tx+(e.x-e.tx)*t,y=e.ty!+(e.y-e.ty!)*t;
@@ -72,7 +89,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    else {if(e.type==='hit'){
     c.strokeStyle='#ffe3a1';c.lineWidth=2*a;c.beginPath();c.arc(e.x,e.y,(1-a)*42*(e.amount??1)+3,0,7);c.stroke();
     for(let j=0;j<12;j++){const angle=j*2.399+(e.x%9),radius=(1-a)*((e.amount??1)*25+15+j%3*8);c.fillStyle=j%3?'#d8a05b':'#a9bab9';c.fillRect(e.x+Math.cos(angle)*radius,e.y+Math.sin(angle)*radius,2+a*2,2+a*2);}
-   }c.strokeStyle=e.type==='dead'?'#ee845e':gold;c.lineWidth=1.5;for(let i=0;i<7;i++){const angle=i*.898;const r=(1-a)*25+5;c.beginPath();c.moveTo(e.x+Math.cos(angle)*r,e.y+Math.sin(angle)*r);c.lineTo(e.x+Math.cos(angle)*(r+5),e.y+Math.sin(angle)*(r+5));c.stroke();}}
+   }c.strokeStyle=e.type==='dead'||e.type==='enemyDead'?'#ee845e':gold;c.lineWidth=1.5;for(let i=0;i<7;i++){const angle=i*.898;const r=(1-a)*25+5;c.beginPath();c.moveTo(e.x+Math.cos(angle)*r,e.y+Math.sin(angle)*r);c.lineTo(e.x+Math.cos(angle)*(r+5),e.y+Math.sin(angle)*(r+5));c.stroke();}}
    c.globalAlpha=1;
  }
  c.restore();
@@ -80,8 +97,9 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  const mx=VIEW_W-88,my=VIEW_H-112,mw=76,mh=88,kx=mw/W,ky=mh/H;
  c.fillStyle='#08131deb';c.fillRect(mx-4,my-4,mw+8,mh+8);c.strokeStyle='#52707d';c.lineWidth=.7;c.strokeRect(mx,my,mw,mh);
  for(const r of w.rocks){if(r.hp<=0)continue;c.fillStyle='#60717e';c.fillRect(mx+r.x*kx,my+r.y*ky,1.5,1.5);}
- c.fillStyle='#e7e2cf';c.fillRect(mx+HOME.x*kx-2,my+HOME.y*ky-2,4,4);
+ c.fillStyle='#e7e2cf';c.fillRect(mx+HOME.x*kx-2,my+HOME.y*ky-2,4,4);if(w.company.outpost){c.fillStyle='#83d8cf';c.fillRect(mx+FAR.x*kx-2,my+FAR.y*ky-2,4,4);}
  for(const d of w.drones){if(d.state==='dead'||d.state==='docked')continue;c.fillStyle=gold;c.beginPath();c.arc(mx+d.x*kx,my+d.y*ky,2,0,7);c.fill();}
+ for(const e of w.enemies){if(e.hp<=0)continue;c.fillStyle='#e6747d';c.fillRect(mx+e.x*kx-1.5,my+e.y*ky-1.5,3,3);}
  const left=Math.max(0,camera.x-VIEW_W/camera.zoom/2),top=Math.max(0,camera.y-VIEW_H/camera.zoom/2);
  const right=Math.min(W,camera.x+VIEW_W/camera.zoom/2),bottom=Math.min(H,camera.y+VIEW_H/camera.zoom/2);
  c.strokeStyle='#8fd6ca';c.strokeRect(mx+left*kx,my+top*ky,(right-left)*kx,(bottom-top)*ky);

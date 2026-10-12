@@ -7,3 +7,7 @@
 
 #field{touch-action:none;cursor:grab}#field:active{cursor:grabbing}.camera-controls{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:5px}.camera-controls button{min-height:36px;padding:5px 9px;background:#0a1823e8;border:1px solid #455c68;border-radius:3px;color:#ced7d5;font-size:10px}.camera-controls #follow[aria-pressed="true"]{color:#f5b743;border-color:#a98441}.camera-controls #zoom-out{margin-left:auto}.camera-controls #zoom-in,.camera-controls #zoom-out{font-size:20px;min-width:36px}#pause-overlay{z-index:3}.camera-controls{z-index:4}
 #pause-overlay{pointer-events:none;background:#09172266}
+
+.chapter{margin:18px 0 0;padding:13px;border:1px solid #4b827f;background:#123138;color:#c9e7db;display:flex;flex-direction:column;gap:5px}.chapter b{font:600 18px 'Barlow Condensed',sans-serif;letter-spacing:1px}.chapter span{font-size:11px;line-height:1.4;color:#9dc2bd}.launch-select{padding:18px 0 0;display:grid;gap:7px}.launch-select .eyebrow{margin-bottom:3px}.launch-select button{border:1px solid #4d606b;color:#a9bdc1;background:#132632;padding:12px;text-align:left;font-size:12px;border-radius:3px}.launch-select button[aria-pressed="true"]{border-color:#edbd62;color:#f5b743;background:#25322e}
+
+.milestone{font:9px/1.5 monospace;letter-spacing:.7px;color:#aac2bf;margin:15px 0 0;padding:7px 0;border-bottom:1px solid #355057}.status.hostile .status-dot{background:#e6747d;box-shadow:0 0 9px #e6747d}

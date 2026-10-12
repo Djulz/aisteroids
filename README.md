@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.4.0
+# AIsteroid Mining · Alpha 0.5.0
 Mobile-first autonomous mining game. Persistent company, 45-second shifts, up to six drones, fleet-wide hull, scanner and mining laser upgrades. Strict overhead industrial art rendered in Canvas 2D. English UI.
 
 ## Run
@@ -22,15 +22,15 @@ Open the Vite URL ending in `/aisteroids/`.
 - Additional drones cost 10, 20, 30, 40, 50. Reinforced Hull: 10. Asteroid Scanner: 30. Mining Laser: 40. Technology applies to the entire fleet.
 - Scanner chooses nearby asteroids. Mining Laser is asteroid-only extraction, not a combat weapon.
 - Pause and 2× speed supported. Backgrounding pauses the mission.
-- Versioned localStorage preserves existing v1 companies and migrates Blaster ownership to Mining Laser. Old mineral balances are preserved, not rebased. Reset Company allows testing the new early progression.
-- No enemies, escorts, active abilities or additional resources in this pass.
+- Versioned localStorage preserves existing v1 and v2 companies and migrates Blaster ownership to Mining Laser. Old mineral balances are preserved, not rebased. Reset Company allows testing the new early progression.
+- The opening remains unopposed. Far belt resources and later competition unlock through mission milestones.
 
 ## Structure
 `src/sim.ts`: seeded fixed-step simulation, no browser dependencies.
 `src/navigation.ts`: obstacle-aware route planning and exact segment checks.
 `src/render.ts`: Canvas industrial sprites and effects.
 `src/main.ts`: UI, mission lifecycle and input.
-`src/storage.ts`: save validation and v1 → v2 migration.
+`src/storage.ts`: save validation and v1/v2 → v3 migration.
 `tests/`: impact, hull, routing, recall, economy, migration and fleet simulation regressions.
 
 ## Publishing
@@ -44,3 +44,6 @@ Art is original code-generated geometry. Fonts: bundled Barlow / Barlow Condense
 
 ## Mining feedback and docking (0.4.0)
 The field fills the mission width with an aspect-correct responsive camera. Drones brake at individual berths beside HQ, hold still while cargo particles travel into the station, and resume from the same position and heading. Minerals are credited on arrival; recall waits for unloading to finish. Mining adds a brief asteroid flash, impact displacement, expanding rings and debris. Ore visuals fan out from the rock center with exponential deceleration toward their collectible positions; presentation does not consume simulation randomness.
+
+## Expanding company (0.5.0)
+Mission 4 opens richer deposits across the far belt. Their teal cores yield 8 minerals per impact rather than 4; the player can buy Expanded Cargo (18 units, 60 minerals), Deep Prospecting (prioritizes rich rocks, requires Scanner, 90), and later Ion Drive (fleet travel +35%, 110). Mission 6 introduces a rival scout that fires at miners; mining lasers remain mining equipment. After this first encounter the company can purchase up to two autonomous Bodyguard Drones (100, then 160), which follow threatened miners and fire at scouts. A second scout arrives later in advanced missions. After mission 8 the Outer Outpost (220) unlocks; the player selects HQ or the remote outpost as the next launch and unloading site. Milestones and incoming rivals appear in the workshop and mission status. Existing v1 and v2 saves migrate to v3 without losing purchases, credits, or rounds.
