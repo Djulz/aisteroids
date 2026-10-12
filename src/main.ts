@@ -1,10 +1,11 @@
+import {newCamera,panCamera,zoomCamera,overview,followCamera,screenToWorld,VIEW_W,VIEW_H} from './camera.ts';
 import '@fontsource/barlow/400.css';
 import '@fontsource/barlow/600.css';
 import '@fontsource/barlow-condensed/500.css';
 import '@fontsource/barlow-condensed/600.css';
 import '@fontsource/barlow-condensed/700.css';
 import './style.css';
-import { buy, cost, createWorld, freshCompany, settle, step, STEP, ROUND_TIME, W, H, type Company, type Purchase, type World } from './sim.ts';
+import { buy, cost, createWorld, freshCompany, settle, step, STEP, ROUND_TIME, type Company, type Purchase, type World } from './sim.ts';
 import { render, drawDrone, drawMother } from './render.ts';
 import { parseSave, SAVE_KEY } from './storage.ts';
 const app=document.querySelector<HTMLDivElement>('#app')!;
@@ -12,11 +13,12 @@ let company:Company=freshCompany(), storageOK=true;
 try{company=parseSave(localStorage.getItem(SAVE_KEY));}catch{storageOK=false;}
 let world:World=createWorld(company), screen:'workshop'|'mission'|'result'='workshop', paused=false, speed=1, accumulator=0, last=0, selected=-1;
 let canvas:HTMLCanvasElement;
+let camera=newCamera();
 const fmt=(n:number)=>n.toLocaleString('en-US');
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(company));}catch{storageOK=false;} }
 function spriteIcon(kind:string){return kind==='drone'?'⬡':kind==='hull'?'▣':kind==='scanner'?'◎':'↗';}
 function mount(){
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">AI<span>↗</span></div><div><h1><em>AI</em>steroid <span>Mining</span></h1><p>AUTONOMOUS MINING DIVISION</p></div><span class="version">ALPHA<br>0.2.0</span></header><section id="content"></section><footer class="legal">INDEPENDENT OPERATIONS <span>EST. 2086</span></footer></main>`;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">AI<span>↗</span></div><div><h1><em>AI</em>steroid <span>Mining</span></h1><p>AUTONOMOUS MINING DIVISION</p></div><span class="version">ALPHA<br>0.3.0</span></header><section id="content"></section><footer class="legal">INDEPENDENT OPERATIONS <span>EST. 2086</span></footer></main>`;
  showWorkshop();
 }
 function showWorkshop(result=false){
@@ -35,7 +37,7 @@ function showWorkshop(result=false){
  }).join('')}</div>
  <div class="launch-area"><button class="primary" id="launch">LAUNCH MISSION <span>↗</span></button><p>45 seconds · Fully autonomous · Free repairs</p></div>
  ${!storageOK?'<p class="save-warning">Saving is unavailable. Progress will be lost when you close this page.</p>':''}
- <details class="instructions"><summary>How the job works</summary><p>Drones mine rocks, collect minerals and unload at the mothership. Full cargo means a trip home, then back to work.</p><p>After 45 seconds, the fleet is recalled. Only delivered cargo earns minerals. Destroyed drones lose their cargo and are repaired for free.</p><p>Technology applies to every drone. Progress is saved in this browser after purchases and completed missions. Aborted missions earn nothing.</p><button class="text-button" id="reset">Reset company</button></details></div>`;
+ <details class="instructions"><summary>How the job works</summary><p>Drones mine rocks, collect minerals and unload at the mothership. Full cargo means a trip home, then back to work.</p><p>Drag the map to explore, use Overview to see the whole field, or Follow fleet to return to automatic tracking. After 45 seconds, the fleet is recalled. Only delivered cargo earns minerals. Destroyed drones lose their cargo and are repaired for free.</p><p>Technology applies to every drone. Progress is saved in this browser after purchases and completed missions. Aborted missions earn nothing.</p><button class="text-button" id="reset">Reset company</button></details></div>`;
  document.querySelector('#launch')!.addEventListener('click',launch);
  document.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b=>b.onclick=()=>{const next=buy(company,b.dataset.buy as Purchase);if(next){company=next;save();showWorkshop();}});
  document.querySelector('#reset')!.addEventListener('click',()=>{if(confirm('Reset the entire company and all upgrades?')){company=freshCompany();save();world=createWorld(company);showWorkshop();}});
@@ -43,10 +45,20 @@ function showWorkshop(result=false){
  (()=>{const h=document.querySelector<HTMLCanvasElement>('#hangar');if(!h)return;h.width=800;h.height=260;const c=h.getContext('2d')!;c.scale(2,2);c.strokeStyle='#2b414b';c.lineWidth=.5;for(let x=0;x<400;x+=25){c.beginPath();c.moveTo(x,0);c.lineTo(x,130);c.stroke();}for(let y=0;y<130;y+=25){c.beginPath();c.moveTo(0,y);c.lineTo(400,y);c.stroke();}c.save();c.translate(-122,-485);drawMother(c,0);c.restore();for(let i=0;i<company.drones;i++)drawDrone(c,185+(i%3)*65,company.drones>3?40+Math.floor(i/3)*49:65,-Math.PI/2,0,company.laser);})();
 }
 function launch(){
- world=createWorld(company,7+company.rounds*7919);screen='mission';paused=false;speed=1;accumulator=0;selected=-1;
- document.querySelector('#content')!.innerHTML=`<div class="mission"><div class="mission-hud"><div><span>MISSION</span><b>${String(company.rounds+1).padStart(2,'0')}</b></div><div class="time"><span id="phase">SHIFT TIME</span><b id="timer">00:45</b></div><div class="ore-count"><span>DELIVERED</span><b>◆ <span id="delivered">0</span></b></div></div><div class="field"><canvas id="field" aria-label="Autonomous drones mine asteroids. Tap a drone for status."></canvas><div id="pause-overlay" hidden>PAUSED<span>The fleet is taking a well-earned microbreak.</span></div><div class="field-caption">LIVE TELEMETRY <span>●</span></div></div><div class="telemetry"><div><small>FLEET</small><b id="fleet">${company.drones}/${company.drones}</b></div><div><small>CARGO</small><b id="cargo">0 / ${company.drones*12}</b></div><button id="pause" aria-label="Pause mission">Ⅱ</button><button id="speed" aria-label="Change game speed">1×</button></div><div class="status"><span class="status-dot"></span><p id="status">${company.scanner?'Asteroids located. This looks suspiciously like work.':'Headbutting efficiency: acceptable.'}</p></div><button class="text-button mission-back" id="abort">Abort mission</button></div>`;
+ world=createWorld(company,7+company.rounds*7919);screen='mission';paused=false;speed=1;accumulator=0;selected=-1;camera=newCamera();
+ document.querySelector('#content')!.innerHTML=`<div class="mission"><div class="mission-hud"><div><span>MISSION</span><b>${String(company.rounds+1).padStart(2,'0')}</b></div><div class="time"><span id="phase">SHIFT TIME</span><b id="timer">00:45</b></div><div class="ore-count"><span>DELIVERED</span><b>◆ <span id="delivered">0</span></b></div></div><div class="field"><canvas id="field" aria-label="Autonomous drones mine asteroids. Drag to pan. Tap a drone for status."></canvas><div id="pause-overlay" hidden>PAUSED<span>The fleet is taking a well-earned microbreak.</span></div><div class="camera-controls"><button id="follow" aria-pressed="true">Follow fleet</button><button id="overview">Overview</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-in" aria-label="Zoom in">+</button></div><div class="field-caption">LIVE TELEMETRY <span>●</span></div></div><div class="telemetry"><div><small>FLEET</small><b id="fleet">${company.drones}/${company.drones}</b></div><div><small>CARGO</small><b id="cargo">0 / ${company.drones*12}</b></div><button id="pause" aria-label="Pause mission">Ⅱ</button><button id="speed" aria-label="Change game speed">1×</button></div><div class="status"><span class="status-dot"></span><p id="status">${company.scanner?'Asteroids located. This looks suspiciously like work.':'Headbutting efficiency: acceptable.'}</p></div><button class="text-button mission-back" id="abort">Abort mission</button></div>`;
  canvas=document.querySelector<HTMLCanvasElement>('#field')!;resize();
- canvas.onclick=e=>{const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*W,y=(e.clientY-rect.top)/rect.height*H;const d=world.drones.find(d=>Math.hypot(d.x-x,d.y-y)<30);selected=d?.id??-1;};
+ let drag:{id:number;x:number;y:number;startX:number;startY:number;moved:boolean}|null=null;
+ const coords=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*VIEW_W,y:(e.clientY-r.top)/r.height*VIEW_H};};
+ const refreshCamera=()=>{document.querySelector('#follow')!.setAttribute('aria-pressed',String(camera.follow));};
+ canvas.onpointerdown=e=>{if(drag)return;const p=coords(e);drag={id:e.pointerId,x:p.x,y:p.y,startX:p.x,startY:p.y,moved:false};canvas.setPointerCapture(e.pointerId);};
+ canvas.onpointermove=e=>{if(!drag||drag.id!==e.pointerId)return;const p=coords(e);if(Math.hypot(p.x-drag.startX,p.y-drag.startY)>5)drag.moved=true;if(drag.moved){panCamera(camera,p.x-drag.x,p.y-drag.y);refreshCamera();}drag.x=p.x;drag.y=p.y;};
+ canvas.onpointerup=e=>{if(!drag||drag.id!==e.pointerId)return;if(!drag.moved){const p=coords(e),q=screenToWorld(camera,p.x,p.y);selected=world.drones.find(d=>Math.hypot(d.x-q.x,d.y-q.y)<24/camera.zoom)?.id??-1;}drag=null;};
+ canvas.onpointercancel=()=>{drag=null;};canvas.onlostpointercapture=()=>{drag=null;};
+ document.querySelector('#follow')!.addEventListener('click',()=>{camera.follow=true;camera.zoom=1;refreshCamera();});
+ document.querySelector('#overview')!.addEventListener('click',()=>{overview(camera);refreshCamera();});
+ document.querySelector('#zoom-in')!.addEventListener('click',()=>zoomCamera(camera,1.25));
+ document.querySelector('#zoom-out')!.addEventListener('click',()=>zoomCamera(camera,.8));
  document.querySelector('#pause')!.addEventListener('click',()=>{paused=!paused;updateHUD();});
  document.querySelector('#speed')!.addEventListener('click',()=>{speed=speed===1?2:1;document.querySelector('#speed')!.textContent=speed+'×';});
  document.querySelector('#abort')!.addEventListener('click',()=>{paused=true;updateHUD();if(confirm('Abort this mission? All minerals from this mission will be lost.'))showWorkshop();else {paused=false;updateHUD();}});
@@ -73,7 +85,7 @@ function frame(time:number){const dt=Math.min((time-last)/1000,.1);last=time;
  if(screen==='mission'){
  if(!paused){accumulator+=dt*speed;while(accumulator>=STEP&&world.phase!=='done'){step(world);accumulator-=STEP;}
  if(world.phase==='done'){company=settle(company,world);save();showWorkshop(true);}}
- if(screen==='mission'){render(canvas,world,selected);hudTime+=dt;if(hudTime>.1){updateHUD();hudTime=0;}}}
+ if(screen==='mission'){followCamera(camera,world,dt);render(canvas,world,selected,camera);hudTime+=dt;if(hudTime>.1){updateHUD();hudTime=0;}}}
  requestAnimationFrame(frame);
 }
 mount();requestAnimationFrame(frame);

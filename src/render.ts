@@ -1,3 +1,4 @@
+import {type Camera,newCamera,VIEW_W,VIEW_H} from './camera.ts';
 import { HOME, W, H, type World } from './sim.ts';
 const gold = '#f5b743', cream = '#e7e2cf';
 function polygon(c: CanvasRenderingContext2D, pts: number[][]) { c.beginPath(); pts.forEach(([x,y], i) => i ? c.lineTo(x,y) : c.moveTo(x,y)); c.closePath(); }
@@ -24,13 +25,13 @@ export function drawMother(c: CanvasRenderingContext2D, t:number) {
  c.font='bold 7px monospace';c.textAlign='center';c.fillStyle='#243b47';c.fillText('01',0,31);
  c.restore();
 }
-export function render(canvas: HTMLCanvasElement, w: World, selected = -1) {
- const c = canvas.getContext('2d')!; const sx=canvas.width/W, sy=canvas.height/H;
- c.setTransform(sx,0,0,sy,0,0); c.clearRect(0,0,W,H);c.fillStyle='#0a1a25';c.fillRect(0,0,W,H);
+export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camera:Camera=newCamera()) {
+ const c = canvas.getContext('2d')!; const sx=canvas.width/VIEW_W, sy=canvas.height/VIEW_H;
+ c.setTransform(sx,0,0,sy,0,0);c.fillStyle='#07121b';c.fillRect(0,0,VIEW_W,VIEW_H);c.save();c.translate(VIEW_W/2,VIEW_H/2);c.scale(camera.zoom,camera.zoom);c.translate(-camera.x,-camera.y);c.fillStyle='#0a1a25';c.fillRect(0,0,W,H);
  c.strokeStyle='#26404d35';c.lineWidth=.6; c.beginPath(); for(let x=0;x<W;x+=25){c.moveTo(x,0);c.lineTo(x,H);}for(let y=0;y<H;y+=25){c.moveTo(0,y);c.lineTo(W,y);}c.stroke();
- for(let i=0;i<48;i++){c.fillStyle=i%4===0?'#71929a66':'#71929a2b';c.fillRect((i*137+19)%W,(i*83+41)%H,i%4===0?1.4:1,1);}
+ for(let i=0;i<144;i++){c.fillStyle=i%4===0?'#71929a66':'#71929a2b';c.fillRect((i*137+19)%W,(i*83+41)%H,i%4===0?1.4:1,1);}
  c.strokeStyle='#68828c3b';for(let i=0;i<9;i++){const x=35+i%3*165,y=34+Math.floor(i/3)*230;c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}
- c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('EXTRACTION ZONE / 01',16,20);
+ c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME FIELD',30,32);c.fillText('FAR BELT',460,32);c.fillText('OUTER REACH',400,720);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
  for(const r of w.rocks){
    if(r.hp<=0) continue;
    c.save();c.translate(r.x,r.y);c.rotate(r.id*.73);
@@ -55,4 +56,15 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1) {
    else {c.strokeStyle=e.type==='dead'?'#ee845e':gold;c.lineWidth=1.5;for(let i=0;i<7;i++){const angle=i*.898;const r=(1-a)*25+5;c.beginPath();c.moveTo(e.x+Math.cos(angle)*r,e.y+Math.sin(angle)*r);c.lineTo(e.x+Math.cos(angle)*(r+5),e.y+Math.sin(angle)*(r+5));c.stroke();}}
    c.globalAlpha=1;
  }
+ c.restore();
+ // Compact world overview, including viewport and off-screen fleet positions.
+ const mx=VIEW_W-88,my=VIEW_H-112,mw=76,mh=88,kx=mw/W,ky=mh/H;
+ c.fillStyle='#08131deb';c.fillRect(mx-4,my-4,mw+8,mh+8);c.strokeStyle='#52707d';c.lineWidth=.7;c.strokeRect(mx,my,mw,mh);
+ for(const r of w.rocks){if(r.hp<=0)continue;c.fillStyle='#60717e';c.fillRect(mx+r.x*kx,my+r.y*ky,1.5,1.5);}
+ c.fillStyle='#e7e2cf';c.fillRect(mx+HOME.x*kx-2,my+HOME.y*ky-2,4,4);
+ for(const d of w.drones){if(d.state==='dead'||d.state==='docked')continue;c.fillStyle=gold;c.beginPath();c.arc(mx+d.x*kx,my+d.y*ky,2,0,7);c.fill();}
+ const left=Math.max(0,camera.x-VIEW_W/camera.zoom/2),top=Math.max(0,camera.y-VIEW_H/camera.zoom/2);
+ const right=Math.min(W,camera.x+VIEW_W/camera.zoom/2),bottom=Math.min(H,camera.y+VIEW_H/camera.zoom/2);
+ c.strokeStyle='#8fd6ca';c.strokeRect(mx+left*kx,my+top*ky,(right-left)*kx,(bottom-top)*ky);
+ c.font='8px monospace';c.fillStyle='#9eb4be';c.fillText('DRAG TO EXPLORE',12,VIEW_H-28);
 }

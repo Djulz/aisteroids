@@ -1,8 +1,7 @@
 // Coarse route planning plus exact circle/segment checks. Shared by cargo and recall.
 export type Point = { x: number; y: number };
 export type Obstacle = Point & { r: number; hp: number; id: number };
-const CELL = 10, COLS = 39, ROWS = 61;
-const point = (id: number): Point => ({ x: 10 + (id % COLS) * CELL, y: 10 + Math.floor(id / COLS) * CELL });
+const CELL = 10;
 export function clearSegment(a: Point, b: Point, rocks: Obstacle[], ignore = -1, margin = 11) {
  const dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
  return rocks.every(r=>{
@@ -11,7 +10,15 @@ export function clearSegment(a: Point, b: Point, rocks: Obstacle[], ignore = -1,
   return Math.hypot(a.x+dx*t-r.x,a.y+dy*t-r.y)>=r.r+margin;
  });
 }
-export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1):Point[]{
+export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=400,height=620):Point[]{
+ const COLS=Math.floor(width/CELL)-1,ROWS=Math.floor(height/CELL)-1;
+ const point=(id:number):Point=>({x:10+(id%COLS)*CELL,y:10+Math.floor(id/COLS)*CELL});
+ // A collision settles at radius+8.2, just inside route-grid clearance.
+ // Move outward first so grid search cannot strand a ship at an asteroid's edge.
+ const near=rocks.find(r=>r.hp>0&&r.id!==ignore&&Math.hypot(start.x-r.x,start.y-r.y)<r.r+11.5);
+ if(near){const len=Math.hypot(start.x-near.x,start.y-near.y)||1;const escape={x:near.x+(start.x-near.x)/len*(near.r+12),y:near.y+(start.y-near.y)/len*(near.r+12)};
+  if(escape.x>=8&&escape.x<=width-8&&escape.y>=8&&escape.y<=height-8&&clearSegment(start,escape,rocks,ignore,8.01))return [escape,...route(escape,goal,rocks,ignore,width,height)];
+ }
  if(clearSegment(start,goal,rocks,ignore))return [goal];
  const openCell=new Uint8Array(COLS*ROWS);
  for(let id=0;id<openCell.length;id++)openCell[id]=+clearSegment(point(id),point(id),rocks,ignore);
