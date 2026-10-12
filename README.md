@@ -1,5 +1,5 @@
 # AIsteroid Mining · Alpha 0.5.0
-Mobile-first autonomous mining game. Persistent company, 45-second shifts, up to six drones, fleet-wide hull, scanner and mining laser upgrades. Strict overhead industrial art rendered in Canvas 2D. English UI.
+Mobile-first autonomous mining game. Persistent company, 45-second shifts, up to six miners, richer outer deposits, rival scouts, bodyguards and an optional remote outpost. Strict overhead industrial art rendered in Canvas 2D. English UI.
 
 ## Run
 Node 24 recommended.
@@ -15,7 +15,7 @@ Open the Vite URL ending in `/aisteroids/`.
 - Unresearched drones wander, oversteer and ram rocks. Baseline collection and return navigation remain reliable.
 - A mining impact requires an armed drone approaching faster than 30 world units/second. Impact causes a 145-unit/second outward impulse and 0.55 seconds without motor control. Another impact requires leaving the contact area and a new approach; stationary contact never ticks damage.
 - Basic hull survives 3 impacts and breaks on the 4th. Reinforced hull survives 6 and breaks on the 7th.
-- Each hit releases 4 minerals; cargo holds 12. Full drones return, unload, then resume mining.
+- Ordinary hits release 4 minerals; rich outer deposits release 8. Standard cargo holds 12, or 18 with Expanded Cargo. Full drones return, unload, then resume mining.
 - Cargo and recall use grid routes with line-of-sight smoothing. Physical asteroid collisions apply in every active state. Only mining impacts damage the hull.
 - At 45 seconds all survivors return with cargo; this can take a few extra seconds. Missions finish early when all drones are destroyed or docked.
 - Only delivered minerals are banked. Destroyed drones lose carried cargo. Repairs are free and the roster persists.
