@@ -1,49 +1,43 @@
-# AIsteroid Mining · Alpha 0.5.0
-Mobile-first autonomous mining game. Persistent company, 45-second shifts, up to six miners, richer outer deposits, rival scouts, bodyguards and an optional remote outpost. Strict overhead industrial art rendered in Canvas 2D. English UI.
+# AIsteroid Mining · Alpha 0.6.0
+
+Mobile-first autonomous asteroid mining game. Run a growing company in one persistent overhead world. Each shift lasts 45 seconds; between shifts, purchase fleet upgrades and choose a survey priority. The English interface and industrial artwork use Canvas 2D.
 
 ## Run
+
 Node 24 recommended.
+
 ```
 npm ci
 npm run dev
 npm test
 npm run build
 ```
-Open the Vite URL ending in `/aisteroids/`.
 
-## Current rules
-- Unresearched drones wander, oversteer and ram rocks. Baseline collection and return navigation remain reliable.
-- A mining impact requires an armed drone approaching faster than 30 world units/second. Impact causes a 145-unit/second outward impulse and 0.55 seconds without motor control. Another impact requires leaving the contact area and a new approach; stationary contact never ticks damage.
-- Basic hull survives 3 impacts and breaks on the 4th. Reinforced hull survives 6 and breaks on the 7th.
-- Ordinary hits release 4 minerals; rich outer deposits release 8. Standard cargo holds 12, or 18 with Expanded Cargo. Full drones return, unload, then resume mining.
-- Cargo and recall use grid routes with line-of-sight smoothing. Physical asteroid collisions apply in every active state. Only mining impacts damage the hull.
-- At 45 seconds all survivors return with cargo; this can take a few extra seconds. Missions finish early when all drones are destroyed or docked.
-- Only delivered minerals are banked. Destroyed drones lose carried cargo. Repairs are free and the roster persists.
-- Additional drones cost 10, 20, 30, 40, 50. Reinforced Hull: 10. Asteroid Scanner: 30. Mining Laser: 40. Technology applies to the entire fleet.
-- Scanner chooses nearby asteroids. Mining Laser is asteroid-only extraction, not a combat weapon.
-- Pause and 2× speed supported. Backgrounding pauses the mission.
-- Versioned localStorage preserves existing v1 and v2 companies and migrates Blaster ownership to Mining Laser. Old mineral balances are preserved, not rebased. Reset Company allows testing the new early progression.
-- The opening remains unopposed. Far belt resources and later competition unlock through mission milestones.
+Open the Vite URL ending in `/aisteroids/`. Published at https://djulz.github.io/aisteroids/ through GitHub Actions on `main`.
+
+## The world and progression
+
+- The 800 × 930 field has a home pocket, a Far Belt with rich teal deposits, and an Outer Reach outpost site. Pan, zoom, follow the fleet, or show the whole map; the radar marks visible points of interest.
+- Rock positions and remaining health persist across completed shifts. Rocks take many impacts to destroy and never regenerate. Loose minerals, including cargo dropped by destroyed drones, also remain on the map for later collection. A mission abort rolls back its changes.
+- The first trip can fund a second drone (10 minerals) or Reinforced Hull (10). Asteroid Scanner costs 30 and Mining Laser costs 40. Scanner enables the Far Belt survey directive. Miner drones remain autonomous during a shift.
+- Deliver a rich sample to unlock Expanded Cargo (60), Deep Prospecting (90, requires Scanner) and Ion Drive (110). Rich rocks yield eight minerals per impact; ordinary rocks yield four.
+- A rival scout appears after a rich sample is delivered. Once encountered, autonomous Bodyguard Drones are available (100, then 160). Mining lasers extract ore and cannot shoot enemies. Survey the Outer Reach site to unlock the Outer Outpost (220), then select the launch and unloading location for the next shift.
+- Discoveries and unlocks depend on exploration and actions in the world, never the number of missions played. Survey directives give the fleet a priority between shifts; after completion they revert to free mining.
+
+## Shift rules
+
+- Early drones wander and oversteer. A ram requires a fresh approach, knocks the miner away and costs one hull point. Basic hull survives three impacts; reinforced hull survives six. Return navigation and physical rock collisions also work with full cargo.
+- Cargo holds 12 minerals, or 18 with Expanded Cargo. Full miners return, pause beside the station while cargo particles fly in, then resume. Delivered minerals fund purchases. Free repairs restore the persistent fleet between shifts.
+- After 45 seconds surviving drones are recalled; return can take longer. Pause and 2× speed are available. Backgrounding pauses the simulation.
+- Save version 4 uses browser localStorage. Existing v1, v2 and v3 companies retain their money, roster and purchased technology when migrating. There is no backend account sync.
 
 ## Structure
-`src/sim.ts`: seeded fixed-step simulation, no browser dependencies.
-`src/navigation.ts`: obstacle-aware route planning and exact segment checks.
-`src/render.ts`: Canvas industrial sprites and effects.
-`src/main.ts`: UI, mission lifecycle and input.
-`src/storage.ts`: save validation and v1/v2 → v3 migration.
-`tests/`: impact, hull, routing, recall, economy, migration and fleet simulation regressions.
 
-## Publishing
-GitHub Actions tests/builds `main` and deploys `dist` to GitHub Pages.
-https://djulz.github.io/aisteroids/
+- `src/sim.ts`: deterministic fixed-step simulation and progression.
+- `src/navigation.ts`: obstacle-aware routing and visibility checks.
+- `src/render.ts`: Canvas sprites, map and effects.
+- `src/main.ts`: workshop, mission UI and camera controls.
+- `src/storage.ts`: save validation and migration.
+- `tests/`: simulation, persistence, economy, navigation and camera checks.
 
-Art is original code-generated geometry. Fonts: bundled Barlow / Barlow Condensed (SIL Open Font License). No external gameplay assets or backend.
-
-## Larger-map camera test (0.3.0)
-800 × 930 world (three original screen areas), with home and outer asteroid clusters. Fleet follow pans smoothly; drag with touch or mouse for manual exploration, use Overview for the whole field and +/− for zoom. Follow fleet resumes tracking. A small radar shows drones, home and the current viewport. Controls and selection use camera-transformed coordinates. The camera never changes simulation state. The 45-second shift, economy, saves and upgrades remain; return travel can take longer with greater distances. No outposts, combat, persistent depletion or new sectors yet.
-
-## Mining feedback and docking (0.4.0)
-The field fills the mission width with an aspect-correct responsive camera. Drones brake at individual berths beside HQ, hold still while cargo particles travel into the station, and resume from the same position and heading. Minerals are credited on arrival; recall waits for unloading to finish. Mining adds a brief asteroid flash, impact displacement, expanding rings and debris. Ore visuals fan out from the rock center with exponential deceleration toward their collectible positions; presentation does not consume simulation randomness.
-
-## Expanding company (0.5.0)
-Mission 4 opens richer deposits across the far belt. Their teal cores yield 8 minerals per impact rather than 4; the player can buy Expanded Cargo (18 units, 60 minerals), Deep Prospecting (prioritizes rich rocks, requires Scanner, 90), and later Ion Drive (fleet travel +35%, 110). Mission 6 introduces a rival scout that fires at miners; mining lasers remain mining equipment. After this first encounter the company can purchase up to two autonomous Bodyguard Drones (100, then 160), which follow threatened miners and fire at scouts. A second scout arrives later in advanced missions. After mission 8 the Outer Outpost (220) unlocks; the player selects HQ or the remote outpost as the next launch and unloading site. Milestones and incoming rivals appear in the workshop and mission status. Existing v1 and v2 saves migrate to v3 without losing purchases, credits, or rounds.
+Artwork is original code-generated geometry. Bundled Barlow and Barlow Condensed fonts use the SIL Open Font License.
