@@ -47,7 +47,7 @@ export function step(w: World, dt = STEP) {
   for (const d of w.drones) {
     if (d.state === 'dead' || d.state === 'docked') continue;
     d.cooldown = Math.max(0, d.cooldown - dt);
-    if (w.phase === 'recall' || d.cargo >= 12 || d.hp <= 18 || (!w.rocks.some(r => r.hp > 0) && !w.ores.length)) d.state = 'return';
+    if (w.phase === 'recall' || d.cargo >= 12 || (!w.rocks.some(r => r.hp > 0) && !w.ores.length)) d.state = 'return';
     let target: { x: number; y: number };
     let rock: Rock | undefined;
     if (d.state === 'return') target = HOME;
@@ -93,7 +93,7 @@ export function step(w: World, dt = STEP) {
       w.delivered += d.cargo;
       if (d.cargo) effect(w, { type: 'deposit', x: HOME.x, y: HOME.y - 35, amount: d.cargo }, 1.2);
       d.cargo = 0;
-      if (w.phase === 'recall' || d.hp <= 18 || !w.rocks.some(r => r.hp > 0) && !w.ores.length) d.state = 'docked';
+      if (w.phase === 'recall' || !w.rocks.some(r => r.hp > 0) && !w.ores.length) d.state = 'docked';
       else { d.state = 'mine'; d.angle = -Math.PI / 2; d.y = HOME.y - 29; d.wander = 0; }
     }
   }

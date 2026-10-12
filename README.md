@@ -13,7 +13,7 @@ Open the Vite URL ending in `/aisteroids/`.
 
 ## Design
 - Unresearched drones wander and ram rocks. All drones can collect nearby mineral chips and find home.
-- 12 units cargo capacity. Loaded drones deliver and return to work. Low-health drones dock early.
+- 12 units cargo capacity. Loaded drones deliver and return to work.
 - Every mining hit produces four units of mineral. Only delivered cargo earns currency.
 - After 60 simulation seconds all drones return. Pause and 2× speed supported; backgrounding pauses.
 - Hull, technology and roster persist; damaged/destroyed drones repair free after each mission.
@@ -31,4 +31,4 @@ Open the Vite URL ending in `/aisteroids/`.
 ## Publishing
 Workflow builds/tests `main` and deploys `dist` to GitHub Pages. Repository Settings → Pages must use **GitHub Actions** if automatic enablement is unavailable. Expected URL: https://djulz.github.io/aisteroids/
 
-Art is original code-generated geometry. Fonts: Google Fonts Barlow / Barlow Condensed, with system fallbacks. No generated-image dependency or external gameplay assets.
+Art is original code-generated geometry. Fonts: locally bundled Barlow / Barlow Condensed (SIL Open Font License), with system fallbacks. No generated-image dependency or external gameplay assets.

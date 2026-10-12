@@ -1,3 +1,8 @@
+import '@fontsource/barlow/400.css';
+import '@fontsource/barlow/600.css';
+import '@fontsource/barlow-condensed/500.css';
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
 import './style.css';
 import { buy, cost, createWorld, freshCompany, settle, step, STEP, ROUND_TIME, W, H, type Company, type Purchase, type World } from './sim.ts';
 import { render, drawDrone, drawMother } from './render.ts';
@@ -30,7 +35,7 @@ function showWorkshop(result=false){
  }).join('')}</div>
  <div class="launch-area"><button class="primary" id="launch">STARTA UPPDRAG <span>↗</span></button><p>60 sekunder · Helt autonomt · Gratis reparation</p></div>
  ${!storageOK?'<p class="save-warning">Webbläsaren kan inte spara. Framstegen finns bara kvar tills sidan stängs.</p>':''}
- <details class="instructions"><summary>Så fungerar jobbet</summary><p>Drönarna bryter sten, samlar mineral och lossar i moderskeppet. Full last betyder en tur hem, sedan fortsätter de jobba.</p><p>Efter 60 sekunder återkallas flottan. Bara levererad last ger mineral. Skadade drönare söker skydd hemma. Utslagna drönare tappar lasten och repareras gratis.</p><p>Teknik gäller alla dina drönare. Framsteg sparas i den här webbläsaren efter köp och avslutade uppdrag. Ett avbrutet uppdrag ger ingen belöning.</p><button class="text-button" id="reset">Nollställ företaget</button></details></div>`;
+ <details class="instructions"><summary>Så fungerar jobbet</summary><p>Drönarna bryter sten, samlar mineral och lossar i moderskeppet. Full last betyder en tur hem, sedan fortsätter de jobba.</p><p>Efter 60 sekunder återkallas flottan. Bara levererad last ger mineral. Utslagna drönare tappar lasten och repareras gratis.</p><p>Teknik gäller alla dina drönare. Framsteg sparas i den här webbläsaren efter köp och avslutade uppdrag. Ett avbrutet uppdrag ger ingen belöning.</p><button class="text-button" id="reset">Nollställ företaget</button></details></div>`;
  document.querySelector('#launch')!.addEventListener('click',launch);
  document.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b=>b.onclick=()=>{const next=buy(company,b.dataset.buy as Purchase);if(next){company=next;save();showWorkshop();}});
  document.querySelector('#reset')!.addEventListener('click',()=>{if(confirm('Nollställ hela företaget och alla uppgraderingar?')){company=freshCompany();save();world=createWorld(company);showWorkshop();}});
