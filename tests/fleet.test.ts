@@ -5,7 +5,7 @@ import {fleetForCounts,renameDrone} from '../src/fleet.ts';
 import {parseSave} from '../src/storage.ts';
 import {renderLobby,type LobbyView} from '../src/lobby.ts';
 
-const view:LobbyView={tab:'hangar',selectedId:'miner-1',editing:false,doctrineOpen:false,error:'',storageOK:true};
+const view:LobbyView={tab:'hangar',selectedId:'miner-1',editing:false,doctrineOpen:false,planOpen:false,error:'',storageOK:true};
 
 test('individual IDs survive purchases, renames, missions and reloads',()=>{
  let c={...freshCompany(),credits:1000};
