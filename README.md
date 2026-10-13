@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.9.1
+# AIsteroid Mining · Alpha 0.9.2
 
 Mobile-first autonomous asteroid mining game. Run a growing company in one persistent overhead world. Each shift lasts 45 seconds; between shifts, purchase fleet upgrades and choose a survey priority. The English interface and industrial artwork use Canvas 2D.
 

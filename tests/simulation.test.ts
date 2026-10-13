@@ -164,6 +164,24 @@ test('a laser miner gathers loose ore without colliding with the rock',()=>{
  const w=createWorld({...freshCompany(),laser:true});for(let i=0;i<1000;i++)step(w);
  const d=w.drones[0],r=w.rocks[0];assert.ok(w.shots>8);assert.ok(d.pathKey.startsWith('rock')||d.pathKey.startsWith('ore'));assert.ok(Math.hypot(d.x-r.x,d.y-r.y)>=r.r+8);assert.equal(w.collisions,0);assert.ok(d.cargo+w.delivered>0);
 });
+test('miners keep working when a fragment lies inside the asteroid navigation margin',()=>{
+ const c={...freshCompany(),drones:2,ores:[{x:208.3,y:459.9,value:2,rich:false}]};
+ const alone=createWorld(c),survivor=alone.drones[1];
+ alone.drones[0].hp=0;alone.drones[0].state='dead';
+ for(let n=0;n<240;n++)step(alone);
+ assert.ok(Math.hypot(survivor.x-209,survivor.y-523)>25,'survivor must move after its partner dies');
+ assert.ok(!alone.ores.some(o=>o.id===100),'fragment must be recoverable without steering into the asteroid');
+ const next=createWorld(c);
+ for(let n=0;n<240;n++)step(next);
+ assert.ok(next.drones.every((d,i)=>Math.hypot(d.x-(191+i*18),d.y-523)>25),'both miners must leave the station on the next shift');
+ assert.ok(!next.ores.some(o=>o.id===100));
+});
+test('an unreachable fragment does not prevent mining a valid asteroid',()=>{
+ const c={...freshCompany(),ores:[{x:200,y:440,value:2,rich:false}]},w=createWorld(c);
+ step(w);
+ assert.equal(w.drones[0].pathKey,'rock0');
+ assert.ok(w.drones[0].path.length>0);
+});
 test('a stationary laser miner faces the rock without continuously rotating',()=>{
  const w=createWorld({...freshCompany(),laser:true});w.rocks=[w.rocks[0]];
  const d=w.drones[0];Object.assign(d,{x:200,y:513,angle:1.2});

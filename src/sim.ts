@@ -100,6 +100,28 @@ function waypoint(w:World,d:Pick<Drone,'x'|'y'|'path'|'pathKey'|'pathAge'>,targe
  if(d.path.length>1&&clearSegment(d,d.path[1],w.rocks,ignore,10))d.path.shift();
  return d.path[0]??{x:d.x,y:d.y};
 }
+// An ejected fragment may sit inside an asteroid's navigation clearance while
+// still being reachable by the pickup radius. Navigate to a clear pickup point
+// instead of routing to the fragment's blocked center.
+function oreApproach(w:World,d:Drone,ore:Ore):Point|undefined{
+ const key='ore'+ore.id;
+ if(d.pathKey===key&&d.path.length){
+  const goal=d.path[d.path.length-1];
+  if(distance(goal,ore)<18)return goal;
+ }
+ const candidates:Point[]=[ore,...Array.from({length:16},(_,i)=>({
+  x:ore.x+Math.cos(i*Math.PI/8)*14,y:ore.y+Math.sin(i*Math.PI/8)*14,
+ }))];
+ candidates.sort((a,b)=>distance(d,a)-distance(d,b));
+ for(const p of candidates){
+  if(p.x<10||p.x>W-10||p.y<10||p.y>H-10||!clearSegment(p,p,w.rocks,-1,11))continue;
+  const path=route(d,p,w.rocks,-1,W,H);
+  if(!path.length)continue;
+  d.path=path;d.pathKey=key;d.pathAge=0;
+  return p;
+ }
+ return undefined;
+}
 function separateRock(w:World,agent:{x:number;y:number;vx:number;vy:number},radius=8){
  for(let pass=0;pass<3;pass++)for(const r of w.rocks){
   const dist=distance(agent,r);if(r.hp<=0||dist>=r.r+radius)continue;
@@ -247,18 +269,21 @@ export function step(w:World,dt=STEP){
    const surveyOutpost=w.company.directive==='surveyOutpost'&&!w.progress.outpostSurveyed;
    const surveyFar=w.company.directive==='surveyFar'&&!w.progress.richSampled;
    const r=miningTarget(w,d,room,surveyFar);
-   const ore=w.ores.filter(o=>(o.age??1)>=ORE_PICKUP_DELAY&&o.value<=room&&(distance(d,o)<130||!r)).sort((a,b)=>distance(d,a)-distance(d,b))[0];
+   const ores=w.ores.filter(o=>(o.age??1)>=ORE_PICKUP_DELAY&&o.value<=room&&(distance(d,o)<130||!r)&&(!surveyFar||o.rich)).sort((a,b)=>distance(d,a)-distance(d,b));
    const retreat=!surveyOutpost?dangerRetreat(w,d):undefined;
    if(retreat){if(d.pathKey!=='retreat')w.disengagements++;target=waypoint(w,d,retreat,'retreat');controlled=true;retreating=true;}
    else if(surveyOutpost){target=waypoint(w,d,FAR,'surveyOutpost');controlled=true;}
-   else if(ore&&(!surveyFar||ore.rich)){target=waypoint(w,d,ore,'ore'+ore.id);controlled=true;}
-   else if(surveyFar&&r){d.ramTarget=w.doctrine==='fullContact'&&w.company.laser&&d.hp>1&&yieldFor(r,false)<=room&&distance(d,r)<175;target=waypoint(w,d,w.company.laser&&!d.ramTarget?laserPosition(d,r,DOCTRINE_AI[w.doctrine].standoff):r,'rock'+r.id,r.id);controlled=true;if(w.company.laser&&!d.ramTarget)aim=r;}
-   else if(r){d.ramTarget=w.doctrine==='fullContact'&&w.company.laser&&d.hp>1&&yieldFor(r,false)<=room&&distance(d,r)<175;target=waypoint(w,d,w.company.laser&&!d.ramTarget?laserPosition(d,r,DOCTRINE_AI[w.doctrine].standoff):r,'rock'+r.id,r.id);controlled=true;aim=w.company.laser&&!d.ramTarget?r:undefined;}
    else{
+    let oreGoal:Point|undefined,oreId=-1;
+    for(const ore of ores){oreGoal=oreApproach(w,d,ore);if(oreGoal){oreId=ore.id;break;}}
+    if(oreGoal){target=waypoint(w,d,oreGoal,'ore'+oreId);controlled=true;}
+    else if(r){d.ramTarget=w.doctrine==='fullContact'&&w.company.laser&&d.hp>1&&yieldFor(r,false)<=room&&distance(d,r)<175;target=waypoint(w,d,w.company.laser&&!d.ramTarget?laserPosition(d,r,DOCTRINE_AI[w.doctrine].standoff):r,'rock'+r.id,r.id);controlled=true;aim=w.company.laser&&!d.ramTarget?r:undefined;}
+    else{
      w.idleTime+=dt;
      d.wander-=dt;
      if(d.wander<=0||distance(d,{x:d.targetX,y:d.targetY})<18){if(w.company.laser||w.delivered>0){d.targetX=Math.max(30,Math.min(W-30,d.x+(w.rng()-.42)*560));d.targetY=Math.max(45,Math.min(H-45,d.y+(w.rng()-.55)*540));}else{d.targetX=30+w.rng()*340;d.targetY=45+w.rng()*450;}d.wander=1.5+w.rng()*2.5;}
      target={x:d.targetX,y:d.targetY};
+    }
     }
   }
   if(w.company.laser&&!d.ramTarget&&!retreating&&d.state==='mine'&&d.cooldown<=0){
