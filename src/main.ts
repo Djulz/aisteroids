@@ -88,7 +88,7 @@ function updateHUD(){if(screen!=='mission')return;
  (document.querySelector('#pause-overlay') as HTMLElement).hidden=!paused;
  document.querySelector('.status')?.classList.toggle('hostile',world.enemies.some(e=>e.hp>0));
  const drone=world.drones.find(d=>d.id===selected);
- if(world.phase==='done')document.querySelector('#status')!.textContent='Final telemetry ready. Return to the workshop when you are ready.';
+ if(world.phase==='done')document.querySelector('#status')!.textContent='Final telemetry ready. Return to Mission Control when you are ready.';
  else if(world.phase==='aftermath')document.querySelector('#status')!.textContent='All miners lost. Recovering final telemetry…';
  else if(drone) document.querySelector('#status')!.textContent=`${drone.name} · ${Math.round(drone.hp/drone.maxHp*100)}% hull · Cargo ${drone.cargo}/${capacity(company)} · ${{mine:'Mining',return:'Returning',unload:'Unloading',docked:'Docked',dead:'Destroyed'}[drone.state]}`;
  else if(world.phase==='recall')document.querySelector('#status')!.textContent='Shift over. The fleet is returning with its cargo.';
