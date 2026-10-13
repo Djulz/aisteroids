@@ -1,6 +1,5 @@
 import {type Camera,newCamera} from './camera.ts';
 import { HOME, FAR, W, H, ORE_PICKUP_DELAY, type World } from './sim.ts';
-import type {FrameId,ModuleId} from './engineering.ts';
 const gold = '#f5b743', cream = '#e7e2cf';
 function drawOutpost(c:CanvasRenderingContext2D,active:boolean,t:number,bounce=0){
  c.save();c.translate(FAR.x,FAR.y);c.scale(1+bounce,1+bounce);c.strokeStyle=active?'#83d8cf':'#598d94';c.fillStyle='#122e36';c.lineWidth=2;
@@ -11,29 +10,22 @@ function drawOutpost(c:CanvasRenderingContext2D,active:boolean,t:number,bounce=0
  c.restore();
 }
 function polygon(c: CanvasRenderingContext2D, pts: number[][]) { c.beginPath(); pts.forEach(([x,y], i) => i ? c.lineTo(x,y) : c.moveTo(x,y)); c.closePath(); }
-export function drawGuard(c:CanvasRenderingContext2D,x:number,y:number,angle:number,frame:FrameId='standard',modules:readonly (ModuleId|null)[]=[]){
- c.save();c.translate(x,y);c.rotate(angle+Math.PI/2);c.scale(frame==='heavy'?1.15:frame==='light'?.88:1,frame==='heavy'?1.15:frame==='light'?.88:1);c.strokeStyle='#8ee5d3';c.fillStyle='#1c4652';c.lineWidth=1.5;
+export function drawGuard(c:CanvasRenderingContext2D,x:number,y:number,angle:number){
+ c.save();c.translate(x,y);c.rotate(angle+Math.PI/2);c.strokeStyle='#8ee5d3';c.fillStyle='#1c4652';c.lineWidth=1.5;
  polygon(c,[[-9,9],[0,-13],[9,9],[0,5]]);c.fill();c.stroke();c.fillStyle='#a8eee3';c.fillRect(-2,-4,4,7);
- if(modules.includes('reinforcedPlating')){c.strokeStyle='#d3e1d2';c.lineWidth=2;c.beginPath();c.moveTo(-10,6);c.lineTo(-7,-2);c.moveTo(10,6);c.lineTo(7,-2);c.stroke();}
- if(modules.includes('longBarrel')){c.fillStyle='#a8eee3';c.fillRect(-1.5,-19,3,9);}
- if(modules.includes('targetingComputer')){c.fillStyle='#f5b743';c.fillRect(-2,-8,4,3);}
  c.restore();
 }
 export function drawTurret(c:CanvasRenderingContext2D,x:number,y:number,t=0){
  c.save();c.translate(x,y);c.fillStyle='#193741';c.strokeStyle='#9fe2d5';c.lineWidth=1.6;c.beginPath();c.arc(0,0,11,0,7);c.fill();c.stroke();c.rotate(t);c.fillStyle='#263f48';c.fillRect(-3,-16,6,15);c.strokeRect(-3,-16,6,15);c.fillStyle='#8ee3cc';c.fillRect(-2,-4,4,4);c.restore();
 }
-export function drawDrone(c: CanvasRenderingContext2D, x: number, y: number, angle: number, cargo = 0, laser = false, time = 0, thrust = true, frame:FrameId='standard',modules:readonly (ModuleId|null)[]=[]) {
- c.save(); c.translate(x,y); c.rotate(angle + Math.PI / 2);c.scale(frame==='heavy'?1.14:frame==='light'?.88:1,frame==='heavy'?1.14:frame==='light'?.88:1);
+export function drawDrone(c: CanvasRenderingContext2D, x: number, y: number, angle: number, cargo = 0, laser = false, time = 0, thrust = true) {
+ c.save(); c.translate(x,y); c.rotate(angle + Math.PI / 2);
  if(thrust){c.fillStyle = '#83caca'; c.globalAlpha = .7; polygon(c,[[-4,12],[0,21 + Math.sin(time*30)*3],[4,12]]); c.fill(); c.globalAlpha = 1;}
  c.fillStyle='#182b36'; c.strokeStyle=gold; c.lineWidth=1.4; c.fillRect(-12,-4,6,15); c.strokeRect(-12,-4,6,15); c.fillRect(6,-4,6,15); c.strokeRect(6,-4,6,15);
  c.fillStyle=gold; polygon(c,[[-7,10],[-8,-5],[-4,-11],[4,-11],[8,-5],[7,10]]); c.fill();
  c.fillStyle='#14232b'; c.fillRect(-4,-6,8,6); c.fillStyle=cream; c.fillRect(-3,3,6,3);
- c.fillStyle='#68c4c1'; for(let i=0;i<Math.ceil(cargo/4);i++) c.fillRect(-5+i*4,7,3,3);
+ c.fillStyle='#68c4c1'; for(let i=0;i<cargo;i++) c.fillRect(-5+i*4,7,3,3);
  if(laser){ c.fillStyle=cream; c.fillRect(-11,-13,3,9); c.fillRect(8,-13,3,9); }
- if(modules.includes('impactProw')){c.fillStyle='#e1b267';polygon(c,[[-7,-10],[0,-18],[7,-10]]);c.fill();}
- if(modules.includes('reinforcedPlating')){c.strokeStyle='#b7c9bc';c.lineWidth=2;c.beginPath();c.moveTo(-11,2);c.lineTo(-10,-8);c.moveTo(11,2);c.lineTo(10,-8);c.stroke();}
- if(modules.includes('extendedOptics')){c.fillStyle='#8ee3cc';c.fillRect(-11,-18,3,5);c.fillRect(8,-18,3,5);}
- if(modules.includes('emergencyThrusters')){c.fillStyle='#8ee3cc';c.fillRect(-12,12,4,3);c.fillRect(8,12,4,3);}
  c.restore();
 }
 export function drawMother(c: CanvasRenderingContext2D, t:number,bounce=0,base=HOME) {
@@ -61,7 +53,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    const impact=w.effects.find(e=>e.type==='hit'&&e.x===r.x&&e.y===r.y);const pulse=impact?impact.life/impact.max:0;
    c.save();c.translate(r.x+Math.sin(pulse*24)*pulse*2,r.y+Math.cos(pulse*19)*pulse*2);c.rotate(r.id*.73);c.scale(1+pulse*.07,1+pulse*.07);
    const points=r.shape.map((n,i)=>[Math.cos(i/r.shape.length*Math.PI*2)*r.r*n,Math.sin(i/r.shape.length*Math.PI*2)*r.r*n]);
-   const scanned=!!(r.rich&&w.company.scanner);
+   const scanned=!!(r.rich&&w.company.progress.farSurveyed);
    polygon(c,points); c.fillStyle=scanned?(pulse>.75?'#b9d7c9':'#2b5559'):(pulse>.75?'#ac9f7e':'#34434d');c.fill();c.strokeStyle=scanned?(pulse>.4?'#e4fff0':'#79c9bf'):(pulse>.4?'#efd7a0':'#71808a');c.lineWidth=1;c.stroke();
    for(let i=0;i<5;i++){const a=i*2.4+r.id;const radius=r.r*(i%2?.42:.2);const x=Math.cos(a)*radius,y=Math.sin(a)*radius; c.fillStyle='#23343f';c.beginPath();c.ellipse(x,y,r.r*.14,r.r*.11,a,0,7);c.fill();c.strokeStyle='#53636c';c.lineWidth=.6;c.beginPath();c.arc(x,y,r.r*.14,0,2.5);c.stroke();}
    const damage=1-r.hp/r.max;
@@ -87,10 +79,10 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
 
    if(d.state==='dead'){ c.strokeStyle='#7d5350';c.lineWidth=2;c.beginPath();c.moveTo(d.x-5,d.y-5);c.lineTo(d.x+5,d.y+5);c.moveTo(d.x-5,d.y+5);c.lineTo(d.x+5,d.y-5);c.stroke();continue;}
    if(selected===d.id){c.strokeStyle='#f5b74388';c.lineWidth=1;c.beginPath();c.arc(d.x,d.y,21,0,7);c.stroke();}
-   drawDrone(c,d.x,d.y,d.angle,d.cargo,w.company.laser,w.time,d.state==='mine'||d.state==='return',d.frame,d.modules);
+   drawDrone(c,d.x,d.y,d.angle,d.cargo,d.kind==='laserMiner',w.time,d.state==='mine'||d.state==='return');
    if(d.hp<d.maxHp){c.fillStyle='#1a2933';c.fillRect(d.x-10,d.y+24,20,2);c.fillStyle=d.hp/d.maxHp>.4?'#72b5a4':'#db795c';c.fillRect(d.x-10,d.y+24,20*d.hp/d.maxHp,2);}
  }
- for(const g of w.guards){if(g.hp<=0){c.strokeStyle='#558b86';c.beginPath();c.moveTo(g.x-5,g.y-5);c.lineTo(g.x+5,g.y+5);c.moveTo(g.x-5,g.y+5);c.lineTo(g.x+5,g.y-5);c.stroke();continue;}drawGuard(c,g.x,g.y,g.angle,g.frame,g.modules);if(g.hp<g.maxHp){c.fillStyle='#0b2029';c.fillRect(g.x-8,g.y+17,16,2);c.fillStyle='#8ee3cc';c.fillRect(g.x-8,g.y+17,g.hp/g.maxHp*16,2);}}
+ for(const g of w.guards){if(g.hp<=0){c.strokeStyle='#558b86';c.beginPath();c.moveTo(g.x-5,g.y-5);c.lineTo(g.x+5,g.y+5);c.moveTo(g.x-5,g.y+5);c.lineTo(g.x+5,g.y-5);c.stroke();continue;}drawGuard(c,g.x,g.y,g.angle);if(g.hp<g.maxHp){c.fillStyle='#0b2029';c.fillRect(g.x-8,g.y+17,16,2);c.fillStyle='#8ee3cc';c.fillRect(g.x-8,g.y+17,g.hp/g.maxHp*16,2);}}
  for(const foe of w.enemies){if(foe.hp<=0)continue;c.save();c.translate(foe.x,foe.y);c.rotate(w.time*.6);c.fillStyle='#7d3d4a';c.strokeStyle='#e6747d';c.lineWidth=1.5;polygon(c,[[0,-11],[10,0],[0,11],[-10,0]]);c.fill();c.stroke();c.fillStyle='#ff9393';c.fillRect(-2,-3,4,6);c.restore();}
  for(const e of w.effects){const a=e.life/e.max;c.globalAlpha=a;
    if(e.type==='transfer'){
@@ -116,7 +108,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  // Compact world overview, including viewport and off-screen fleet positions.
  const mx=VIEW_W-88,my=VIEW_H-112,mw=76,mh=88,kx=mw/W,ky=mh/H;
  c.fillStyle='#08131deb';c.fillRect(mx-4,my-4,mw+8,mh+8);c.strokeStyle='#52707d';c.lineWidth=.7;c.strokeRect(mx,my,mw,mh);
- for(const r of w.rocks){if(r.hp<=0)continue;c.fillStyle=w.company.scanner&&r.rich?'#7bd4be':'#60717e';c.fillRect(mx+r.x*kx,my+r.y*ky,w.company.scanner&&r.rich?2:1.5,w.company.scanner&&r.rich?2:1.5);}
+ for(const r of w.rocks){if(r.hp<=0)continue;c.fillStyle=w.company.progress.farSurveyed&&r.rich?'#7bd4be':'#60717e';c.fillRect(mx+r.x*kx,my+r.y*ky,w.company.progress.farSurveyed&&r.rich?2:1.5,w.company.progress.farSurveyed&&r.rich?2:1.5);}
  c.fillStyle='#e7e2cf';c.fillRect(mx+HOME.x*kx-2,my+HOME.y*ky-2,4,4);if(w.company.outpost){c.fillStyle='#83d8cf';c.fillRect(mx+FAR.x*kx-2,my+FAR.y*ky-2,4,4);}
  else if(w.company.directive==='surveyOutpost'&&!w.progress.outpostSurveyed){c.strokeStyle='#83d8cf';c.strokeRect(mx+FAR.x*kx-2,my+FAR.y*ky-2,4,4);}
  for(const d of w.drones){if(d.state==='dead'||d.state==='docked')continue;c.fillStyle=gold;c.beginPath();c.arc(mx+d.x*kx,my+d.y*ky,2,0,7);c.fill();}

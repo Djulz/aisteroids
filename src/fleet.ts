@@ -1,56 +1,27 @@
-import {FRAMES,MODULES,equipmentReason,type WorkshopEquipment,type DroneRole,type FrameId,type ModuleId,type Loadout} from './engineering.ts';
-export type {DroneRole,FrameId,ModuleId} from './engineering.ts';
-export type FleetDrone={id:string;name:string}&Loadout;
-
-const minerNames=['BOLT','SPARK','CLANK','RIVET','GEAR','NOVA'];
-const defaultDrone=(role:DroneRole,index:number):FleetDrone=>({
- id:`${role}-${index+1}`,role,frame:'standard',modules:[null,null],
- name:`${role==='miner'?minerNames[index]??'MINER':'GUARD'}-${String(index+1).padStart(2,'0')}`,
-});
-
-// Purchased entitlements define IDs and roster size. A role change never changes an ID.
-export function fleetForCounts(miners:number,guards:number,saved:unknown=[],laser=false):FleetDrone[]{
- const records=Array.isArray(saved)?saved:[];
- const expected=[...Array.from({length:miners},(_,i)=>defaultDrone('miner',i)),...Array.from({length:guards},(_,i)=>defaultDrone('escort',i))];
- const used=new Set<string>();let escorts=0;
- const c={drones:miners,guards,laser,hull:false,drive:false,cargoBay:false};
- return expected.map(base=>{
-  const found=records.find((r:unknown)=>r&&typeof r==='object'&&(r as FleetDrone).id===base.id) as Partial<FleetDrone>|undefined;
-  const candidate=typeof found?.name==='string'?found.name.trim():'';
-  const preferred=candidate&&candidate.length<=24&&!/[\u0000-\u001f\u007f]/.test(candidate)&&!used.has(candidate.toLocaleLowerCase())?candidate:base.name;
-  const name=used.has(preferred.toLocaleLowerCase())?`${base.name} ${base.id}`:preferred;
-  used.add(name.toLocaleLowerCase());
-  let role:DroneRole=found?.role==='miner'||found?.role==='escort'?found.role:base.role;
-  if(role==='escort'&&escorts>=guards)role='miner';
-  if(role==='escort')escorts++;
-  let frame:FrameId=found?.frame&&Object.hasOwn(FRAMES,found.frame)?found.frame:'standard';
-  const raw=Array.isArray(found?.modules)?found.modules:[];
-  const modules:[ModuleId|null,ModuleId|null]=[0,1].map(i=>raw[i]&&Object.hasOwn(MODULES,raw[i])?raw[i] as ModuleId:null) as [ModuleId|null,ModuleId|null];
-  if(miners<2)frame='standard';
-  for(let i=0;i<2;i++)if(equipmentReason(c,role,frame,[i===0?modules[i]:null,i===1?modules[i]:null]))modules[i]=null;
-  if(modules[0]===modules[1])modules[1]=null;
-  return {...base,name,role,frame,modules};
- });
+// Capacity and composition are the only fleet ownership state. The Laser unlock
+// remains a typed seam for Pass B; normal saves cannot acquire it in Pass A.
+// Hauler is reserved for 10 cargo (later 14 through Research); it has no AI or
+// selectable slot here. Mining Rig has no assigned slot cost or implementation.
+export type FleetType='impactMiner'|'laserMiner'|'escort'|'hauler'|'miningRig';
+export type FleetComposition=Record<FleetType,number>;
+export const MAX_FLEET_CAPACITY=6;
+export const freshComposition=():FleetComposition=>({impactMiner:1,laserMiner:0,escort:0,hauler:0,miningRig:0});
+export const usedSlots=(fleet:FleetComposition)=>fleet.impactMiner+fleet.laserMiner+fleet.escort;
+export type FleetOwner={fleetCapacity:number;fleetComposition:FleetComposition;unlockedTypes:FleetType[];progress:{rivalSeen:boolean}};
+export const typeAvailable=(c:FleetOwner,type:FleetType)=>type==='impactMiner'||type==='escort'&&c.progress.rivalSeen||type==='laserMiner'&&c.unlockedTypes.includes('laserMiner');
+export function fleetError(c:FleetOwner):string|undefined{
+ const f=c.fleetComposition;
+ if(!Number.isInteger(c.fleetCapacity)||c.fleetCapacity<1||c.fleetCapacity>MAX_FLEET_CAPACITY)return 'Invalid fleet capacity.';
+ if((Object.keys(f) as FleetType[]).some(k=>!['impactMiner','laserMiner','escort','hauler','miningRig'].includes(k)))return 'Unknown drone type.';
+ for(const type of ['impactMiner','laserMiner','escort','hauler','miningRig'] as const){
+  if(!Number.isInteger(f[type])||f[type]<0)return 'Invalid drone count.';
+  if(f[type]&&!typeAvailable(c,type))return `${type==='laserMiner'?'Laser Miner':type==='escort'?'Escort':type} is locked.`;
+ }
+ if(!f.impactMiner&&!f.laserMiner)return 'At least one Miner is required to deploy.';
+ if(usedSlots(f)>c.fleetCapacity)return 'Fleet exceeds purchased drone slots.';
 }
-
-export function fleetError(c:WorkshopEquipment,fleet:FleetDrone[]):string|undefined{
- if(fleet.length!==c.drones+c.guards)return 'Roster does not match purchased drone capacity.';
- if(new Set(fleet.map(d=>d.id)).size!==fleet.length)return 'Duplicate drone identity.';
- const expected=new Set([...Array.from({length:c.drones},(_,i)=>`miner-${i+1}`),...Array.from({length:c.guards},(_,i)=>`escort-${i+1}`)]);
- if(fleet.some(d=>!expected.has(d.id)))return 'A drone identity does not belong to the purchased roster.';
- const escorts=fleet.filter(d=>d.role==='escort').length;
- if(escorts>c.guards)return `Only ${c.guards} purchased Escort slot${c.guards===1?' is':'s are'} available.`;
- if(escorts===fleet.length)return 'At least one Miner is required to deploy.';
- for(const d of fleet){const reason=equipmentReason(c,d.role,d.frame,d.modules);if(reason)return `${d.name}: ${reason}`;}
-}
-export function configureDrone(c:WorkshopEquipment,fleet:FleetDrone[],id:string,name:string,loadout:Loadout):{fleet?:FleetDrone[];error?:string}{
- const named=renameDrone(fleet,id,name);if(!named)return {error:'Enter a unique name, up to 24 characters.'};
- const changed=named.map(d=>d.id===id?{...d,...loadout,modules:[...loadout.modules] as [ModuleId|null,ModuleId|null]}:d);
- const error=fleetError(c,changed);return error?{error}:{fleet:changed};
-}
-
-export function renameDrone(fleet:FleetDrone[],id:string,name:string):FleetDrone[]|null{
- const clean=name.trim();
- if(clean.length<1||clean.length>24||/[\u0000-\u001f\u007f]/.test(clean)||!fleet.some(d=>d.id===id)||fleet.some(d=>d.id!==id&&d.name.toLocaleLowerCase()===clean.toLocaleLowerCase()))return null;
- return fleet.map(d=>d.id===id?{...d,name:clean}:d);
+export function changeFleet<T extends FleetOwner>(c:T,type:FleetType,delta:-1|1):T|null{
+ if((delta!==1&&delta!==-1)||!['impactMiner','laserMiner','escort'].includes(type)||!typeAvailable(c,type))return null;
+ const next={...c,fleetComposition:{...c.fleetComposition,[type]:c.fleetComposition[type]+delta}};
+ return fleetError(next)?null:next;
 }
