@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.8.0
+# AIsteroid Mining · Alpha 0.9.0
 
 Mobile-first autonomous asteroid mining game. Run a growing company in one persistent overhead world. Each shift lasts 45 seconds; between shifts, purchase fleet upgrades and choose a survey priority. The English interface and industrial artwork use Canvas 2D.
 
@@ -31,8 +31,9 @@ Open the Vite URL ending in `/aisteroids/`. Published at https://djulz.github.io
 - Mining lasers hold a position away from the asteroid surface while extracted ore flies back to the miner. Six miners can dock at the Outpost without blocked berths.
 - After 45 seconds surviving drones are recalled; return can take longer. Pause and 2× speed are available. Backgrounding pauses the simulation.
 - When every miner is destroyed, the wreckage remains visible briefly. All completed shifts show an on-map debrief with delivered and extracted minerals, rich ore, losses, discoveries and salvage before the player returns to the workshop.
-- Fleet Configuration in the Workshop selects one of four free doctrines before launch. Standard Protocol follows the previous targeting and escort behavior. Full Contact Mining favors accessible, productive impacts and may ram despite owning lasers. Careful Prospectors weighs hostile positions, retreats when seriously threatened and uses a wider laser standoff. Convoy Protocol favors shared mining regions and focuses escorts on threats near miners. The selected doctrine is stored with the company, captured at deployment, and shown in the mission and report. No doctrine adds equipment or direct control.
-- Save version 5 uses browser localStorage. Existing v1–v4 companies retain their money, roster, purchases and persistent deposit depletion when migrating. There is no backend account sync.
+- Mission Control has Workshop and Hangar tabs. Workshop purchases still use the same progression, prices and effects. Hangar displays one stable record for each owned miner and escort, tied to the existing purchased counts. Individual names can be changed in Edit / Tinker. Frame and module choices are visibly unavailable until those systems have simulation effects. The next implementation can attach equipment configuration to each `FleetDrone` record in `src/fleet.ts`, then resolve its effects in `createWorld` and the existing decision points in `src/sim.ts`; aggregate ownership remains authoritative.
+- Fleet Doctrine is a free quick selection above Deploy. Standard Protocol follows the previous targeting and escort behavior. Full Contact Mining favors accessible, productive impacts and may ram despite owning lasers. Careful Prospectors weighs hostile positions, retreats when seriously threatened and uses a wider laser standoff. Convoy Protocol favors shared mining regions and focuses escorts on threats near miners. The selected doctrine is stored with the company, captured at deployment, and shown in the mission and report. No doctrine adds equipment or direct control.
+- Save version 5 uses browser localStorage. Existing v1–v4 companies retain their money, roster, purchases and persistent deposit depletion; older saves without individual records gain exactly the owned miner and escort identities. There is no backend account sync.
 
 ## Structure
 
@@ -40,7 +41,9 @@ Open the Vite URL ending in `/aisteroids/`. Published at https://djulz.github.io
 - `src/doctrines.ts`: stable doctrine IDs, player-facing descriptions and centralized AI priorities. Future Tinkering equipment can attach per-drone capability or equipment modifiers at `miningTarget`, `laserPosition`, `dangerRetreat` and the existing combat/navigation decisions in `src/sim.ts`; keep ownership and equipment limits in the simulation. No module inventory or slots exist yet.
 - `src/navigation.ts`: obstacle-aware routing and visibility checks.
 - `src/render.ts`: Canvas sprites, map and effects.
-- `src/main.ts`: workshop, mission UI and camera controls.
+- `src/fleet.ts`: individual identity normalization, stable IDs and name validation. Counts in `Company` remain the source of ownership.
+- `src/lobby.ts`: Mission Control Workshop, Hangar, doctrine picker and deploy summary.
+- `src/main.ts`: lobby interactions, mission UI and camera controls.
 - `src/storage.ts`: save validation and migration.
 - `tests/`: simulation, persistence, economy, navigation and camera checks.
 

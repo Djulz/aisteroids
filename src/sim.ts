@@ -1,5 +1,6 @@
 import { route, clearSegment, type Point } from './navigation.ts';
 import {DOCTRINE_AI,validDoctrine,type DoctrineId} from './doctrines.ts';
+import {fleetForCounts,type FleetDrone} from './fleet.ts';
 // Fixed-step seeded simulation: independent of browser and rendering.
 export const W=800,H=930,ROUND_TIME=45,STEP=1/60,CAPACITY=12;
 export const HOME={x:200,y:550}, FAR={x:535,y:770};
@@ -8,22 +9,23 @@ export type Directive='auto'|'surveyFar'|'surveyOutpost';
 export type Progress={farSurveyed:boolean;richSampled:boolean;rivalSeen:boolean;outpostSurveyed:boolean};
 export const freshProgress=():Progress=>({farSurveyed:false,richSampled:false,rivalSeen:false,outpostSurveyed:false});
 export type StoredOre={x:number;y:number;value:number;rich:boolean};
-export type Company={version:5;credits:number;drones:number;scanner:boolean;hull:boolean;laser:boolean;turret:boolean;rounds:number;total:number;cargoBay:boolean;prospector:boolean;drive:boolean;guards:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;directive:Directive;doctrine:DoctrineId};
-export const freshCompany=():Company=>({version:5,credits:0,drones:1,scanner:false,hull:false,laser:false,turret:false,rounds:0,total:0,cargoBay:false,prospector:false,drive:false,guards:0,outpost:false,launchSite:'home',worldSeed:7,rockHp:{},ores:[],progress:freshProgress(),directive:'auto',doctrine:'standard'});
+export type Company={version:5;credits:number;drones:number;scanner:boolean;hull:boolean;laser:boolean;turret:boolean;rounds:number;total:number;cargoBay:boolean;prospector:boolean;drive:boolean;guards:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;directive:Directive;doctrine:DoctrineId;fleet:FleetDrone[]};
+export const freshCompany=():Company=>({version:5,credits:0,drones:1,scanner:false,hull:false,laser:false,turret:false,rounds:0,total:0,cargoBay:false,prospector:false,drive:false,guards:0,outpost:false,launchSite:'home',worldSeed:7,rockHp:{},ores:[],progress:freshProgress(),directive:'auto',doctrine:'standard',fleet:fleetForCounts(1,0)});
 export type Purchase='drone'|'hull'|'scanner'|'laser'|'cargoBay'|'prospector'|'drive'|'guard'|'turret'|'outpost';
 export function unlocked(c:Company,item:Purchase){return item==='cargoBay'||item==='prospector'||item==='drive'?c.progress.richSampled:item==='guard'||item==='turret'?c.progress.rivalSeen:item==='outpost'?c.progress.outpostSurveyed:true;}
 export function cost(c:Company,item:Purchase){return item==='drone'?[0,10,30,70,140,240,360][c.drones]:item==='hull'?10:item==='scanner'?30:item==='laser'?80:item==='cargoBay'?120:item==='prospector'?130:item==='drive'?160:item==='guard'?180+c.guards*100:item==='turret'?90:300;}
 export function buy(c:Company,item:Purchase):Company|null{
  if(!unlocked(c,item)||c.credits<cost(c,item)||(item==='drone'?c.drones>=6:item==='guard'?c.guards>=2:c[item])||item==='prospector'&&!c.scanner)return null;
- return {...c,credits:c.credits-cost(c,item),...(item==='drone'?{drones:c.drones+1}:item==='guard'?{guards:c.guards+1}:{[item]:true})};
+ const next={...c,credits:c.credits-cost(c,item),...(item==='drone'?{drones:c.drones+1}:item==='guard'?{guards:c.guards+1}:{[item]:true})};
+ return {...next,fleet:fleetForCounts(next.drones,next.guards,c.fleet)};
 }
 export const capacity=(c:Company)=>CAPACITY+(c.cargoBay?6:0);
 export const baseFor=(c:Company)=>c.outpost&&c.launchSite==='far'?FAR:HOME;
 export type Rock={id:number;x:number;y:number;r:number;hp:number;max:number;shape:number[];rich?:boolean};
 export type Ore={id:number;x:number;y:number;value:number;rich?:boolean;originX?:number;originY?:number;age?:number};
-export type Drone={id:number;x:number;y:number;angle:number;hp:number;maxHp:number;cargo:number;richCargo:number;cooldown:number;targetX:number;targetY:number;wander:number;vx:number;vy:number;recoil:number;armed:boolean;lastRock:number;targetRock:number;targetHold:number;ramTarget:boolean;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;state:'mine'|'unload'|'return'|'docked'|'dead'};
+export type Drone={id:number;identityId:string;name:string;x:number;y:number;angle:number;hp:number;maxHp:number;cargo:number;richCargo:number;cooldown:number;targetX:number;targetY:number;wander:number;vx:number;vy:number;recoil:number;armed:boolean;lastRock:number;targetRock:number;targetHold:number;ramTarget:boolean;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;state:'mine'|'unload'|'return'|'docked'|'dead'};
 export type Enemy={id:number;x:number;y:number;vx:number;vy:number;hp:number;cooldown:number;path:Point[];pathKey:string;pathAge:number};
-export type Guard={id:number;x:number;y:number;vx:number;vy:number;angle:number;hp:number;cooldown:number;path:Point[];pathKey:string;pathAge:number};
+export type Guard={id:number;identityId:string;name:string;x:number;y:number;vx:number;vy:number;angle:number;hp:number;cooldown:number;path:Point[];pathKey:string;pathAge:number};
 export type Effect={type:'transfer'|'hit'|'laser'|'ore'|'deposit'|'dead'|'enemyShot'|'guardShot'|'turretShot'|'enemyDead';x:number;y:number;tx?:number;ty?:number;life:number;max:number;amount?:number;richAmount?:number};
 export type World={time:number;phase:'mining'|'recall'|'aftermath'|'done';aftermath:number;company:Company;doctrine:DoctrineId;progress:Progress;rocks:Rock[];ores:Ore[];drones:Drone[];enemies:Enemy[];guards:Guard[];effects:Effect[];delivered:number;extracted:number;richExtracted:number;lost:number;collisions:number;shots:number;mined:number;attacks:number;intercepts:number;disengagements:number;idleTime:number;wave:number;base:typeof HOME;rng:()=>number;nextId:number;turretCooldown:number};
 export function random(seed:number){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
@@ -31,6 +33,7 @@ export function createWorld(company:Company,seed=7):World{
  const rng=random(seed^Math.imul(company.rounds,7919)),rocksRng=random(seed);
  const base=baseFor(company);
  const doctrine=validDoctrine(company.doctrine);
+ const fleet=fleetForCounts(company.drones,company.guards,company.fleet);
  const w:World={time:0,phase:'mining',aftermath:0,company:{...company,doctrine},doctrine,progress:{...company.progress},rocks:[],ores:company.ores.map((o,i)=>({...o,id:100+i,age:1})),drones:[],enemies:[],guards:[],effects:[],delivered:0,extracted:0,richExtracted:0,lost:0,collisions:0,shots:0,mined:0,attacks:0,intercepts:0,disengagements:0,idleTime:0,wave:0,base,rng,nextId:100+company.ores.length,turretCooldown:0};
  const locations=[[200,440],[74,100],[285,91],[160,165],[337,224],[60,281],[242,309],[119,377],[337,419],[50,461],[296,165],[157,65]];
  locations.forEach(([x,y],id)=>{const r=id===0?18:21+rocksRng()*15,max=4*(id===0?40:38+Math.round(r*1.1));w.rocks.push({id,x:x+(id?(rocksRng()-.5)*18:0),y,r,hp:company.rockHp[id]??max,max,shape:Array.from({length:11},()=>.77+rocksRng()*.23)});});
@@ -47,9 +50,10 @@ export function createWorld(company:Company,seed=7):World{
  }
  for(let i=0;i<company.drones;i++){
   const maxHp=company.hull?7:4;
-  w.drones.push({id:i,x:base.x+(i-(company.drones-1)/2)*18,y:base.y-27,angle:-Math.PI/2,hp:maxHp,maxHp,cargo:0,richCargo:0,cooldown:0,targetX:200+i*25,targetY:90,wander:3.5,vx:0,vy:0,recoil:0,armed:true,lastRock:-1,targetRock:-1,targetHold:0,ramTarget:false,path:[],pathKey:'',pathAge:0,unloadTime:0,unloadCargo:0,state:'mine'});
+  const identity=fleet[i];
+  w.drones.push({id:i,identityId:identity.id,name:identity.name,x:base.x+(i-(company.drones-1)/2)*18,y:base.y-27,angle:-Math.PI/2,hp:maxHp,maxHp,cargo:0,richCargo:0,cooldown:0,targetX:200+i*25,targetY:90,wander:3.5,vx:0,vy:0,recoil:0,armed:true,lastRock:-1,targetRock:-1,targetHold:0,ramTarget:false,path:[],pathKey:'',pathAge:0,unloadTime:0,unloadCargo:0,state:'mine'});
  }
- for(let i=0;i<company.guards;i++)w.guards.push({id:i,x:base.x+(i?24:-24),y:base.y-85,vx:0,vy:0,angle:-Math.PI/2,hp:6,cooldown:0,path:[],pathKey:'',pathAge:0});
+ for(let i=0;i<company.guards;i++){const identity=fleet[company.drones+i];w.guards.push({id:i,identityId:identity.id,name:identity.name,x:base.x+(i?24:-24),y:base.y-85,vx:0,vy:0,angle:-Math.PI/2,hp:6,cooldown:0,path:[],pathKey:'',pathAge:0});}
  return w;
 }
 const distance=(a:Point,b:Point)=>Math.hypot(a.x-b.x,a.y-b.y);

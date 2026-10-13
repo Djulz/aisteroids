@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorld,freshCompany,step,settle,buy,cost,ROUND_TIME,STEP,HOME,type Company,type World} from '../src/sim.ts';
 import {parseSave} from '../src/storage.ts';
+import {fleetForCounts} from '../src/fleet.ts';
 function run(upgrades:Partial<Company>={},seed=7){const w=createWorld({...freshCompany(),...upgrades},seed);for(let n=0;n<4500&&w.phase!=='done';n++)step(w);assert.equal(w.phase,'done',JSON.stringify({seed,upgrades,drones:w.drones}));return w;}
 function impactFixture(hull=false){const w=createWorld({...freshCompany(),hull,scanner:true});const r=w.rocks[0];r.hp=50;r.max=50;w.rocks=[r];const d=w.drones[0];d.x=r.x;d.y=r.y+r.r+8.5;d.vy=-67;d.angle=-Math.PI/2;return w;}
 test('starter can deliver 12 with headbutts and fund its first purchase',()=>{const w=run();assert.equal(w.delivered,12);assert.ok(w.collisions>=3);assert.equal(w.shots,0);assert.ok(buy(settle(freshCompany(),w),'drone'));});
@@ -14,7 +15,7 @@ for(const recall of [false,true])test((recall?'recall':'full cargo')+' routes ar
 test('recall starts at 45 seconds, not 60',()=>{const w=returnFixture(false);w.drones[0].cargo=2;w.time=ROUND_TIME-STEP;step(w);assert.equal(w.phase,'recall');assert.equal(w.drones[0].state,'return');});
 test('laser mines with no hull damage and uses laser effects',()=>{const w=createWorld({...freshCompany(),laser:true,scanner:true});let seen=false;for(let i=0;i<4000&&w.phase!=='done';i++){step(w);seen ||= w.effects.some(e=>e.type==='laser');}assert.ok(seen);assert.ok(w.shots>0);assert.equal(w.collisions,0);assert.equal(w.drones[0].hp,4);assert.equal(w.phase,'done');assert.ok(w.delivered>12);});
 test('new economy uses round prices and rejects duplicate/invalid purchases',()=>{const c={...freshCompany(),credits:12};assert.equal(cost(c,'drone'),10);assert.equal(cost(c,'hull'),10);assert.equal(cost(c,'scanner'),30);assert.equal(cost(c,'laser'),80);assert.equal(buy(c,'drone')!.credits,2);assert.equal(cost(buy(c,'drone')!,'drone'),30);const upgraded=buy(c,'hull')!;assert.equal(upgraded.hull,true);assert.equal(upgraded.credits,2);assert.equal(buy(upgraded,'hull'),null);assert.equal(buy(c,'scanner'),null);assert.equal(buy({...c,credits:999,drones:6},'drone'),null);});
-test('legacy saves preserve economy, drones and technology',()=>{const old={version:1,credits:73,drones:3,scanner:true,blaster:true,rounds:8,total:213};assert.deepEqual(parseSave(JSON.stringify(old)),{...freshCompany(),credits:73,drones:3,scanner:true,laser:true,rounds:8,total:213});});
+test('legacy saves preserve economy, drones and technology',()=>{const old={version:1,credits:73,drones:3,scanner:true,blaster:true,rounds:8,total:213};assert.deepEqual(parseSave(JSON.stringify(old)),{...freshCompany(),credits:73,drones:3,scanner:true,laser:true,rounds:8,total:213,fleet:fleetForCounts(3,0)});});
 test('v3 saves round-trip; malformed saves are rejected',()=>{const c={...freshCompany(),credits:22,hull:true};assert.deepEqual(parseSave(JSON.stringify(c)),c);for(const value of ['{oops',JSON.stringify({...c,credits:-1}),JSON.stringify({...c,hull:'yes'})])assert.deepEqual(parseSave(value),freshCompany());});
 test('seeded worlds are deterministic',()=>{const a=run({},99),b=run({},99);assert.deepEqual(a.drones,b.drones);assert.equal(a.delivered,b.delivered);});
 test('sampled fleet combinations finish; first upgrades improve earnings',()=>{let base=0,hull=0,fleet=0;for(let i=0;i<8;i++){const seed=7+i*7919;const b=run({},seed);base+=b.delivered;hull+=run({hull:true},seed).delivered;fleet+=run({drones:2},seed).delivered;}assert.ok(hull>base*1.2);assert.ok(fleet>base*1.5);for(const scanner of [false,true])for(const laser of [false,true])for(const hull of [false,true]){const w=run({drones:4,scanner,laser,hull});assert.ok(w.drones.every(d=>d.cargo===0&&d.hp>=0));}});
@@ -36,7 +37,7 @@ test('unloading holds position, transfers cargo once and leaves without teleport
 
 test('v2 companies migrate with existing purchases and round history',()=>{
  const v2={version:2,credits:147,drones:4,scanner:true,hull:true,laser:true,rounds:8,total:371};
- assert.deepEqual(parseSave(JSON.stringify(v2)),{...freshCompany(),...v2,version:5});
+ assert.deepEqual(parseSave(JSON.stringify(v2)),{...freshCompany(),...v2,version:5,fleet:fleetForCounts(4,0)});
 });
 test('rich belt exists from the start and releases twice the ore value',()=>{
  const w=createWorld(freshCompany());const rock=w.rocks.find(r=>r.rich)!;
