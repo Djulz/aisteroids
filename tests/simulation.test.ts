@@ -37,7 +37,7 @@ test('unloading holds position, transfers cargo once and leaves without teleport
 
 test('v2 companies migrate with existing purchases and round history',()=>{
  const v2={version:2,credits:147,drones:4,scanner:true,hull:true,laser:true,rounds:8,total:371};
- assert.deepEqual(parseSave(JSON.stringify(v2)),{...freshCompany(),...v2,version:5,fleet:fleetForCounts(4,0)});
+ assert.deepEqual(parseSave(JSON.stringify(v2)),{...freshCompany(),...v2,version:6,fleet:fleetForCounts(4,0)});
 });
 test('rich belt exists from the start and releases twice the ore value',()=>{
  const w=createWorld(freshCompany());const rock=w.rocks.find(r=>r.rich)!;
@@ -59,7 +59,7 @@ test('odd laser cargo unloads without losing a mineral',()=>{
 });
 test('v4 rock integrity migrates fourfold and keeps depleted deposits depleted',()=>{
  const old={...freshCompany(),version:4,rockHp:{0:7,1:0},ores:[{x:200,y:400,value:2,rich:false}]};
- const next=parseSave(JSON.stringify(old));assert.equal(next.version,5);assert.equal(next.rockHp[0],28);assert.equal(next.rockHp[1],0);assert.equal(createWorld(next).rocks[1].hp,0);
+ const next=parseSave(JSON.stringify(old));assert.equal(next.version,6);assert.equal(next.rockHp[0],28);assert.equal(next.rockHp[1],0);assert.equal(createWorld(next).rocks[1].hp,0);
  const odd={...next,ores:[{x:200,y:400,value:1,rich:false}]};assert.deepEqual(parseSave(JSON.stringify(odd)),odd);
 });
 test('technology unlocks from discoveries and costs remain meaningful',()=>{

@@ -6,11 +6,10 @@ export const DOCTRINES={
 } as const;
 export type DoctrineId=keyof typeof DOCTRINES;
 export const doctrineIds=Object.keys(DOCTRINES) as DoctrineId[];
-export const validDoctrine=(value:unknown):DoctrineId=>typeof value==='string'&&value in DOCTRINES?value as DoctrineId:'standard';
+export const validDoctrine=(value:unknown):DoctrineId=>typeof value==='string'&&Object.hasOwn(DOCTRINES,value)?value as DoctrineId:'standard';
 
-// Behavioral priorities only. Equipment ownership and mining yield remain in the simulation.
-// Future Tinkering modules can modify a drone's equipment/capabilities where these priorities
-// are consumed, without changing the shared doctrine selection or duplicating AI controllers.
+// Behavioral priorities only. Workshop ownership and per-drone equipment are
+// resolved separately before these shared AI decisions consume them.
 export const DOCTRINE_AI={
  standard:{near:1,threat:0,group:0,commit:0,retreat:0,standoff:55},
  fullContact:{near:1.45,threat:0.15,group:0,commit:1.8,retreat:0,standoff:55},

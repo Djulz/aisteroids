@@ -29,7 +29,7 @@ test('individual IDs survive purchases, renames, missions and reloads',()=>{
 });
 
 test('existing saves gain exactly the owned identities; invalid and duplicate records cannot change ownership',()=>{
- const old={...freshCompany(),drones:4,guards:1,fleet:undefined,credits:190,laser:true};
+ const old={...freshCompany(),version:5,drones:4,guards:1,fleet:undefined,credits:190,laser:true};
  const restored=parseSave(JSON.stringify(old));
  assert.equal(restored.credits,190);assert.equal(restored.laser,true);
  assert.deepEqual(restored.fleet.map(d=>d.id),['miner-1','miner-2','miner-3','miner-4','escort-1']);
@@ -53,18 +53,18 @@ test('renaming rejects duplicate and invalid names without changing stable IDs',
  assert.equal(fleet[0].name,'BOLT-01');
 });
 
-test('lobby renders actual roles, ownership and doctrine without fake configuration actions',()=>{
+test('lobby renders individual engineering, mission plan and doctrine',()=>{
  const c={...freshCompany(),drones:2,guards:1,doctrine:'convoy' as const,fleet:fleetForCounts(2,1)};
  c.fleet=renameDrone(c.fleet,'miner-1','The <Captain>')!;
  const hangar=renderLobby(c,view);
  assert.match(hangar,/The &lt;Captain&gt;/);
  assert.match(hangar,/GUARD-01/);
- assert.match(hangar,/2 \/ 6 MINER SLOTS · 1 \/ 2 ESCORTS/);
+ assert.match(hangar,/3 OWNED · 1 ESCORT SLOT/);
  assert.match(hangar,/Convoy Protocol/);
- assert.match(hangar,/FRAME <b>Not configurable/);
- assert.doesNotMatch(hangar,/data-role|data-frame|data-module/);
+ assert.match(hangar,/FRAME <b>Standard/);
+ assert.doesNotMatch(hangar,/data-directive=/);
  const edit=renderLobby(c,{...view,editing:true});
- assert.match(edit,/id="rename-form"/);assert.match(edit,/Equipment slots are not active/);
+ assert.match(edit,/id="tinker-form"/);assert.match(edit,/data-frame="heavy"/);assert.match(edit,/data-module-slot="1"/);
  const shop=renderLobby(c,{...view,tab:'workshop'});
  assert.match(shop,/Extra Drone/);assert.match(shop,/data-buy="drone"/);
  assert.match(shop,/data-buy="guard"[^>]*disabled/);

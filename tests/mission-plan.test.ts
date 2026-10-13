@@ -4,7 +4,7 @@ import {createWorld,freshCompany,settle,type Company} from '../src/sim.ts';
 import {effectiveDirective,missionObjectiveName,missionObjectives} from '../src/mission-plan.ts';
 import {renderLobby,type LobbyView} from '../src/lobby.ts';
 
-const view:LobbyView={tab:'hangar',selectedId:'miner-1',editing:false,doctrineOpen:false,planOpen:false,error:'',storageOK:true'};
+const view:LobbyView={tab:'hangar',selectedId:'miner-1',editing:false,doctrineOpen:false,planOpen:false,error:'',storageOK:true};
 const withProgress=(c:Company,updates:Partial<Company['progress']>):Company=>({...c,progress:{...c.progress,...updates}});
 
 test('early lobby keeps Mission Plan compact; Hangar no longer owns launch and survey controls',()=>{
