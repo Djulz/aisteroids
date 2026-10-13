@@ -11,11 +11,12 @@ import { parseSave, SAVE_KEY } from './storage.ts';
 import {DOCTRINES,validDoctrine} from './doctrines.ts';
 import {renderLobby,type LobbyTab} from './lobby.ts';
 import {fleetForCounts,renameDrone} from './fleet.ts';
+import {missionObjectives,missionObjectiveName} from './mission-plan.ts';
 const app=document.querySelector<HTMLDivElement>('#app')!;
 let company:Company=freshCompany(), storageOK=true;
 try{company=parseSave(localStorage.getItem(SAVE_KEY));}catch{storageOK=false;}
 let world:World=createWorld(company), screen:'workshop'|'mission'='workshop', paused=false, speed=1, accumulator=0, last=0, selected=-1, debriefShown=false;
-let activeTab:LobbyTab='workshop',selectedId=company.fleet[0]?.id??'miner-1',editing=false,doctrineOpen=false,formError='';
+let activeTab:LobbyTab='workshop',selectedId=company.fleet[0]?.id??'miner-1',editing=false,doctrineOpen=false,planOpen=false,formError='';
 try{activeTab=localStorage.getItem('aisteroids-lobby-tab')==='hangar'?'hangar':'workshop';}catch{}
 let canvas:HTMLCanvasElement;
 let camera=newCamera();
@@ -38,25 +39,26 @@ function showWorkshop(){
  screen='workshop';paused=false;
  const fleet=fleetForCounts(company.drones,company.guards,company.fleet);
  if(!fleet.some(d=>d.id===selectedId))selectedId=fleet[0]?.id??'';
- document.querySelector('#content')!.innerHTML=renderLobby(company,{tab:activeTab,selectedId,editing,doctrineOpen,error:formError,storageOK});
+ document.querySelector('#content')!.innerHTML=renderLobby(company,{tab:activeTab,selectedId,editing,doctrineOpen,planOpen,error:formError,storageOK});
  document.querySelector('#tab-workshop')!.addEventListener('click',()=>{activeTab='workshop';editing=false;doctrineOpen=false;formError='';try{localStorage.setItem('aisteroids-lobby-tab',activeTab);}catch{}showWorkshop();window.scrollTo({top:0});});
  document.querySelector('#tab-hangar')!.addEventListener('click',()=>{activeTab='hangar';editing=false;doctrineOpen=false;formError='';try{localStorage.setItem('aisteroids-lobby-tab',activeTab);}catch{}showWorkshop();window.scrollTo({top:0});});
  document.querySelector('#launch')!.addEventListener('click',()=>{if(fleet.length)launch();});
- document.querySelector('#change-doctrine')!.addEventListener('click',()=>{doctrineOpen=!doctrineOpen;showWorkshop();});
+ document.querySelector('#change-doctrine')!.addEventListener('click',()=>{doctrineOpen=!doctrineOpen;if(doctrineOpen)planOpen=false;showWorkshop();});
+ document.querySelector('#change-plan')?.addEventListener('click',()=>{planOpen=!planOpen;if(planOpen)doctrineOpen=false;showWorkshop();document.querySelector('#change-plan')?.focus();});
  document.querySelectorAll<HTMLButtonElement>('[data-doctrine]').forEach(b=>b.onclick=()=>{company={...company,doctrine:validDoctrine(b.dataset.doctrine)};doctrineOpen=false;save();showWorkshop();});
  document.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b=>b.onclick=()=>{const next=buy(company,b.dataset.buy as Purchase);if(next){company=next;save();showWorkshop();}});
  document.querySelectorAll<HTMLButtonElement>('[data-drone]').forEach(b=>b.onclick=()=>{selectedId=b.dataset.drone!;editing=false;formError='';showWorkshop();});
  document.querySelector('#edit-drone')?.addEventListener('click',()=>{editing=true;formError='';showWorkshop();document.querySelector('.drone-detail')?.scrollIntoView({block:'nearest'});});
  document.querySelector('#back-hangar')?.addEventListener('click',()=>{editing=false;formError='';showWorkshop();});
  document.querySelector('#rename-form')?.addEventListener('submit',e=>{e.preventDefault();const name=(document.querySelector('#drone-name') as HTMLInputElement).value;const updated=renameDrone(company.fleet,selectedId,name);if(updated){company={...company,fleet:updated};formError='';save();showWorkshop();}else{formError='Enter a unique name, up to 24 characters.';showWorkshop();}});
- document.querySelectorAll<HTMLButtonElement>('[data-directive]').forEach(b=>b.onclick=()=>{company={...company,directive:b.dataset.directive as Company['directive']};save();showWorkshop();});
- document.querySelectorAll<HTMLButtonElement>('[data-site]').forEach(b=>b.onclick=()=>{company={...company,launchSite:b.dataset.site as Company['launchSite']};save();showWorkshop();});
- document.querySelector('#reset')!.addEventListener('click',()=>{if(confirm('Reset the entire company and all upgrades?')){company=freshCompany();selectedId=company.fleet[0].id;editing=false;doctrineOpen=false;formError='';save();world=createWorld(company);showWorkshop();}});
+ document.querySelectorAll<HTMLButtonElement>('[data-directive]').forEach(b=>b.onclick=()=>{const directive=b.dataset.directive as Company['directive'];if(!missionObjectives(company).some(o=>o.id===directive))return;company={...company,directive};save();showWorkshop();});
+ document.querySelectorAll<HTMLButtonElement>('[data-site]').forEach(b=>b.onclick=()=>{const site=b.dataset.site;if(site!=='home'&&(site!=='far'||!company.outpost))return;company={...company,launchSite:site};save();showWorkshop();});
+ document.querySelector('#reset')!.addEventListener('click',()=>{if(confirm('Reset the entire company and all upgrades?')){company=freshCompany();selectedId=company.fleet[0].id;editing=false;doctrineOpen=false;planOpen=false;formError='';save();world=createWorld(company);showWorkshop();}});
  drawHangarArt();
 }
 function launch(){
  world=createWorld(company,company.worldSeed);screen='mission';paused=false;speed=1;accumulator=0;selected=-1;debriefShown=false;camera=newCamera();if(company.launchSite==='far'){camera.x=world.base.x;camera.y=world.base.y;}
- document.querySelector('#content')!.innerHTML=`<div class="mission"><div class="mission-hud"><div><span>MISSION</span><b>${String(company.rounds+1).padStart(2,'0')}</b></div><div class="time"><span id="phase">SHIFT TIME</span><b id="timer">00:45</b></div><div class="ore-count"><span>DELIVERED</span><b>◆ <span id="delivered">0</span></b></div></div><div class="mission-doctrine">DOCTRINE · ${DOCTRINES[world.doctrine].name.toUpperCase()}</div><div class="field"><canvas id="field" aria-label="Autonomous drones mine asteroids. Drag to pan. Tap a drone for status."></canvas><div id="pause-overlay" hidden>PAUSED<span>The fleet is taking a well-earned microbreak.</span></div><div class="camera-controls"><button id="follow" aria-pressed="true">Follow fleet</button><button id="overview">Overview</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-in" aria-label="Zoom in">+</button></div><div class="field-caption">LIVE TELEMETRY <span>●</span></div></div><div class="telemetry"><div><small>MINERS</small><b id="fleet">${company.drones}/${company.drones}</b></div><div><small>CARGO</small><b id="cargo">0 / ${company.drones*capacity(company)}</b></div><button id="pause" aria-label="Pause mission">Ⅱ</button><button id="speed" aria-label="Change game speed">1×</button></div><div class="status"><span class="status-dot"></span><p id="status">${company.scanner?'Geological survey online. Rich signals are teal.':'Headbutting efficiency: acceptable.'}</p></div><button class="text-button mission-back" id="abort">Abort mission</button></div>`;
+ document.querySelector('#content')!.innerHTML=`<div class="mission"><div class="mission-hud"><div><span>MISSION</span><b>${String(company.rounds+1).padStart(2,'0')}</b></div><div class="time"><span id="phase">SHIFT TIME</span><b id="timer">00:45</b></div><div class="ore-count"><span>DELIVERED</span><b>◆ <span id="delivered">0</span></b></div></div><div class="mission-doctrine">DOCTRINE · ${DOCTRINES[world.doctrine].name.toUpperCase()} · ${missionObjectiveName(world.company).toUpperCase()}</div><div class="field"><canvas id="field" aria-label="Autonomous drones mine asteroids. Drag to pan. Tap a drone for status."></canvas><div id="pause-overlay" hidden>PAUSED<span>The fleet is taking a well-earned microbreak.</span></div><div class="camera-controls"><button id="follow" aria-pressed="true">Follow fleet</button><button id="overview">Overview</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-in" aria-label="Zoom in">+</button></div><div class="field-caption">LIVE TELEMETRY <span>●</span></div></div><div class="telemetry"><div><small>MINERS</small><b id="fleet">${company.drones}/${company.drones}</b></div><div><small>CARGO</small><b id="cargo">0 / ${company.drones*capacity(company)}</b></div><button id="pause" aria-label="Pause mission">Ⅱ</button><button id="speed" aria-label="Change game speed">1×</button></div><div class="status"><span class="status-dot"></span><p id="status">${company.scanner?'Geological survey online. Rich signals are teal.':'Headbutting efficiency: acceptable.'}</p></div><button class="text-button mission-back" id="abort">Abort mission</button></div>`;
  canvas=document.querySelector<HTMLCanvasElement>('#field')!;resize();
  let drag:{id:number;x:number;y:number;startX:number;startY:number;moved:boolean}|null=null;
  const coords=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*camera.width,y:(e.clientY-r.top)/r.height*camera.height};};
