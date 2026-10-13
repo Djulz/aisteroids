@@ -44,7 +44,7 @@ function showWorkshop(){
  document.querySelector('#tab-hangar')!.addEventListener('click',()=>{activeTab='hangar';editing=false;doctrineOpen=false;formError='';try{localStorage.setItem('aisteroids-lobby-tab',activeTab);}catch{}showWorkshop();window.scrollTo({top:0});});
  document.querySelector('#launch')!.addEventListener('click',()=>{if(fleet.length)launch();});
  document.querySelector('#change-doctrine')!.addEventListener('click',()=>{doctrineOpen=!doctrineOpen;if(doctrineOpen)planOpen=false;showWorkshop();});
- document.querySelector('#change-plan')?.addEventListener('click',()=>{planOpen=!planOpen;if(planOpen)doctrineOpen=false;showWorkshop();document.querySelector('#change-plan')?.focus();});
+ document.querySelector('#change-plan')?.addEventListener('click',()=>{planOpen=!planOpen;if(planOpen)doctrineOpen=false;showWorkshop();document.querySelector<HTMLButtonElement>('#change-plan')?.focus();});
  document.querySelectorAll<HTMLButtonElement>('[data-doctrine]').forEach(b=>b.onclick=()=>{company={...company,doctrine:validDoctrine(b.dataset.doctrine)};doctrineOpen=false;save();showWorkshop();});
  document.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b=>b.onclick=()=>{const next=buy(company,b.dataset.buy as Purchase);if(next){company=next;save();showWorkshop();}});
  document.querySelectorAll<HTMLButtonElement>('[data-drone]').forEach(b=>b.onclick=()=>{selectedId=b.dataset.drone!;editing=false;formError='';showWorkshop();});
