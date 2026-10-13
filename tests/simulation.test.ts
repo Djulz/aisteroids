@@ -1,12 +1,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorld,freshCompany,step,settle,buy,cost,ROUND_TIME,STEP,HOME,type Company,type World} from '../src/sim.ts';
+import {createWorld,freshCompany,step,settle,buy,cost,ROUND_TIME,STEP,HOME,FAR,dockingSpots,ORE_PICKUP_DELAY,type Company,type World} from '../src/sim.ts';
 import {parseSave} from '../src/storage.ts';
 import {fleetForCounts} from '../src/fleet.ts';
 function run(upgrades:Partial<Company>={},seed=7){const w=createWorld({...freshCompany(),...upgrades},seed);for(let n=0;n<4500&&w.phase!=='done';n++)step(w);assert.equal(w.phase,'done',JSON.stringify({seed,upgrades,drones:w.drones}));return w;}
 function impactFixture(hull=false){const w=createWorld({...freshCompany(),hull,scanner:true});const r=w.rocks[0];r.hp=50;r.max=50;w.rocks=[r];const d=w.drones[0];d.x=r.x;d.y=r.y+r.r+8.5;d.vy=-67;d.angle=-Math.PI/2;return w;}
 test('starter can deliver 12 with headbutts and fund its first purchase',()=>{const w=run();assert.equal(w.delivered,12);assert.ok(w.collisions>=3);assert.equal(w.shots,0);assert.ok(buy(settle(freshCompany(),w),'drone'));});
-test('knockback produces clearance, fresh approach and a new impact',()=>{const w=impactFixture(),d=w.drones[0],r=w.rocks[0];step(w);assert.equal(d.hp,3);assert.ok(d.vy>100);const y=d.y;for(let i=0;i<30;i++)step(w);assert.ok(d.y-y>45,'ship must visibly bounce two lengths');assert.equal(w.collisions,1);for(let i=0;i<180&&w.collisions<2;i++)step(w);assert.equal(w.collisions,2);assert.ok(w.time>1,'impacts require a fresh approach');});
+test('knockback produces clearance, collects ejected ore, then makes a fresh impact',()=>{const w=impactFixture(),d=w.drones[0],r=w.rocks[0];step(w);assert.equal(d.hp,3);assert.ok(d.vy>100);const y=d.y;for(let i=0;i<30;i++)step(w);assert.ok(d.y-y>45,'ship must visibly bounce two lengths');assert.equal(w.collisions,1);for(let i=0;i<270&&w.collisions<2;i++)step(w);assert.equal(w.collisions,2);assert.ok(d.cargo>0);assert.ok(w.time>1,'impacts require a fresh approach');});
 test('stationary unarmed contact cannot tick damage',()=>{const w=impactFixture(),d=w.drones[0],r=w.rocks[0];for(let i=0;i<120;i++){d.x=r.x;d.y=r.y+r.r+8;d.vx=d.vy=0;d.armed=false;d.cooldown=0;step(w);}assert.equal(w.collisions,0);assert.equal(d.hp,4);});
 test('reinforced hull survives six hits and dies on seventh',()=>{const w=run({scanner:true,hull:true});assert.equal(w.collisions,7);assert.equal(w.delivered,24);assert.equal(w.drones[0].state,'dead');assert.equal(w.drones[0].maxHp,7);});
 test('destroyed cargo falls into the field for a later shift; repairs remain free',()=>{const w=impactFixture(),d=w.drones[0];d.hp=1;d.cargo=6;step(w);assert.equal(d.state,'dead');assert.equal(d.cargo,0);assert.equal(w.lost,6);assert.equal(w.delivered,0);const next=settle(freshCompany(),w);assert.equal(next.drones,1);assert.equal(next.credits,0);assert.equal(next.ores.reduce((n,o)=>n+o.value,0),10);assert.equal(createWorld(next).drones[0].hp,4);assert.equal(createWorld(next).ores.length,5);});
@@ -160,9 +160,72 @@ test('six miners can all dock at the outpost after recall',()=>{
  for(let i=0;i<1200&&w.phase!=='done';i++)step(w);
  assert.equal(w.phase,'done');assert.equal(w.delivered,72);assert.ok(w.drones.every(d=>d.state==='docked'));
 });
-test('a laser miner holds a visible standoff instead of orbiting the rock surface',()=>{
+test('a laser miner gathers loose ore without colliding with the rock',()=>{
  const w=createWorld({...freshCompany(),laser:true});for(let i=0;i<1000;i++)step(w);
- const d=w.drones[0],r=w.rocks[0];assert.ok(w.shots>8);assert.equal(d.pathKey,'rock0');assert.ok(Math.hypot(d.x-r.x,d.y-r.y)>r.r+42);
+ const d=w.drones[0],r=w.rocks[0];assert.ok(w.shots>8);assert.ok(d.pathKey.startsWith('rock')||d.pathKey.startsWith('ore'));assert.ok(Math.hypot(d.x-r.x,d.y-r.y)>=r.r+8);assert.equal(w.collisions,0);assert.ok(d.cargo+w.delivered>0);
+});
+test('a stationary laser miner faces the rock without continuously rotating',()=>{
+ const w=createWorld({...freshCompany(),laser:true});w.rocks=[w.rocks[0]];
+ const d=w.drones[0];Object.assign(d,{x:200,y:513,angle:1.2});
+ const angles:number[]=[];
+ for(let i=0;i<180;i++){step(w);w.ores=[];if(i>=100)angles.push(d.angle);}
+ assert.ok(w.shots>=2);assert.equal(d.pathKey,'rock0');
+ assert.ok(Math.max(...angles)-Math.min(...angles)<.02);
+ assert.ok(Math.abs(d.angle+Math.PI/2)<.02);
+});
+test('a miner holding position at HQ during a threat keeps its heading',()=>{
+ const w=createWorld({...freshCompany(),doctrine:'careful',laser:true});w.wave=1;
+ const d=w.drones[0];Object.assign(d,{x:HOME.x,y:HOME.y,angle:1,vx:0,vy:0,hp:2});
+ w.enemies=[{id:0,x:HOME.x+110,y:HOME.y,vx:0,vy:0,hp:3,cooldown:100,path:[],pathKey:'',pathAge:0}];
+ for(let i=0;i<45;i++)step(w);
+ assert.equal(d.pathKey,'retreat');assert.ok(Math.abs(d.angle-1)<.01);
+});
+test('mineral fragments fly in seeded varied directions and cannot be picked up mid-flight',()=>{
+ const setup=(seed:number)=>{
+  const w=createWorld({...freshCompany(),laser:true},seed),r=w.rocks[0],d=w.drones[0];w.rocks=[r];
+  Object.assign(d,{x:r.x,y:r.y+r.r+50,vx:0,vy:0,cooldown:0});step(w);
+  return {w,r,d,ore:w.ores[0]};
+ };
+ const {w,r,d,ore}=setup(7),other=setup(8).ore;
+ assert.ok(ore&&other);assert.equal(ore.originX,r.x);assert.equal(ore.originY,r.y);
+ assert.ok(Math.hypot(ore.x-r.x,ore.y-r.y)>r.r+18);
+ assert.ok(Math.hypot(ore.x-other.x,ore.y-other.y)>1,'spawn direction uses mission RNG');
+ Object.assign(d,{x:ore.x,y:ore.y,vx:0,vy:0,recoil:1});
+ for(let i=0;i<Math.floor(ORE_PICKUP_DELAY/STEP)-2;i++)step(w);
+ assert.equal(d.cargo,0);assert.ok(w.ores.includes(ore));
+ for(let i=0;i<5;i++)step(w);
+ assert.equal(d.cargo,ore.value);assert.ok(!w.ores.includes(ore));
+});
+test('HQ and Outpost assign the nearest unreserved berth around the whole station',()=>{
+ for(const far of [false,true]){
+  const c={...freshCompany(),drones:6,outpost:far,launchSite:far?'far' as const:'home' as const};
+  const w=createWorld(c);w.rocks=[];w.time=ROUND_TIME;
+  const base=far?FAR:HOME,spots=dockingSpots(base),start={x:base.x+100,y:base.y};
+  for(const d of w.drones)Object.assign(d,{...start,cargo:12,state:'return',vx:0,vy:0});
+  step(w);
+  const occupied=new Set<number>();
+  for(const d of w.drones){
+   assert.ok(d.berth>=0&&d.berth<12);assert.ok(!occupied.has(d.berth));
+   const nearest=Math.min(...spots.map((p,i)=>occupied.has(i)?Infinity:Math.hypot(start.x-p.x,start.y-p.y)));
+   assert.ok(Math.hypot(start.x-spots[d.berth].x,start.y-spots[d.berth].y)<=nearest+1e-6);
+   occupied.add(d.berth);
+  }
+  assert.ok([...occupied].some(i=>i<3)&&[...occupied].some(i=>i>3),'berths encircle the station');
+  for(let i=0;i<1200&&w.phase!=='done';i++)step(w);
+  assert.equal(w.phase,'done');assert.equal(w.delivered,72);
+ }
+});
+test('station reservations avoid real asteroid layouts and six miners complete recall',()=>{
+ for(const far of [false,true])for(const seed of [7,31]){
+  const w=createWorld({...freshCompany(),drones:6,outpost:far,launchSite:far?'far':'home'},seed);
+  w.time=ROUND_TIME;
+  for(const d of w.drones){d.cargo=12;d.state='return';}
+  for(let i=0;i<1600&&w.phase!=='done';i++)step(w);
+  const spots=dockingSpots(w.base);
+  assert.equal(new Set(w.drones.map(d=>d.berth)).size,6);
+  for(const d of w.drones)assert.ok(w.rocks.every(r=>r.hp<=0||Math.hypot(spots[d.berth].x-r.x,spots[d.berth].y-r.y)>=r.r+12));
+  assert.equal(w.phase,'done');assert.equal(w.delivered,72);
+ }
 });
 test('fleet loss leaves wreckage on screen before the final report',()=>{
  const w=impactFixture(),d=w.drones[0];d.hp=1;step(w);assert.equal(d.state,'dead');assert.equal(w.phase,'aftermath');

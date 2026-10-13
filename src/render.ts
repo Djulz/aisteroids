@@ -1,5 +1,5 @@
 import {type Camera,newCamera} from './camera.ts';
-import { HOME, FAR, W, H, type World } from './sim.ts';
+import { HOME, FAR, W, H, ORE_PICKUP_DELAY, type World } from './sim.ts';
 const gold = '#f5b743', cream = '#e7e2cf';
 function drawOutpost(c:CanvasRenderingContext2D,active:boolean,t:number,bounce=0){
  c.save();c.translate(FAR.x,FAR.y);c.scale(1+bounce,1+bounce);c.strokeStyle=active?'#83d8cf':'#598d94';c.fillStyle='#122e36';c.lineWidth=2;
@@ -62,10 +62,12 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    if(scanned){c.fillStyle='#7bd4be';for(let i=0;i<3;i++){c.beginPath();c.arc(Math.cos(i*2.1)*r.r*.52,Math.sin(i*2.1)*r.r*.52,2.5,0,7);c.fill();}c.rotate(-r.id*.73);c.strokeStyle='#7bd4be88';c.lineWidth=1;c.beginPath();c.arc(0,0,r.r+6,-Math.PI/2,-Math.PI/2+Math.PI*2*r.hp/r.max);c.stroke();}
    c.restore();
  }
- for(const o of w.ores){const age=o.age??1,flight=1-Math.exp(-age*12);const x=(o.originX??o.x)+(o.x-(o.originX??o.x))*flight,y=(o.originY??o.y)+(o.y-(o.originY??o.y))*flight;
-  if(age<.35){c.strokeStyle='#f5b74377';c.lineWidth=2;c.beginPath();c.moveTo(x-(o.x-(o.originX??o.x))*(1-flight)*.5,y-(o.y-(o.originY??o.y))*(1-flight)*.5);c.lineTo(x,y);c.stroke();}
-  const spread=Math.sin(flight*Math.PI)*(o.id%2?12:-12),direction=Math.atan2(o.y-(o.originY??o.y),o.x-(o.originX??o.x));
-  c.save();c.translate(x-Math.sin(direction)*spread,y+Math.cos(direction)*spread);c.rotate(.4+Math.min(age,.5)*5);c.shadowColor=gold;c.shadowBlur=age<.4?10:0;c.fillStyle=gold;polygon(c,[[0,-4],[4,0],[1,4],[-3,2],[-4,-1]]);c.fill();c.restore();}
+ for(const o of w.ores){const age=o.age??1,t=Math.min(1,age/ORE_PICKUP_DELAY),flight=1-(1-t)*(1-t);
+  const originX=o.originX??o.x,originY=o.originY??o.y,dx=o.x-originX,dy=o.y-originY;
+  const x=originX+dx*flight,y=originY+dy*flight;
+  if(t<1){c.strokeStyle='#f5b74377';c.lineWidth=2;c.beginPath();c.moveTo(x-dx*(1-t)*.18,y-dy*(1-t)*.18);c.lineTo(x,y);c.stroke();}
+  const direction=Math.atan2(dy,dx),spread=Math.sin(t*Math.PI)*(o.id%2?6:-6);
+  c.save();c.translate(x-Math.sin(direction)*spread,y+Math.cos(direction)*spread);c.rotate(.4+Math.min(age,.5)*5);c.shadowColor=gold;c.shadowBlur=t<1?10:0;c.fillStyle=gold;polygon(c,[[0,-4],[4,0],[1,4],[-3,2],[-4,-1]]);c.fill();c.restore();}
  const arrivals=w.effects.filter(e=>e.type==='transfer');
  const bounce=Math.max(0,...arrivals.map(e=>{const t=e.max-e.life-.26;return t>0?Math.sin(t/.09*Math.PI)*.065:0;}));
  if(w.base.x===FAR.x){drawMother(c,w.time,0,HOME);drawOutpost(c,true,w.time*.6,bounce);}

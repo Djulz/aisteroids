@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.9.0
+# AIsteroid Mining · Alpha 0.9.1
 
 Mobile-first autonomous asteroid mining game. Run a growing company in one persistent overhead world. Each shift lasts 45 seconds; between shifts, purchase fleet upgrades and choose a survey priority. The English interface and industrial artwork use Canvas 2D.
 
@@ -28,7 +28,7 @@ Open the Vite URL ending in `/aisteroids/`. Published at https://djulz.github.io
 
 - Early drones seek work immediately, but still wobble and headbutt. A ram requires a fresh approach, knocks the miner away and costs one hull point. Basic hull survives three impacts; reinforced hull survives six. Return navigation and physical rock collisions also work with full cargo.
 - Cargo holds 12 minerals, or 18 with Expanded Cargo. Full miners return, pause beside the station while cargo particles fly in, then resume. Delivered minerals fund purchases. Free repairs restore the persistent fleet between shifts.
-- Mining lasers hold a position away from the asteroid surface while extracted ore flies back to the miner. Six miners can dock at the Outpost without blocked berths.
+- Mining lasers hold a position away from the asteroid surface and face it while firing. Extracted fragments fly in varied directions from the rock, remain unavailable for pickup for 0.55 seconds, and are then collected by miners. The HQ and Outer Outpost share ring-shaped docking geometry: returning miners reserve the nearest free, rock-clear berth and release it when departing. Six miners can still dock at either station.
 - After 45 seconds surviving drones are recalled; return can take longer. Pause and 2× speed are available. Backgrounding pauses the simulation.
 - When every miner is destroyed, the wreckage remains visible briefly. All completed shifts show an on-map debrief with delivered and extracted minerals, rich ore, losses, discoveries and salvage before the player returns to the workshop.
 - Mission Control has Workshop and Hangar tabs. Workshop purchases still use the same progression, prices and effects. Hangar displays one stable record for each owned miner and escort, tied to the existing purchased counts. Individual names can be changed in Edit / Tinker. Frame and module choices are visibly unavailable until those systems have simulation effects. The next implementation can attach equipment configuration to each `FleetDrone` record in `src/fleet.ts`, then resolve its effects in `createWorld` and the existing decision points in `src/sim.ts`; aggregate ownership remains authoritative.
