@@ -18,7 +18,7 @@ const fmt=(n:number)=>n.toLocaleString('en-US');
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(company));}catch{storageOK=false;} }
 function spriteIcon(kind:string){return ({drone:'⬡',hull:'▣',scanner:'◎',laser:'↗',cargoBay:'▤',prospector:'◇',drive:'➤',guard:'✥',turret:'⌖',outpost:'⌂'} as Record<string,string>)[kind];}
 function mount(){
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">AI<span>↗</span></div><div><h1><em>AI</em>steroid <span>Mining</span></h1><p>AUTONOMOUS MINING DIVISION</p></div><span class="version">ALPHA<br>0.7.1</span></header><section id="content"></section><footer class="legal">INDEPENDENT OPERATIONS <span>EST. 2086</span></footer></main>`;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">AI<span>↗</span></div><div><h1><em>AI</em>steroid <span>Mining</span></h1><p>AUTONOMOUS MINING DIVISION</p></div><span class="version">ALPHA<br>0.7.2</span></header><section id="content"></section><footer class="legal">INDEPENDENT OPERATIONS <span>EST. 2086</span></footer></main>`;
  showWorkshop();
 }
 function showWorkshop(result=false){
@@ -81,8 +81,8 @@ window.addEventListener('resize',resize);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&screen==='mission'){paused=true;accumulator=0;updateHUD();}});
 function updateHUD(){if(screen!=='mission')return;
  const remaining=Math.max(0,Math.ceil(ROUND_TIME-world.time));
- document.querySelector('#timer')!.textContent=world.phase==='aftermath'?'SIGNAL LOST':world.phase==='recall'||world.phase==='done'?'HOMEBOUND':`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;
- document.querySelector('#phase')!.textContent=world.phase==='aftermath'?'FLEET LOST':world.phase==='recall'?'RECALL':'SHIFT TIME';
+ document.querySelector('#timer')!.textContent=world.phase==='done'?'REPORT':world.phase==='aftermath'?'SIGNAL LOST':world.phase==='recall'?'HOMEBOUND':`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;
+ document.querySelector('#phase')!.textContent=world.phase==='done'?'FINAL':world.phase==='aftermath'?'FLEET LOST':world.phase==='recall'?'RECALL':'SHIFT TIME';
  document.querySelector('#delivered')!.textContent=String(world.delivered);
  document.querySelector('#fleet')!.textContent=`${world.drones.filter(d=>d.state!=='dead').length}/${company.drones}`;
  document.querySelector('#cargo')!.textContent=`${world.drones.reduce((n,d)=>n+d.cargo,0)} / ${company.drones*capacity(company)}`;
@@ -91,7 +91,8 @@ function updateHUD(){if(screen!=='mission')return;
  (document.querySelector('#pause-overlay') as HTMLElement).hidden=!paused;
  document.querySelector('.status')?.classList.toggle('hostile',world.enemies.some(e=>e.hp>0));
  const drone=world.drones.find(d=>d.id===selected);
- if(world.phase==='aftermath')document.querySelector('#status')!.textContent='All miners lost. Recovering final telemetry…';
+ if(world.phase==='done')document.querySelector('#status')!.textContent='Final telemetry ready. Return to the workshop when you are ready.';
+ else if(world.phase==='aftermath')document.querySelector('#status')!.textContent='All miners lost. Recovering final telemetry…';
  else if(drone) document.querySelector('#status')!.textContent=`DRONE ${String(drone.id+1).padStart(2,'0')} · ${Math.round(drone.hp/drone.maxHp*100)}% hull · Cargo ${drone.cargo}/${capacity(company)} · ${{mine:'Mining',return:'Returning',unload:'Unloading',docked:'Docked',dead:'Destroyed'}[drone.state]}`;
  else if(world.phase==='recall')document.querySelector('#status')!.textContent='Shift over. The fleet is returning with its cargo.';
  else if(world.enemies.some(e=>e.hp>0))document.querySelector('#status')!.textContent=world.guards.some(g=>g.hp>0)?'Rival scouts are hunting the fleet. Escort engaging.':world.company.turret?'Rival scouts are hunting the fleet. HQ turret is standing by.':'Rival scouts are hunting the fleet, even near HQ.';
