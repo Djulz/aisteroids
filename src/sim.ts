@@ -1,5 +1,6 @@
 import { route, clearSegment, type Point } from './navigation.ts';
 import {DOCTRINE_AI,validDoctrine,type DoctrineId} from './doctrines.ts';
+import {effectiveDirective} from './mission-plan.ts';
 import {fleetForCounts,type FleetDrone} from './fleet.ts';
 // Fixed-step seeded simulation: independent of browser and rendering.
 export const W=800,H=930,ROUND_TIME=45,STEP=1/60,CAPACITY=12;
@@ -34,7 +35,7 @@ export function createWorld(company:Company,seed=7):World{
  const base=baseFor(company);
  const doctrine=validDoctrine(company.doctrine);
  const fleet=fleetForCounts(company.drones,company.guards,company.fleet);
- const w:World={time:0,phase:'mining',aftermath:0,company:{...company,doctrine},doctrine,progress:{...company.progress},rocks:[],ores:company.ores.map((o,i)=>({...o,id:100+i,age:1})),drones:[],enemies:[],guards:[],effects:[],delivered:0,extracted:0,richExtracted:0,lost:0,collisions:0,shots:0,mined:0,attacks:0,intercepts:0,disengagements:0,idleTime:0,wave:0,base,rng,nextId:100+company.ores.length,turretCooldown:0};
+ const w:World={time:0,phase:'mining',aftermath:0,company:{...company,doctrine,directive:effectiveDirective(company)},doctrine,progress:{...company.progress},rocks:[],ores:company.ores.map((o,i)=>({...o,id:100+i,age:1})),drones:[],enemies:[],guards:[],effects:[],delivered:0,extracted:0,richExtracted:0,lost:0,collisions:0,shots:0,mined:0,attacks:0,intercepts:0,disengagements:0,idleTime:0,wave:0,base,rng,nextId:100+company.ores.length,turretCooldown:0};
  const locations=[[200,440],[74,100],[285,91],[160,165],[337,224],[60,281],[242,309],[119,377],[337,419],[50,461],[296,165],[157,65]];
  locations.forEach(([x,y],id)=>{const r=id===0?18:21+rocksRng()*15,max=4*(id===0?40:38+Math.round(r*1.1));w.rocks.push({id,x:x+(id?(rocksRng()-.5)*18:0),y,r,hp:company.rockHp[id]??max,max,shape:Array.from({length:11},()=>.77+rocksRng()*.23)});});
  // Extended test field: original starting pocket plus two outer resource clusters.
@@ -270,7 +271,7 @@ export function step(w:World,dt=STEP){
    const surveyFar=w.company.directive==='surveyFar'&&!w.progress.richSampled;
    const r=miningTarget(w,d,room,surveyFar);
    const ores=w.ores.filter(o=>(o.age??1)>=ORE_PICKUP_DELAY&&o.value<=room&&(distance(d,o)<130||!r)&&(!surveyFar||o.rich)).sort((a,b)=>distance(d,a)-distance(d,b));
-   const retreat=!surveyOutpost?dangerRetreat(w,d):undefined;
+   const retreat=dangerRetreat(w,d);
    if(retreat){if(d.pathKey!=='retreat')w.disengagements++;target=waypoint(w,d,retreat,'retreat');controlled=true;retreating=true;}
    else if(surveyOutpost){target=waypoint(w,d,FAR,'surveyOutpost');controlled=true;}
    else{
@@ -343,6 +344,6 @@ export function settle(c:Company,w:World):Company{
  const rockHp={...c.rockHp};for(const r of w.rocks)if(r.hp<r.max)rockHp[r.id]=r.hp;
  const ores=w.ores.map(o=>({x:o.x,y:o.y,value:o.value,rich:!!o.rich}));
  const progress={...w.progress};
- const directive=c.directive==='surveyFar'&&progress.richSampled||c.directive==='surveyOutpost'&&progress.outpostSurveyed?'auto':c.directive;
+ const directive=effectiveDirective({...c,progress});
  return {...c,credits:c.credits+w.delivered,total:c.total+w.delivered,rounds:c.rounds+1,rockHp,ores,progress,directive};
 }
