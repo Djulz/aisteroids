@@ -1,4 +1,5 @@
 import {W,H,freshCompany, type Company, type Progress, type StoredOre} from './sim.ts';
+import {validDoctrine} from './doctrines.ts';
 // The key stays the same so older local companies migrate in place.
 export const SAVE_KEY='aisteroids-company-v1';
 export function parseSave(raw:string|null):Company{
@@ -16,6 +17,6 @@ export function parseSave(raw:string|null):Company{
   const base=freshCompany();
   const owned=v.version>=3?{cargoBay:v.cargoBay,prospector:v.prospector,drive:v.drive,guards:v.guards,outpost:v.outpost,launchSite:v.launchSite}:{};
   const progress:Progress=v.version>=4?v.progress:{farSurveyed:!!(v.cargoBay||v.prospector||v.drive||v.guards||v.outpost),richSampled:!!(v.cargoBay||v.prospector||v.drive||v.guards||v.outpost),rivalSeen:!!(v.guards||v.outpost),outpostSurveyed:!!v.outpost};
-  return {...base,credits:v.credits,drones:v.drones,scanner:v.scanner,hull:v.version>=2?v.hull:false,laser:v.version>=2?v.laser:v.blaster,turret:v.turret===true,rounds:v.rounds,total:v.total,...owned,progress,...(v.version>=4?{worldSeed:v.worldSeed,rockHp:v.version===4?Object.fromEntries(Object.entries(v.rockHp).map(([id,hp])=>[id,(hp as number)*4])):v.rockHp,ores:v.ores,directive:v.directive}:{})};
+  return {...base,credits:v.credits,drones:v.drones,scanner:v.scanner,hull:v.version>=2?v.hull:false,laser:v.version>=2?v.laser:v.blaster,turret:v.turret===true,rounds:v.rounds,total:v.total,...owned,progress,...(v.version>=4?{worldSeed:v.worldSeed,rockHp:v.version===4?Object.fromEntries(Object.entries(v.rockHp).map(([id,hp])=>[id,(hp as number)*4])):v.rockHp,ores:v.ores,directive:v.directive}:{}),doctrine:validDoctrine(v.doctrine)};
  }catch{return freshCompany();}
 }

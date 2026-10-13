@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.7.2
+# AIsteroid Mining · Alpha 0.8.0
 
 Mobile-first autonomous asteroid mining game. Run a growing company in one persistent overhead world. Each shift lasts 45 seconds; between shifts, purchase fleet upgrades and choose a survey priority. The English interface and industrial artwork use Canvas 2D.
 
@@ -31,11 +31,13 @@ Open the Vite URL ending in `/aisteroids/`. Published at https://djulz.github.io
 - Mining lasers hold a position away from the asteroid surface while extracted ore flies back to the miner. Six miners can dock at the Outpost without blocked berths.
 - After 45 seconds surviving drones are recalled; return can take longer. Pause and 2× speed are available. Backgrounding pauses the simulation.
 - When every miner is destroyed, the wreckage remains visible briefly. All completed shifts show an on-map debrief with delivered and extracted minerals, rich ore, losses, discoveries and salvage before the player returns to the workshop.
+- Fleet Configuration in the Workshop selects one of four free doctrines before launch. Standard Protocol follows the previous targeting and escort behavior. Full Contact Mining favors accessible, productive impacts and may ram despite owning lasers. Careful Prospectors weighs hostile positions, retreats when seriously threatened and uses a wider laser standoff. Convoy Protocol favors shared mining regions and focuses escorts on threats near miners. The selected doctrine is stored with the company, captured at deployment, and shown in the mission and report. No doctrine adds equipment or direct control.
 - Save version 5 uses browser localStorage. Existing v1–v4 companies retain their money, roster, purchases and persistent deposit depletion when migrating. There is no backend account sync.
 
 ## Structure
 
 - `src/sim.ts`: deterministic fixed-step simulation and progression.
+- `src/doctrines.ts`: stable doctrine IDs, player-facing descriptions and centralized AI priorities. Future Tinkering equipment can attach per-drone capability or equipment modifiers at `miningTarget`, `laserPosition`, `dangerRetreat` and the existing combat/navigation decisions in `src/sim.ts`; keep ownership and equipment limits in the simulation. No module inventory or slots exist yet.
 - `src/navigation.ts`: obstacle-aware routing and visibility checks.
 - `src/render.ts`: Canvas sprites, map and effects.
 - `src/main.ts`: workshop, mission UI and camera controls.
