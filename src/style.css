@@ -28,3 +28,28 @@
 @media(max-width:360px){.lobby-dock{margin-inline:-14px;padding-inline:14px}.drone-card canvas{width:45px;height:50px}.drone-card b{font-size:15px}.drone-facts b{font-size:11px}.deploy-summary{font-size:8px}}
 .empty-slot{border-style:dashed;color:#899fa6;cursor:default}.empty-slot .slot-symbol{width:58px;flex:none;text-align:center;font:600 34px 'Barlow Condensed',sans-serif;color:#627e87}.empty-slot b{color:#a0afb0}.empty-slot small{color:#94a9ac}@media(max-width:360px){.empty-slot .slot-symbol{width:45px}}
 .lobby{padding-bottom:155px}.lobby-dock{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,480px);margin:0}.lobby .instructions{margin-top:16px}@media(max-width:360px){.lobby-dock{margin:0}}
+
+/* Mission Plan belongs to Deploy, not the drone workshop. Keep the normal
+   action dock compact and put the more detailed controls in a scrollable editor. */
+.lobby{padding-bottom:225px}
+.mission-plan{border-top:1px solid #37535c;margin-top:9px;padding-top:8px}
+.plan-quick{display:flex;align-items:center;gap:8px;min-height:46px}
+.plan-quick>div{flex:1;min-width:0}
+.plan-quick b{display:block;color:#e5e7dc;font:600 17px/1.2 'Barlow Condensed',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
+.plan-quick small{display:block;color:#91a7ae;font-size:9px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.plan-quick button{flex:none;min-height:42px;min-width:72px;color:#f4c772;background:#28342f;border:1px solid #c39145;font:600 12px 'Barlow Condensed',sans-serif}
+.plan-options{margin-top:8px;padding:10px;background:#102630;border:1px solid #3f6069;max-height:min(42svh,360px);overflow-y:auto;overscroll-behavior:contain}
+.plan-group+.plan-group,.scanner-intel{margin-top:12px;padding-top:12px;border-top:1px solid #36515c}
+.plan-group>.eyebrow{margin-bottom:7px}
+.plan-site-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.plan-site-options button,.plan-objectives button{min-width:0;color:#cbd7d1;background:#142d37;border:1px solid #506974;text-align:left;border-radius:3px;min-height:48px;padding:10px}
+.plan-site-options button[aria-pressed="true"],.plan-objectives button[aria-pressed="true"]{border-color:#f5b743;background:#29392f}
+.plan-site-options b,.plan-objectives b{font:600 15px 'Barlow Condensed',sans-serif;display:block}
+.plan-site-options button[aria-pressed="true"] b,.plan-objectives button[aria-pressed="true"] b{color:#f5bd60}
+.plan-site-options small,.plan-objectives small{display:block;color:#9cb5b8;font-size:10px;line-height:1.35;margin-top:3px}
+.plan-objectives{display:grid;gap:6px}
+.plan-hint{color:#8fb0b5;font-size:10px;line-height:1.45;margin:7px 0 0}
+.scanner-intel summary{font:600 12px 'Barlow Condensed',sans-serif;letter-spacing:.4px;color:#b3d4ce;cursor:pointer;min-height:32px;display:flex;align-items:center}
+.scanner-intel .survey-readout{margin-top:9px}
+.scanner-intel .survey-readout b{font-size:18px}
+@media(max-width:360px){.plan-quick b{font-size:15px}.plan-quick button{min-width:64px}.plan-options{padding:8px}.plan-site-options button{padding:8px}.plan-site-options b{font-size:13px}}
