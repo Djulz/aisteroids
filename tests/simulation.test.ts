@@ -48,7 +48,7 @@ test('laser extracts one quarter as much per pulse, while a ram retains its four
  const ram=impactFixture(),before=ram.rocks[0].hp;step(ram);
  assert.equal(before-ram.rocks[0].hp,4);assert.equal(ram.ores.reduce((n,o)=>n+o.value,0),4);
  const laser=createWorld({...freshCompany(),laser:true});laser.rocks=[rock];const d=laser.drones[0];d.x=rock.x;d.y=rock.y+rock.r+50;step(laser);
- assert.equal(rock.max-rock.hp,1);assert.equal(laser.ores.reduce((n,o)=>n+o.value,0),1);
+ assert.equal(rock.max-rock.hp,1);assert.equal(laser.ores.reduce((n,o)=>n+o.value,0)+d.cargo,1);
  assert.equal(rock.max,160,'persistent ore budget remains equal to the old 40 headbutt hits');
 });
 test('odd laser cargo unloads without losing a mineral',()=>{
@@ -134,9 +134,39 @@ test('an unescorted scout destroys a basic miner in three clear shots',()=>{
  for(let n=0;n<1400&&d.state!=='dead';n++)step(w);
  assert.equal(d.state,'dead');assert.equal(w.attacks,3);assert.ok(w.lost>=4);
 });
-test('the home field remains a viable way to earn a bodyguard after the rival appears',()=>{
- const c={...freshCompany(),drones:2,scanner:true,hull:true,progress:{...freshCompany().progress,richSampled:true,rivalSeen:true}};
- const w=run(c);assert.ok(w.enemies.length>0);assert.equal(w.attacks,0);assert.ok(w.delivered>=20);
+test('scouts pursue and attack miners near HQ, including during recall',()=>{
+ const c={...freshCompany(),progress:{...freshCompany().progress,richSampled:true,rivalSeen:true}};
+ const w=createWorld(c),d=w.drones[0];w.wave=1;w.enemies=[{id:0,x:300,y:550,vx:0,vy:0,hp:3,cooldown:0,path:[],pathKey:'',pathAge:0}];d.x=210;d.y=550;w.time=ROUND_TIME;d.cargo=5;
+ for(let i=0;i<200&&w.attacks===0;i++)step(w);
+ assert.ok(w.attacks>0);assert.ok(d.hp<d.maxHp);
+});
+test('HQ turret is cheaper than a guard and fires only around home',()=>{
+ const c={...freshCompany(),credits:200,progress:{...freshCompany().progress,rivalSeen:true}};
+ assert.equal(cost(c,'turret'),90);assert.ok(cost(c,'turret')<cost(c,'guard'));
+ const owned=buy(c,'turret')!;assert.equal(owned.turret,true);assert.equal(buy(owned,'turret'),null);
+ const w=createWorld(owned);w.wave=2;w.enemies=[{id:0,x:290,y:550,vx:0,vy:0,hp:3,cooldown:0,path:[],pathKey:'',pathAge:0}];
+ for(let i=0;i<400&&w.enemies[0].hp>0;i++)step(w);
+ assert.equal(w.enemies[0].hp,0);assert.ok(w.effects.some(e=>e.type==='turretShot')||w.intercepts>=3);
+});
+test('one escort beats one scout, while two scouts can defeat the escort',()=>{
+ const fight=(count:number)=>{const w=createWorld({...freshCompany(),guards:1});w.wave=2;w.time=12;w.drones[0].x=210;w.drones[0].y=550;w.guards[0].x=490;w.guards[0].y=530;w.enemies=Array.from({length:count},(_,id)=>({id,x:540+id*24,y:530,vx:0,vy:0,hp:3,cooldown:0,path:[],pathKey:'',pathAge:0}));for(let i=0;i<1100&&w.guards[0].hp>0&&w.enemies.some(e=>e.hp>0);i++)step(w);return w;};
+ const solo=fight(1);assert.ok(solo.guards[0].hp>0);assert.equal(solo.enemies[0].hp,0);
+ const pair=fight(2);assert.equal(pair.guards[0].hp,0);assert.ok(pair.enemies.some(e=>e.hp<=0));assert.ok(pair.enemies.some(e=>e.hp>0&&e.hp<3));
+});
+test('six miners can all dock at the outpost after recall',()=>{
+ const c={...freshCompany(),drones:6,laser:true,outpost:true,launchSite:'far' as const,progress:{...freshCompany().progress,outpostSurveyed:true}};
+ const w=createWorld(c);w.time=ROUND_TIME;for(const d of w.drones){d.cargo=12;d.state='return';d.x=535;d.y=600;}
+ for(let i=0;i<1200&&w.phase!=='done';i++)step(w);
+ assert.equal(w.phase,'done');assert.equal(w.delivered,72);assert.ok(w.drones.every(d=>d.state==='docked'));
+});
+test('a laser miner holds a visible standoff instead of orbiting the rock surface',()=>{
+ const w=createWorld({...freshCompany(),laser:true});for(let i=0;i<1000;i++)step(w);
+ const d=w.drones[0],r=w.rocks[0];assert.ok(w.shots>8);assert.equal(d.pathKey,'rock0');assert.ok(Math.hypot(d.x-r.x,d.y-r.y)>r.r+42);
+});
+test('fleet loss leaves wreckage on screen before the final report',()=>{
+ const w=impactFixture(),d=w.drones[0];d.hp=1;step(w);assert.equal(d.state,'dead');assert.equal(w.phase,'aftermath');
+ for(let i=0;i<120;i++)step(w);assert.equal(w.phase,'aftermath');
+ for(let i=0;i<40;i++)step(w);assert.equal(w.phase,'done');
 });
 test('survey priorities lead to discoveries without mission count gates',()=>{
  let c={...freshCompany(),scanner:true,hull:true,drones:2,directive:'surveyFar' as const};

@@ -1,4 +1,4 @@
-import {W,H,HOME,type World} from './sim.ts';
+import {W,H,type World} from './sim.ts';
 export const VIEW_W=400,VIEW_H=620,MIN_ZOOM=.5,MAX_ZOOM=1.5;
 export type Camera={x:number;y:number;zoom:number;follow:boolean;width:number;height:number};
 export function newCamera():Camera{return {x:200,y:310,zoom:1,follow:true,width:VIEW_W,height:VIEW_H};}
@@ -15,7 +15,8 @@ export function overview(c:Camera){c.follow=false;c.zoom=Math.min(c.width/W,c.he
 export function followCamera(c:Camera,w:World,dt:number){
  if(!c.follow)return;
  const fleet=w.drones.filter(d=>d.state==='mine'||d.state==='return'||d.state==='unload');
- const targets=fleet.length?fleet:[HOME];
+ const wrecks=w.drones.filter(d=>d.state==='dead');
+ const targets=fleet.length?fleet:wrecks.length===w.drones.length?wrecks:[w.base];
  const x=(Math.min(...targets.map(d=>d.x))+Math.max(...targets.map(d=>d.x)))/2;
  const y=(Math.min(...targets.map(d=>d.y))+Math.max(...targets.map(d=>d.y)))/2;
  // Ease toward the working fleet, never jump between individual incidents.

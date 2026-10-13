@@ -7,11 +7,11 @@ export type Directive='auto'|'surveyFar'|'surveyOutpost';
 export type Progress={farSurveyed:boolean;richSampled:boolean;rivalSeen:boolean;outpostSurveyed:boolean};
 export const freshProgress=():Progress=>({farSurveyed:false,richSampled:false,rivalSeen:false,outpostSurveyed:false});
 export type StoredOre={x:number;y:number;value:number;rich:boolean};
-export type Company={version:5;credits:number;drones:number;scanner:boolean;hull:boolean;laser:boolean;rounds:number;total:number;cargoBay:boolean;prospector:boolean;drive:boolean;guards:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;directive:Directive};
-export const freshCompany=():Company=>({version:5,credits:0,drones:1,scanner:false,hull:false,laser:false,rounds:0,total:0,cargoBay:false,prospector:false,drive:false,guards:0,outpost:false,launchSite:'home',worldSeed:7,rockHp:{},ores:[],progress:freshProgress(),directive:'auto'});
-export type Purchase='drone'|'hull'|'scanner'|'laser'|'cargoBay'|'prospector'|'drive'|'guard'|'outpost';
-export function unlocked(c:Company,item:Purchase){return item==='cargoBay'||item==='prospector'||item==='drive'?c.progress.richSampled:item==='guard'?c.progress.rivalSeen:item==='outpost'?c.progress.outpostSurveyed:true;}
-export function cost(c:Company,item:Purchase){return item==='drone'?[0,10,30,70,140,240,360][c.drones]:item==='hull'?10:item==='scanner'?30:item==='laser'?80:item==='cargoBay'?120:item==='prospector'?130:item==='drive'?160:item==='guard'?180+c.guards*100:300;}
+export type Company={version:5;credits:number;drones:number;scanner:boolean;hull:boolean;laser:boolean;turret:boolean;rounds:number;total:number;cargoBay:boolean;prospector:boolean;drive:boolean;guards:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;directive:Directive};
+export const freshCompany=():Company=>({version:5,credits:0,drones:1,scanner:false,hull:false,laser:false,turret:false,rounds:0,total:0,cargoBay:false,prospector:false,drive:false,guards:0,outpost:false,launchSite:'home',worldSeed:7,rockHp:{},ores:[],progress:freshProgress(),directive:'auto'});
+export type Purchase='drone'|'hull'|'scanner'|'laser'|'cargoBay'|'prospector'|'drive'|'guard'|'turret'|'outpost';
+export function unlocked(c:Company,item:Purchase){return item==='cargoBay'||item==='prospector'||item==='drive'?c.progress.richSampled:item==='guard'||item==='turret'?c.progress.rivalSeen:item==='outpost'?c.progress.outpostSurveyed:true;}
+export function cost(c:Company,item:Purchase){return item==='drone'?[0,10,30,70,140,240,360][c.drones]:item==='hull'?10:item==='scanner'?30:item==='laser'?80:item==='cargoBay'?120:item==='prospector'?130:item==='drive'?160:item==='guard'?180+c.guards*100:item==='turret'?90:300;}
 export function buy(c:Company,item:Purchase):Company|null{
  if(!unlocked(c,item)||c.credits<cost(c,item)||(item==='drone'?c.drones>=6:item==='guard'?c.guards>=2:c[item])||item==='prospector'&&!c.scanner)return null;
  return {...c,credits:c.credits-cost(c,item),...(item==='drone'?{drones:c.drones+1}:item==='guard'?{guards:c.guards+1}:{[item]:true})};
@@ -22,14 +22,14 @@ export type Rock={id:number;x:number;y:number;r:number;hp:number;max:number;shap
 export type Ore={id:number;x:number;y:number;value:number;rich?:boolean;originX?:number;originY?:number;age?:number};
 export type Drone={id:number;x:number;y:number;angle:number;hp:number;maxHp:number;cargo:number;richCargo:number;cooldown:number;targetX:number;targetY:number;wander:number;vx:number;vy:number;recoil:number;armed:boolean;lastRock:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;state:'mine'|'unload'|'return'|'docked'|'dead'};
 export type Enemy={id:number;x:number;y:number;vx:number;vy:number;hp:number;cooldown:number;path:Point[];pathKey:string;pathAge:number};
-export type Guard={id:number;x:number;y:number;vx:number;vy:number;angle:number;cooldown:number;path:Point[];pathKey:string;pathAge:number};
-export type Effect={type:'transfer'|'hit'|'laser'|'ore'|'deposit'|'dead'|'enemyShot'|'guardShot'|'enemyDead';x:number;y:number;tx?:number;ty?:number;life:number;max:number;amount?:number;richAmount?:number};
-export type World={time:number;phase:'mining'|'recall'|'done';company:Company;progress:Progress;rocks:Rock[];ores:Ore[];drones:Drone[];enemies:Enemy[];guards:Guard[];effects:Effect[];delivered:number;lost:number;collisions:number;shots:number;mined:number;attacks:number;intercepts:number;wave:number;base:typeof HOME;rng:()=>number;nextId:number};
+export type Guard={id:number;x:number;y:number;vx:number;vy:number;angle:number;hp:number;cooldown:number;path:Point[];pathKey:string;pathAge:number};
+export type Effect={type:'transfer'|'hit'|'laser'|'ore'|'deposit'|'dead'|'enemyShot'|'guardShot'|'turretShot'|'enemyDead';x:number;y:number;tx?:number;ty?:number;life:number;max:number;amount?:number;richAmount?:number};
+export type World={time:number;phase:'mining'|'recall'|'aftermath'|'done';aftermath:number;company:Company;progress:Progress;rocks:Rock[];ores:Ore[];drones:Drone[];enemies:Enemy[];guards:Guard[];effects:Effect[];delivered:number;extracted:number;richExtracted:number;lost:number;collisions:number;shots:number;mined:number;attacks:number;intercepts:number;wave:number;base:typeof HOME;rng:()=>number;nextId:number;turretCooldown:number};
 export function random(seed:number){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
 export function createWorld(company:Company,seed=7):World{
  const rng=random(seed^Math.imul(company.rounds,7919)),rocksRng=random(seed);
  const base=baseFor(company);
- const w:World={time:0,phase:'mining',company:{...company},progress:{...company.progress},rocks:[],ores:company.ores.map((o,i)=>({...o,id:100+i,age:1})),drones:[],enemies:[],guards:[],effects:[],delivered:0,lost:0,collisions:0,shots:0,mined:0,attacks:0,intercepts:0,wave:0,base,rng,nextId:100+company.ores.length};
+ const w:World={time:0,phase:'mining',aftermath:0,company:{...company},progress:{...company.progress},rocks:[],ores:company.ores.map((o,i)=>({...o,id:100+i,age:1})),drones:[],enemies:[],guards:[],effects:[],delivered:0,extracted:0,richExtracted:0,lost:0,collisions:0,shots:0,mined:0,attacks:0,intercepts:0,wave:0,base,rng,nextId:100+company.ores.length,turretCooldown:0};
  const locations=[[200,440],[74,100],[285,91],[160,165],[337,224],[60,281],[242,309],[119,377],[337,419],[50,461],[296,165],[157,65]];
  locations.forEach(([x,y],id)=>{const r=id===0?18:21+rocksRng()*15,max=4*(id===0?40:38+Math.round(r*1.1));w.rocks.push({id,x:x+(id?(rocksRng()-.5)*18:0),y,r,hp:company.rockHp[id]??max,max,shape:Array.from({length:11},()=>.77+rocksRng()*.23)});});
  // Extended test field: original starting pocket plus two outer resource clusters.
@@ -47,19 +47,21 @@ export function createWorld(company:Company,seed=7):World{
   const maxHp=company.hull?7:4;
   w.drones.push({id:i,x:base.x+(i-(company.drones-1)/2)*18,y:base.y-27,angle:-Math.PI/2,hp:maxHp,maxHp,cargo:0,richCargo:0,cooldown:0,targetX:200+i*25,targetY:90,wander:3.5,vx:0,vy:0,recoil:0,armed:true,lastRock:-1,path:[],pathKey:'',pathAge:0,unloadTime:0,unloadCargo:0,state:'mine'});
  }
- for(let i=0;i<company.guards;i++)w.guards.push({id:i,x:base.x+(i?24:-24),y:base.y-85,vx:0,vy:0,angle:-Math.PI/2,cooldown:0,path:[],pathKey:'',pathAge:0});
+ for(let i=0;i<company.guards;i++)w.guards.push({id:i,x:base.x+(i?24:-24),y:base.y-85,vx:0,vy:0,angle:-Math.PI/2,hp:6,cooldown:0,path:[],pathKey:'',pathAge:0});
  return w;
 }
 const distance=(a:Point,b:Point)=>Math.hypot(a.x-b.x,a.y-b.y);
+const berthFor=(w:World,d:Drone):Point=>({x:w.base.x+(d.id-(w.drones.length-1)/2)*(w.base===FAR?18:25),y:w.base.y-62});
+const laserPosition=(d:Drone,r:Rock):Point=>{const length=distance(d,r)||1;return {x:r.x+(d.x-r.x)/length*(r.r+55),y:r.y+(d.y-r.y)/length*(r.r+55)};};
 function effect(w:World,e:Omit<Effect,'life'|'max'>,life=.5){w.effects.push({...e,life,max:life});}
 const yieldFor=(r:Rock,laser:boolean)=>Math.min(r.hp,laser?1:4)*(r.rich?2:1);
 function hit(w:World,r:Rock,d:Drone,laser:boolean){
  const damage=Math.min(r.hp,laser?1:4),amount=damage*(r.rich?2:1);
- r.hp-=damage;w.mined++;effect(w,{type:'hit',x:r.x,y:r.y,tx:d.x,ty:d.y,amount:laser?0.45:r.hp<=0?2:1},.45);
+ r.hp-=damage;w.mined++;w.extracted+=amount;if(r.rich)w.richExtracted+=amount;effect(w,{type:'hit',x:r.x,y:r.y,tx:d.x,ty:d.y,amount:laser?0.45:r.hp<=0?2:1},.45);
  const pieces=laser?1:Math.min(2,amount);
  for(let j=0;j<pieces;j++){
   const a=Math.atan2(d.y-r.y,d.x-r.x)+(j? .4:-.4)+(w.rng()-.5)*.55;
-  w.ores.push({id:w.nextId++,x:r.x+Math.cos(a)*(r.r+24),y:r.y+Math.sin(a)*(r.r+24),value:Math.floor(amount/pieces)+(j<amount%pieces?1:0),rich:!!r.rich,originX:r.x,originY:r.y,age:0});
+  w.ores.push({id:w.nextId++,x:laser?d.x+Math.cos(a)*5:r.x+Math.cos(a)*(r.r+24),y:laser?d.y+Math.sin(a)*5:r.y+Math.sin(a)*(r.r+24),value:Math.floor(amount/pieces)+(j<amount%pieces?1:0),rich:!!r.rich,originX:r.x,originY:r.y,age:0});
  }
 }
 function waypoint(w:World,d:Pick<Drone,'x'|'y'|'path'|'pathKey'|'pathAge'>,target:Point,key:string,ignore=-1){
@@ -88,11 +90,9 @@ function dropCargo(w:World,d:Drone){
  }
  d.cargo=0;d.richCargo=0;
 }
-const inContestedField=(p:Point)=>p.x>405||p.y>680;
 function updateRivals(w:World,dt:number){
- if(w.phase==='recall')return;
- if(w.progress.richSampled&&w.time>=11&&w.wave===0 || w.progress.outpostSurveyed&&w.time>=30&&w.wave===1){
-  const miners=w.drones.filter(d=>(d.state==='mine'||d.state==='return')&&inContestedField(d));
+ if(w.phase==='mining'&&(w.progress.richSampled&&w.time>=11&&w.wave===0 || w.progress.outpostSurveyed&&w.time>=30&&w.wave===1)){
+  const miners=w.drones.filter(d=>d.state==='mine'||d.state==='return'||d.state==='unload');
   const target=miners.sort((a,b)=>b.x-a.x)[0];
   const side=w.wave%2?1:-1;
   w.enemies.push({id:w.wave++,x:Math.max(430,Math.min(W-25,(target?.x??620)+side*140)),y:Math.max(90,Math.min(H-25,(target?.y??360)-70)),vx:0,vy:0,hp:3,cooldown:1.1,path:[],pathKey:'',pathAge:0});
@@ -100,22 +100,27 @@ function updateRivals(w:World,dt:number){
  }
  for(const e of w.enemies){
   if(e.hp<=0)continue;
-  const miners=w.drones.filter(d=>(d.state==='mine'||d.state==='return')&&inContestedField(d));
-  if(!miners.length){e.vx*=.96;e.vy*=.96;continue;}
-  const target=miners.reduce((best,d)=>distance(d,e)<distance(best,e)?d:best);
-  const dist=distance(e,target),point=clearSegment(e,target,w.rocks,-1,10)?target:waypoint(w,e,target,'pursue'+target.id);
+  const miners=w.drones.filter(d=>d.state==='mine'||d.state==='return'||d.state==='unload');
+  const guards=w.guards.filter(g=>g.hp>0).sort((a,b)=>distance(e,a)-distance(e,b));
+  const miner=miners.sort((a,b)=>distance(e,a)-distance(e,b))[0];
+  const target=guards[0]&&distance(e,guards[0])<145?guards[0]:miner??guards[0];
+  if(!target){e.vx*=.96;e.vy*=.96;continue;}
+  const dist=distance(e,target),point=clearSegment(e,target,w.rocks,-1,10)?target:waypoint(w,e,target,'pursue'+('state' in target?'miner':'guard')+target.id);
   const pathDist=distance(e,point),dx=(point.x-e.x)/Math.max(1,pathDist),dy=(point.y-e.y)/Math.max(1,pathDist);
   const desired=dist>105?82:dist<70?-35:0;
   e.vx+=(dx*desired-e.vx)*Math.min(1,dt*2);e.vy+=(dy*desired-e.vy)*Math.min(1,dt*2);
   e.x=Math.max(12,Math.min(W-12,e.x+e.vx*dt));e.y=Math.max(12,Math.min(H-12,e.y+e.vy*dt));separateRock(w,e);
   e.cooldown-=dt;
-  if(dist<145&&e.cooldown<=0&&clearSegment(e,target,w.rocks,-1,0)){
+  if(distance(e,target)<145&&e.cooldown<=0&&clearSegment(e,target,w.rocks,-1,0)){
    effect(w,{type:'enemyShot',x:e.x,y:e.y,tx:target.x,ty:target.y},.3);w.attacks++;
-   target.hp-=1.5;if(target.hp<=0){target.hp=0;dropCargo(w,target);target.state='dead';effect(w,{type:'dead',x:target.x,y:target.y},1);}
-   e.cooldown=2.1;
+   const isMiner=target===miner;
+   target.hp-=isMiner?1.5:1;
+   if(target.hp<=0){target.hp=0;if(isMiner){const victim=target as Drone;dropCargo(w,victim);victim.state='dead';}effect(w,{type:'dead',x:target.x,y:target.y},1);}
+   e.cooldown=1.8;
   }
  }
  for(const g of w.guards){
+  if(g.hp<=0)continue;
   const active=w.enemies.filter(e=>e.hp>0);
   const miners=w.drones.filter(d=>d.state==='mine'||d.state==='return'||d.state==='unload');
   const foe=active.sort((a,b)=>distance(a,g)-distance(b,g))[0];
@@ -134,11 +139,17 @@ function updateRivals(w:World,dt:number){
    if(foe.hp<=0)effect(w,{type:'enemyDead',x:foe.x,y:foe.y},.8);
   }
  }
+ if(w.company.turret){
+  w.turretCooldown=Math.max(0,w.turretCooldown-dt);
+  const foe=w.enemies.filter(e=>e.hp>0&&distance(e,HOME)<180&&clearSegment(HOME,e,w.rocks,-1,0)).sort((a,b)=>distance(a,HOME)-distance(b,HOME))[0];
+  if(foe&&w.turretCooldown<=0){effect(w,{type:'turretShot',x:HOME.x,y:HOME.y-10,tx:foe.x,ty:foe.y},.35);foe.hp--;w.intercepts++;w.turretCooldown=.8;if(foe.hp<=0)effect(w,{type:'enemyDead',x:foe.x,y:foe.y},.8);}
+ }
 }
 export function step(w:World,dt=STEP){
  if(w.phase==='done')return;
  w.time+=dt;w.effects.forEach(e=>{e.life-=dt;if(e.type==='transfer'&&e.life<=0){w.delivered+=e.amount??0;if(e.richAmount)w.progress.richSampled=true;}});w.effects=w.effects.filter(e=>e.life>0);
  for(const o of w.ores)o.age=(o.age??1)+dt;
+ if(w.phase==='aftermath'){w.aftermath+=dt;if(w.aftermath>=2.5&&!w.effects.some(e=>e.type==='transfer'))w.phase='done';return;}
  if(w.time>=ROUND_TIME)w.phase='recall';
  updateRivals(w,dt);
  for(const d of w.drones){
@@ -160,17 +171,17 @@ export function step(w:World,dt=STEP){
   const collectable=w.ores.some(o=>o.value<=room);
   if(w.phase==='recall'||room===0||d.cargo>0&&!extractable&&!collectable||!w.rocks.some(r=>r.hp>0)&&!w.ores.length)d.state='return';
   let target:Point,controlled=false;
-  if(d.state==='return'){target=waypoint(w,d,{x:w.base.x+(d.id-(w.drones.length-1)/2)*25,y:w.base.y-62},'home');controlled=true;}
+  if(d.state==='return'){target=waypoint(w,d,berthFor(w,d),'home');controlled=true;}
    else{
    const surveyOutpost=w.company.directive==='surveyOutpost'&&!w.progress.outpostSurveyed;
    const surveyFar=w.company.directive==='surveyFar'&&!w.progress.richSampled;
    const richRocks=surveyFar?w.rocks.filter(r=>r.hp>0&&r.rich&&yieldFor(r,w.company.laser)<=room):[];
    const r=richRocks.length?richRocks.sort((a,b)=>distance(d,a)-distance(d,b))[0]:w.rocks.filter(r=>r.hp>0&&yieldFor(r,w.company.laser)<=room).sort((a,b)=>(distance(d,a)/(w.company.prospector&&a.rich?5:1))-(distance(d,b)/(w.company.prospector&&b.rich?5:1)))[0];
-   const ore=w.ores.filter(o=>o.value<=room&&(distance(d,o)<130||!r)).sort((a,b)=>distance(d,a)-distance(d,b))[0];
+   const ore=w.ores.filter(o=>o.value<=room&&(distance(d,o)<(w.company.laser&&r?25:130)||!r)).sort((a,b)=>distance(d,a)-distance(d,b))[0];
    if(surveyOutpost){target=waypoint(w,d,FAR,'surveyOutpost');controlled=true;}
-   else if(surveyFar&&r){target=waypoint(w,d,r,'rock'+r.id,r.id);controlled=true;}
+   else if(surveyFar&&r){target=waypoint(w,d,w.company.laser?laserPosition(d,r):r,'rock'+r.id,r.id);controlled=true;}
    else if(ore){target=waypoint(w,d,ore,'ore'+ore.id);controlled=true;}
-   else if(r){target=waypoint(w,d,r,'rock'+r.id,r.id);controlled=true;}
+   else if(r){target=waypoint(w,d,w.company.laser?laserPosition(d,r):r,'rock'+r.id,r.id);controlled=true;}
    else{
      d.wander-=dt;
      if(d.wander<=0||distance(d,{x:d.targetX,y:d.targetY})<18){if(w.company.laser||w.delivered>0){d.targetX=Math.max(30,Math.min(W-30,d.x+(w.rng()-.42)*560));d.targetY=Math.max(45,Math.min(H-45,d.y+(w.rng()-.55)*540));}else{d.targetX=30+w.rng()*340;d.targetY=45+w.rng()*450;}d.wander=1.5+w.rng()*2.5;}
@@ -185,7 +196,7 @@ export function step(w:World,dt=STEP){
    // Motor cannot cancel the impulse. This creates visible clearance for a fresh run-up.
    d.recoil=Math.max(0,d.recoil-dt);d.vx*=Math.exp(-1.1*dt);d.vy*=Math.exp(-1.1*dt);
   }else{
-   const wobble=controlled&&d.state==='mine'?Math.sin(w.time*2.1+d.id*1.7)*.1:controlled?0:Math.sin(w.time*2.1+d.id*1.7)*.3;
+   const wobble=controlled&&d.state==='mine'&&!w.company.laser?Math.sin(w.time*2.1+d.id*1.7)*.1:controlled?0:Math.sin(w.time*2.1+d.id*1.7)*.3;
    const desired=Math.atan2(target.y-d.y,target.x-d.x)+wobble;
    const delta=Math.atan2(Math.sin(desired-d.angle),Math.cos(desired-d.angle));
    // Cargo navigation is reliable; unassisted exploration oversteers and wanders.
@@ -221,12 +232,13 @@ export function step(w:World,dt=STEP){
   for(let i=w.ores.length-1;i>=0;i--){const ore=w.ores[i];if(distance(d,ore)<18&&d.cargo+ore.value<=capacity(w.company)){d.cargo+=ore.value;if(ore.rich){d.richCargo+=ore.value;w.progress.farSurveyed=true;}effect(w,{type:'ore',x:ore.x,y:ore.y,amount:ore.value,tx:(ore.age??1)<STEP*2?ore.originX:undefined,ty:ore.originY},.7);w.ores.splice(i,1);}}
   if(d.x>405||d.y>650)w.progress.farSurveyed=true;
   if(distance(d,FAR)<74)w.progress.outpostSurveyed=true;
-  const berth={x:w.base.x+(d.id-(w.drones.length-1)/2)*25,y:w.base.y-62};
+  const berth=berthFor(w,d);
   if(d.state==='return'&&distance(d,berth)<2&&Math.hypot(d.vx,d.vy)<8){
    d.state='unload';d.unloadTime=0;d.unloadCargo=d.cargo;d.vx=0;d.vy=0;
   }
  }
- if(w.drones.every(d=>d.state==='dead'||d.state==='docked')&&!w.effects.some(e=>e.type==='transfer'))w.phase='done';
+ if(w.drones.every(d=>d.state==='dead')){w.phase='aftermath';w.aftermath=0;}
+ else if(w.drones.every(d=>d.state==='dead'||d.state==='docked')&&!w.effects.some(e=>e.type==='transfer'))w.phase='done';
 }
 export function settle(c:Company,w:World):Company{
  const rockHp={...c.rockHp};for(const r of w.rocks)if(r.hp<r.max)rockHp[r.id]=r.hp;

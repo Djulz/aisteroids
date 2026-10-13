@@ -14,6 +14,9 @@ export function drawGuard(c:CanvasRenderingContext2D,x:number,y:number,angle:num
  c.save();c.translate(x,y);c.rotate(angle+Math.PI/2);c.strokeStyle='#8ee5d3';c.fillStyle='#1c4652';c.lineWidth=1.5;
  polygon(c,[[-9,9],[0,-13],[9,9],[0,5]]);c.fill();c.stroke();c.fillStyle='#a8eee3';c.fillRect(-2,-4,4,7);c.restore();
 }
+export function drawTurret(c:CanvasRenderingContext2D,x:number,y:number,t=0){
+ c.save();c.translate(x,y);c.fillStyle='#193741';c.strokeStyle='#9fe2d5';c.lineWidth=1.6;c.beginPath();c.arc(0,0,11,0,7);c.fill();c.stroke();c.rotate(t);c.fillStyle='#263f48';c.fillRect(-3,-16,6,15);c.strokeRect(-3,-16,6,15);c.fillStyle='#8ee3cc';c.fillRect(-2,-4,4,4);c.restore();
+}
 export function drawDrone(c: CanvasRenderingContext2D, x: number, y: number, angle: number, cargo = 0, laser = false, time = 0, thrust = true) {
  c.save(); c.translate(x,y); c.rotate(angle + Math.PI / 2);
  if(thrust){c.fillStyle = '#83caca'; c.globalAlpha = .7; polygon(c,[[-4,12],[0,21 + Math.sin(time*30)*3],[4,12]]); c.fill(); c.globalAlpha = 1;}
@@ -67,6 +70,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  const bounce=Math.max(0,...arrivals.map(e=>{const t=e.max-e.life-.26;return t>0?Math.sin(t/.09*Math.PI)*.065:0;}));
  if(w.base.x===FAR.x){drawMother(c,w.time,0,HOME);drawOutpost(c,true,w.time*.6,bounce);}
  else {drawMother(c,w.time,bounce);if(w.company.outpost)drawOutpost(c,false,w.time*.6);}
+ if(w.company.turret){const target=w.enemies.filter(e=>e.hp>0).sort((a,b)=>Math.hypot(a.x-HOME.x,a.y-HOME.y)-Math.hypot(b.x-HOME.x,b.y-HOME.y))[0];drawTurret(c,HOME.x,HOME.y-15,target?Math.atan2(target.y-HOME.y,target.x-HOME.x)+Math.PI/2:w.time*.35);}
  if(w.company.directive==='surveyOutpost'&&!w.progress.outpostSurveyed){c.save();c.translate(FAR.x,FAR.y);c.strokeStyle='#8ee3cc';c.lineWidth=1.4;c.setLineDash([4,5]);c.beginPath();c.arc(0,0,28+Math.sin(w.time*3)*4,0,7);c.stroke();c.setLineDash([]);c.fillStyle='#a6ded4';c.font='9px monospace';c.textAlign='center';c.fillText('SURVEY SITE',0,-37);c.restore();}
  for(const d of w.drones){
 
@@ -75,7 +79,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    drawDrone(c,d.x,d.y,d.angle,d.cargo,w.company.laser,w.time,d.state==='mine'||d.state==='return');
    if(d.hp<d.maxHp){c.fillStyle='#1a2933';c.fillRect(d.x-10,d.y+24,20,2);c.fillStyle=d.hp/d.maxHp>.4?'#72b5a4':'#db795c';c.fillRect(d.x-10,d.y+24,20*d.hp/d.maxHp,2);}
  }
- for(const g of w.guards)drawGuard(c,g.x,g.y,g.angle);
+ for(const g of w.guards){if(g.hp<=0){c.strokeStyle='#558b86';c.beginPath();c.moveTo(g.x-5,g.y-5);c.lineTo(g.x+5,g.y+5);c.moveTo(g.x-5,g.y+5);c.lineTo(g.x+5,g.y-5);c.stroke();continue;}drawGuard(c,g.x,g.y,g.angle);if(g.hp<6){c.fillStyle='#0b2029';c.fillRect(g.x-8,g.y+17,16,2);c.fillStyle='#8ee3cc';c.fillRect(g.x-8,g.y+17,g.hp/6*16,2);}}
  for(const foe of w.enemies){if(foe.hp<=0)continue;c.save();c.translate(foe.x,foe.y);c.rotate(w.time*.6);c.fillStyle='#7d3d4a';c.strokeStyle='#e6747d';c.lineWidth=1.5;polygon(c,[[0,-11],[10,0],[0,11],[-10,0]]);c.fill();c.stroke();c.fillStyle='#ff9393';c.fillRect(-2,-3,4,6);c.restore();}
  for(const e of w.effects){const a=e.life/e.max;c.globalAlpha=a;
    if(e.type==='transfer'){
@@ -84,7 +88,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
     c.save();c.translate(x,y);c.rotate(t*5);c.fillStyle=gold;c.shadowColor=gold;c.shadowBlur=12;c.fillRect(-3,-3,6,6);c.restore();
     if(travel===1){c.strokeStyle='#a4e0cc';c.beginPath();c.arc(e.tx!,e.ty!,4+(t-.78)*70,0,7);c.stroke();}
    }
-   else if(e.type==='enemyShot'||e.type==='guardShot'){c.strokeStyle=e.type==='enemyShot'?'#f5848d':'#8af0dc';c.lineWidth=3*a+1;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.fillStyle=c.strokeStyle;c.beginPath();c.arc(e.tx!,e.ty!,3+(1-a)*8,0,7);c.fill();}
+   else if(e.type==='enemyShot'||e.type==='guardShot'||e.type==='turretShot'){c.strokeStyle=e.type==='enemyShot'?'#f5848d':e.type==='turretShot'?'#f5b743':'#8af0dc';c.lineWidth=3*a+1;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.fillStyle=c.strokeStyle;c.beginPath();c.arc(e.tx!,e.ty!,3+(1-a)*8,0,7);c.fill();}
    else if(e.type==='laser'){c.strokeStyle='#67d9ce';c.lineWidth=4;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.strokeStyle='#eaffec';c.lineWidth=1.2;c.stroke();}
    else if(e.type==='ore'&&e.max-e.life<.25&&e.tx!==undefined){
     const t=1-Math.exp(-(e.max-e.life)*16),x=e.tx+(e.x-e.tx)*t,y=e.ty!+(e.y-e.ty!)*t;
