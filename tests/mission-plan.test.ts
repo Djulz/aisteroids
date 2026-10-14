@@ -10,7 +10,7 @@ test('early plan offers reachable Far Belt exploration without Hangar controls',
 });
 test('Far Belt discovery unlocks interim scanner and rich objective without Workshop purchase',()=>{
  const c={...freshCompany(),progress:{...freshCompany().progress,farSurveyed:true}};
- assert.deepEqual(missionObjectives(c).map(o=>o.id),['auto','surveyFar']);
+ assert.deepEqual(missionObjectives(c).map(o=>o.id),['auto','surveyFar','investigateFreight']);
  const html=renderLobby(c,view);assert.match(html,/SCANNER INTEL/);assert.match(html,/data-directive="surveyFar"/);
 });
 test('rival and outpost survey objectives normalize after completion, with HQ/Outpost controls',()=>{

@@ -1,3 +1,4 @@
+import {LOGISTICS_SITES} from '../src/logistics-sites.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {freshCompany,createWorld,step,settle,STEP,RESEARCH_STATION,EXPERIMENTAL_PROBE,FAR,type Company,type World} from '../src/sim.ts';
@@ -14,7 +15,7 @@ const old=(changes:Partial<Company>={})=>JSON.stringify({...freshCompany(),...ch
 test('v7 progress and Escort fleet migrate once; old milestones grant Tech without charging a grandfathered entitlement',()=>{
  const v7=old({credits:31,total:48,rounds:8,fleetCapacity:3,fleetComposition:{impactMiner:2,laserMiner:0,escort:1,hauler:0,miningRig:0},turret:true,outpost:true,launchSite:'far',directive:'surveyOutpost',doctrine:'convoy',rockHp:{0:17,13:51},ores:[{x:350,y:400,value:1,rich:true}],progress:{farSurveyed:true,richSampled:true,rivalSeen:true,outpostSurveyed:false}});
  const {map,storage}=store({'aisteroids-company-v7':v7,'unrelated':'keep'});
- const c=loadCompany(storage);assert.equal(c.version,8);assert.equal(c.credits,31);assert.equal(c.total,48);assert.equal(c.rounds,8);assert.equal(c.fleetCapacity,3);assert.equal(c.fleetComposition.escort,1);assert.equal(c.rockHp[0],17);assert.deepEqual(c.ores,[{x:350,y:400,value:1,rich:true}]);
+ const c=loadCompany(storage);assert.equal(c.version,9);assert.equal(c.credits,31);assert.equal(c.total,48);assert.equal(c.rounds,8);assert.equal(c.fleetCapacity,3);assert.equal(c.fleetComposition.escort,1);assert.equal(c.rockHp[0],17);assert.deepEqual(c.ores,[{x:350,y:400,value:1,rich:true}]);
  assert.equal(c.outpost,true);assert.equal(c.launchSite,'far');assert.equal(c.directive,'surveyOutpost');assert.equal(c.doctrine,'convoy');
  assert.equal(c.grandfatheredEscort,true);assert.deepEqual(c.unlockedTechnologies,['escortProgram']);assert.equal(c.techPointsEarned,3);assert.equal(c.techPointsAvailable,3);
  assert.equal(map.has('aisteroids-company-v7'),false);assert.equal(map.get('unrelated'),'keep');assert.deepEqual(loadCompany(storage),c);assert.equal(createWorld(c).guards.length,1);
@@ -34,21 +35,21 @@ test('Research prerequisites, costs and Hangar deployment share one entitlement'
  assert.equal(research(c,'rapidCooling'),null);assert.equal(changeFleet(c,'laserMiner',1),null);
  c={...c,fleetCapacity:2};c=changeFleet(c,'laserMiner',1)!;assert.equal(createWorld(c).drones[1].kind,'laserMiner');assert.ok(c.fleetComposition.impactMiner===1);
  const html=renderLobby(c,{tab:'hangar',doctrineOpen:false,planOpen:false,researchOpen:true,error:'',storageOK:true});
- assert.match(html,/Laser Mining/);assert.match(html,/RESEARCHED/);assert.equal((html.match(/id="tab-/g)??[]).length,2);assert.doesNotMatch(html,/Hauler.*data-research/);
+ assert.match(html,/Laser Mining/);assert.match(html,/RESEARCHED/);assert.equal((html.match(/id="tab-/g)??[]).length,2);assert.match(html,/data-research="haulerOperation"/);
  assert.deepEqual(parseSave(JSON.stringify(c)),c);
 });
-test('six POIs and milestones emit one pending event each, then settle exactly once',()=>{
+test('nine POIs and milestones emit one pending event each, then settle exactly once',()=>{
  const c=freshCompany(),w=createWorld(c),d=w.drones[0];
- for(const p of [RESEARCH_STATION,EXPERIMENTAL_PROBE,FAR]){d.x=p.x;d.y=p.y;d.vx=0;d.vy=0;step(w,STEP);}
+ for(const p of [RESEARCH_STATION,EXPERIMENTAL_PROBE,FAR,...LOGISTICS_SITES]){d.x=p.x;d.y=p.y;d.vx=0;d.vy=0;step(w,STEP);}
  assert.ok(w.pendingTech.some(e=>e.id==='abandoned_research_station'));assert.ok(w.pendingTech.some(e=>e.id==='experimental_probe_salvaged'));
  assert.ok(w.pendingTech.some(e=>e.id==='far_belt_charted'));assert.ok(w.pendingTech.some(e=>e.id==='outpost_site_surveyed'));
  w.effects.push({type:'transfer',x:200,y:480,life:.001,max:.001,amount:1,richAmount:1});w.time=11;step(w,STEP);
  assert.ok(w.pendingTech.some(e=>e.id==='first_rich_sample'));assert.ok(w.pendingTech.some(e=>e.id==='first_rival_contact'));
  for(let i=0;i<60;i++)step(w,STEP);
  assert.deepEqual(new Set(w.pendingTech.map(e=>e.id)),new Set(discoveryIds));assert.equal(c.techPointsAvailable,0);
- const saved=settle(c,w);assert.equal(saved.techPointsEarned,6);assert.equal(saved.techPointsAvailable,6);assert.equal(settle(saved,w).techPointsEarned,6);
+ const saved=settle(c,w);assert.equal(saved.techPointsEarned,9);assert.equal(saved.techPointsAvailable,9);assert.equal(settle(saved,w).techPointsEarned,9);
  const next=createWorld(saved);assert.equal(next.pendingTech.length,0);
- assert.equal(Object.keys(TECH_DISCOVERIES).length,6);
+ assert.equal(Object.keys(TECH_DISCOVERIES).length,9);
 });
 test('abort leaves pending Tech and POI unclaimed; completed loss settles a find',()=>{
  const c=freshCompany(),w=createWorld(c);w.drones[0].x=RESEARCH_STATION.x;w.drones[0].y=RESEARCH_STATION.y;step(w);

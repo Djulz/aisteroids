@@ -14,9 +14,9 @@ export function zoomCamera(c:Camera,factor:number){c.zoom*=factor;clampCamera(c)
 export function overview(c:Camera){c.follow=false;c.zoom=Math.min(c.width/W,c.height/H);c.x=W/2;c.y=H/2;clampCamera(c);}
 export function followCamera(c:Camera,w:World,dt:number){
  if(!c.follow)return;
- const fleet=w.drones.filter(d=>d.state==='mine'||d.state==='return'||d.state==='unload');
- const wrecks=w.drones.filter(d=>d.state==='dead');
- const targets=fleet.length?fleet:wrecks.length===w.drones.length?wrecks:[w.base];
+ const fleet=[...w.drones.filter(d=>d.state==='mine'||d.state==='handoff'||d.state==='return'||d.state==='unload'),...w.haulers.filter(h=>h.state==='work'||h.state==='return'||h.state==='unload')];
+ const wrecks=[...w.drones,...w.haulers].filter(d=>d.state==='dead');
+ const targets=fleet.length?fleet:wrecks.length===w.drones.length+w.haulers.length?wrecks:[w.base];
  const x=(Math.min(...targets.map(d=>d.x))+Math.max(...targets.map(d=>d.x)))/2;
  const y=(Math.min(...targets.map(d=>d.y))+Math.max(...targets.map(d=>d.y)))/2;
  // Ease toward the working fleet, never jump between individual incidents.

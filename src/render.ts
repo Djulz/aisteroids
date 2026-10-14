@@ -1,5 +1,6 @@
 import {type Camera,newCamera} from './camera.ts';
 import { HOME, FAR, W, H, ORE_PICKUP_DELAY, RESEARCH_STATION, EXPERIMENTAL_PROBE, type World } from './sim.ts';
+import {LOGISTICS_SITES} from './logistics-sites.ts';
 const gold = '#f5b743', cream = '#e7e2cf';
 function drawOutpost(c:CanvasRenderingContext2D,active:boolean,t:number,bounce=0){
  c.save();c.translate(FAR.x,FAR.y);c.scale(1+bounce,1+bounce);c.strokeStyle=active?'#83d8cf':'#598d94';c.fillStyle='#122e36';c.lineWidth=2;
@@ -28,6 +29,15 @@ export function drawDrone(c: CanvasRenderingContext2D, x: number, y: number, ang
  if(laser){ c.fillStyle=cream; c.fillRect(-11,-13,3,9); c.fillRect(8,-13,3,9); }
  c.restore();
 }
+export function drawHauler(c:CanvasRenderingContext2D,x:number,y:number,angle:number,cargo:number,capacity:number,time:number,thrust=true){
+ c.save();c.translate(x,y);c.rotate(angle+Math.PI/2);
+ if(thrust){c.fillStyle='#79bebc99';polygon(c,[[-6,12],[0,18+Math.sin(time*22)*2],[6,12]]);c.fill();}
+ c.fillStyle='#26343c';c.strokeStyle='#9bd5cb';c.lineWidth=1.5;
+ polygon(c,[[-12,-8],[-7,-13],[7,-13],[12,-8],[12,11],[-12,11]]);c.fill();c.stroke();
+ c.fillStyle='#132630';c.fillRect(-9,-5,18,13);c.strokeStyle='#688d92';c.strokeRect(-9,-5,18,13);
+ c.fillStyle='#d3aa67';for(let i=0;i<Math.min(5,Math.ceil(cargo/Math.max(1,capacity/5)));i++)c.fillRect(-7+i*3,-2,2,7);
+ c.fillStyle='#9bd5cb';c.fillRect(-4,-12,8,3);c.fillStyle='#556f78';c.fillRect(-14,2,3,9);c.fillRect(11,2,3,9);c.restore();
+}
 export function drawMother(c: CanvasRenderingContext2D, t:number,bounce=0,base=HOME) {
  c.save(); c.translate(base.x,base.y);c.scale(1+bounce,1+bounce);
  c.strokeStyle='#5d78834d'; c.lineWidth=1; c.setLineDash([3,6]); c.beginPath(); c.ellipse(0,0,66,52,0,0,Math.PI*2); c.stroke(); c.setLineDash([]);
@@ -53,6 +63,9 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  c.save();c.translate(RESEARCH_STATION.x,RESEARCH_STATION.y);c.fillStyle=stationDone?'#304e52':'#174851';c.strokeStyle=stationDone?'#648080':'#8ee3d3';c.lineWidth=1.4;c.fillRect(-12,-9,24,18);c.strokeRect(-12,-9,24,18);c.fillStyle=stationDone?'#7a9b9c':'#a8f0e6';c.fillRect(-4,-5,8,5);c.fillRect(-16,8,32,3);c.font='8px monospace';c.textAlign='center';c.fillText(stationDone?'RESEARCH LOGGED':'RESEARCH SITE',0,-15);c.restore();
  const probeDone=w.company.uniqueTechDiscoveries.includes('experimental_probe_salvaged')||w.pendingTech.some(e=>e.id==='experimental_probe_salvaged');
  c.save();c.translate(EXPERIMENTAL_PROBE.x,EXPERIMENTAL_PROBE.y);c.fillStyle=probeDone?'#46656a':'#94e6d8';c.strokeStyle='#6cbeb2';c.lineWidth=1.2;c.beginPath();c.moveTo(0,-9);c.lineTo(9,0);c.lineTo(0,9);c.lineTo(-9,0);c.closePath();c.fill();c.stroke();c.fillStyle='#8cb7b8';c.font='8px monospace';c.textAlign='center';c.fillText(probeDone?'PROBE RECOVERED':'PROBE SIGNAL',0,-15);c.restore();
+ for(const site of LOGISTICS_SITES){const done=w.company.uniqueTechDiscoveries.includes(site.id)||w.pendingTech.some(e=>e.id===site.id);
+  c.save();c.translate(site.x,site.y);c.fillStyle=done?'#3b5e62':'#bdca9c';c.strokeStyle=done?'#587779':'#9be0d1';c.lineWidth=1.2;c.fillRect(-10,-6,20,12);c.strokeRect(-10,-6,20,12);c.fillStyle='#162d35';c.fillRect(-6,-3,12,6);c.font='7px monospace';c.textAlign='center';c.fillStyle=done?'#7c999b':'#b7e5d5';c.fillText(done?'RECOVERED':site.name.toUpperCase(),0,-13);c.restore();
+ }
  for(const r of w.rocks){
    if(r.hp<=0) continue;
    const impact=w.effects.find(e=>e.type==='hit'&&e.x===r.x&&e.y===r.y);const pulse=impact?impact.life/impact.max:0;
@@ -87,12 +100,18 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    drawDrone(c,d.x,d.y,d.angle,d.cargo,d.kind==='laserMiner',w.time,d.state==='mine'||d.state==='return');
    if(d.hp<d.maxHp){c.fillStyle='#1a2933';c.fillRect(d.x-10,d.y+24,20,2);c.fillStyle=d.hp/d.maxHp>.4?'#72b5a4':'#db795c';c.fillRect(d.x-10,d.y+24,20*d.hp/d.maxHp,2);}
  }
+ for(const h of w.haulers){
+   if(h.state==='dead'){c.strokeStyle='#69807c';c.beginPath();c.moveTo(h.x-7,h.y-7);c.lineTo(h.x+7,h.y+7);c.moveTo(h.x-7,h.y+7);c.lineTo(h.x+7,h.y-7);c.stroke();continue;}
+   if(selected===h.id){c.strokeStyle='#9bd5cb99';c.beginPath();c.arc(h.x,h.y,22,0,7);c.stroke();}
+   drawHauler(c,h.x,h.y,h.angle,h.cargo,h.capacity,w.time,h.state==='work'||h.state==='return');
+   if(h.hp<h.maxHp){c.fillStyle='#102a34';c.fillRect(h.x-11,h.y+23,22,2);c.fillStyle='#9bd5cb';c.fillRect(h.x-11,h.y+23,22*h.hp/h.maxHp,2);}
+ }
  for(const g of w.guards){if(g.hp<=0){c.strokeStyle='#558b86';c.beginPath();c.moveTo(g.x-5,g.y-5);c.lineTo(g.x+5,g.y+5);c.moveTo(g.x-5,g.y+5);c.lineTo(g.x+5,g.y-5);c.stroke();continue;}drawGuard(c,g.x,g.y,g.angle);if(g.hp<g.maxHp){c.fillStyle='#0b2029';c.fillRect(g.x-8,g.y+17,16,2);c.fillStyle='#8ee3cc';c.fillRect(g.x-8,g.y+17,g.hp/g.maxHp*16,2);}}
  for(const foe of w.enemies){if(foe.hp<=0)continue;c.save();c.translate(foe.x,foe.y);c.rotate(w.time*.6);c.fillStyle='#7d3d4a';c.strokeStyle='#e6747d';c.lineWidth=1.5;polygon(c,[[0,-11],[10,0],[0,11],[-10,0]]);c.fill();c.stroke();c.fillStyle='#ff9393';c.fillRect(-2,-3,4,6);c.restore();}
  for(const e of w.effects){const a=e.life/e.max;c.globalAlpha=a;
-   if(e.type==='transfer'){
+   if(e.type==='transfer'||e.type==='handoff'){
     const t=1-a,travel=Math.min(1,t/.78),ease=travel*travel*(3-2*travel),x=e.x+(e.tx!-e.x)*ease,y=e.y+(e.ty!-e.y)*ease-Math.sin(travel*Math.PI)*14;
-    c.globalAlpha=travel<1?1:a*3;c.strokeStyle='#8ee3cc';c.lineWidth=2;c.beginPath();c.moveTo(x-(e.tx!-e.x)*.08,y-(e.ty!-e.y)*.08);c.lineTo(x,y);c.stroke();
+    c.globalAlpha=travel<1?1:a*3;c.strokeStyle=e.type==='handoff'?'#d4b878':'#8ee3cc';c.lineWidth=2;c.beginPath();c.moveTo(x-(e.tx!-e.x)*.08,y-(e.ty!-e.y)*.08);c.lineTo(x,y);c.stroke();
     c.save();c.translate(x,y);c.rotate(t*5);c.fillStyle=gold;c.shadowColor=gold;c.shadowBlur=12;c.fillRect(-3,-3,6,6);c.restore();
     if(travel===1){c.strokeStyle='#a4e0cc';c.beginPath();c.arc(e.tx!,e.ty!,4+(t-.78)*70,0,7);c.stroke();}
    }
@@ -115,9 +134,11 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  c.fillStyle='#08131deb';c.fillRect(mx-4,my-4,mw+8,mh+8);c.strokeStyle='#52707d';c.lineWidth=.7;c.strokeRect(mx,my,mw,mh);
  for(const r of w.rocks){if(r.hp<=0)continue;c.fillStyle=w.company.progress.farSurveyed&&r.rich?'#7bd4be':'#60717e';c.fillRect(mx+r.x*kx,my+r.y*ky,w.company.progress.farSurveyed&&r.rich?2:1.5,w.company.progress.farSurveyed&&r.rich?2:1.5);}
  for(const [p,id] of [[RESEARCH_STATION,'abandoned_research_station'],[EXPERIMENTAL_PROBE,'experimental_probe_salvaged']] as const){c.fillStyle=w.company.uniqueTechDiscoveries.includes(id)||w.pendingTech.some(e=>e.id===id)?'#55797c':'#8ee3d3';c.fillRect(mx+p.x*kx-1.5,my+p.y*ky-1.5,3,3);}
+ for(const site of LOGISTICS_SITES){c.fillStyle=w.company.uniqueTechDiscoveries.includes(site.id)||w.pendingTech.some(e=>e.id===site.id)?'#55797c':'#b9ddbc';c.fillRect(mx+site.x*kx-1.5,my+site.y*ky-1.5,3,3);}
  c.fillStyle='#e7e2cf';c.fillRect(mx+HOME.x*kx-2,my+HOME.y*ky-2,4,4);if(w.company.outpost){c.fillStyle='#83d8cf';c.fillRect(mx+FAR.x*kx-2,my+FAR.y*ky-2,4,4);}
  else if(w.company.directive==='surveyOutpost'&&!w.progress.outpostSurveyed){c.strokeStyle='#83d8cf';c.strokeRect(mx+FAR.x*kx-2,my+FAR.y*ky-2,4,4);}
  for(const d of w.drones){if(d.state==='dead'||d.state==='docked')continue;c.fillStyle=gold;c.beginPath();c.arc(mx+d.x*kx,my+d.y*ky,2,0,7);c.fill();}
+ for(const h of w.haulers){if(h.state==='dead'||h.state==='docked')continue;c.fillStyle='#a9ded1';c.fillRect(mx+h.x*kx-2,my+h.y*ky-2,4,4);}
  for(const e of w.enemies){if(e.hp<=0)continue;c.fillStyle='#e6747d';c.fillRect(mx+e.x*kx-1.5,my+e.y*ky-1.5,3,3);}
  const left=Math.max(0,camera.x-VIEW_W/camera.zoom/2),top=Math.max(0,camera.y-VIEW_H/camera.zoom/2);
  const right=Math.min(W,camera.x+VIEW_W/camera.zoom/2),bottom=Math.min(H,camera.y+VIEW_H/camera.zoom/2);
