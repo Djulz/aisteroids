@@ -66,7 +66,7 @@ test('a Miner abandons a failed rendezvous when the assigned Hauler dies or time
 
 test('Hauler gathers existing salvage after pickup delay and can deliver rich cargo after last Miner loss',()=>{
  const c=logistics(),w=createWorld({...c,ores:[{x:220,y:590,value:1,rich:true}]});
- const h=w.haulers[0],ore=w.ores[0];h.x=ore.x;h.y=ore.y;h.vx=h.vy=0;step(w);
+ const h=w.haulers[0],ore=w.ores[0];w.drones[0].x=710;w.drones[0].y=800;h.x=ore.x;h.y=ore.y;h.vx=h.vy=0;step(w);
  assert.equal(h.cargo,1);assert.equal(h.richCargo,1);assert.equal(w.haulerPickups,1);assert.equal(w.ores.length,0);
  w.drones[0].state='dead';h.cargo=3;h.richCargo=1;run(w);
  assert.equal(w.haulerDelivered,3);assert.equal(w.delivered,3);
@@ -76,7 +76,7 @@ test('Hauler gathers existing salvage after pickup delay and can deliver rich ca
 
 test('fresh fragments stay visible before collection; two Haulers cannot take the same one',()=>{
  let c=logistics();c=changeFleet(c,'hauler',1)!;
- const w=createWorld(c),[a,b]=w.haulers;
+ const w=createWorld(c),[a,b]=w.haulers;w.drones[0].x=710;w.drones[0].y=800;
  const ore={id:900,x:a.x,y:a.y,value:1 as const,rich:false,age:0};w.ores.push(ore);
  step(w);assert.equal(a.cargo+b.cargo,0);assert.equal(w.ores.length,1);
  ore.age=ORE_PICKUP_DELAY;a.x=b.x=ore.x;a.y=b.y=ore.y;a.vx=b.vx=a.vy=b.vy=0;

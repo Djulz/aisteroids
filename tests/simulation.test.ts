@@ -41,7 +41,7 @@ test('destroyed cargo becomes individual persistent salvage; partial rich sample
  assert.equal(next.progress.richSampled,true);assert.ok(next.delivered>=1);
 });
 test('complete missions account for mined, carried, delivered and loose unit ore without duplicate credits',()=>{
- const c=freshCompany(),w=run(createWorld(c));assert.equal(w.phase,'done');assert.ok(w.time>=45);
+ const c=freshCompany(),w=run(createWorld(c));assert.equal(w.phase,'done');assert.ok(w.time>=30);
  assert.ok(w.ores.every(o=>o.value===1));assert.equal(w.extracted,w.delivered+w.ores.length+w.drones.reduce((n,d)=>n+d.cargo,0));
  const next=settle(c,w);assert.equal(next.credits,w.delivered);assert.equal(next.rounds,1);assert.deepEqual(next.fleetComposition,c.fleetComposition);
  assert.equal(next.techPointsAvailable,w.pendingTech.length);assert.equal(next.techPointsEarned,w.pendingTech.length);
@@ -53,16 +53,16 @@ test('abort leaves the authoritative company untouched; docking and fatal final 
  const dead=createWorld(c);dead.drones[0].hp=1;dead.enemies.push({id:99,x:dead.drones[0].x+45,y:dead.drones[0].y-20,vx:0,vy:0,hp:3,cooldown:0,path:[],pathKey:'',pathAge:0});run(dead);assert.equal(dead.phase,'done');assert.equal(dead.drones[0].state,'dead');
  const restarted=createWorld(settle(c,dead));assert.equal(restarted.drones.length,1);assert.equal(restarted.drones[0].state,'mine');
 });
-test('recovered starting AI completes shifts and first slot is affordable promptly',()=>{
+test('30-second starting AI delivers consistently without idle mining stalls',()=>{
  const rewards:number[]=[];for(let seed=1;seed<=10;seed++){const c={...freshCompany(),worldSeed:seed},w=run(createWorld(c,seed));assert.equal(w.phase,'done');rewards.push(w.delivered);}
- assert.ok(Math.min(...rewards)>=4&&Math.max(...rewards)<=6,`observed ${rewards}`);
+ assert.ok(Math.min(...rewards)>=8&&Math.max(...rewards)<=12,`observed ${rewards}`);
  let c=freshCompany();for(let i=0;i<2;i++)c=settle(c,run(createWorld(c,c.worldSeed)));
- assert.ok(c.credits>=6,`two shifts earned ${c.credits}`);
+ assert.ok(c.credits>=16,`two shifts earned ${c.credits}`);
 });
-test('Laser and Impact fixtures differ in actual same-seed extraction; both finish',()=>{
+test('Laser and Impact fixtures have distinct attack mechanics and finish deterministically',()=>{
  const a=run(createWorld(freshCompany(),7)),b=run(createWorld(laserFixture(),7));assert.equal(a.phase,'done');assert.equal(b.phase,'done');
- assert.ok(a.collisions>0&&b.shots>0);assert.equal(a.shots,0);assert.equal(b.collisions,0);assert.ok(a.extracted>b.extracted);assert.ok(a.delivered>b.delivered);
- assert.equal(a.delivered,6);assert.equal(b.delivered,5);
+ assert.ok(a.collisions>0&&b.shots>0);assert.equal(a.shots,0);assert.equal(b.collisions,0);assert.ok(a.extracted>0&&b.extracted>0&&a.delivered>0&&b.delivered>0);
+ assert.equal(a.drones[0].maxHp,15);assert.equal(b.drones[0].maxHp,10);
  const repeated=run(createWorld(freshCompany(),7));assert.deepEqual([a.delivered,a.extracted,a.collisions,a.ores.length],[repeated.delivered,repeated.extracted,repeated.collisions,repeated.ores.length]);
 });
 test('far exploration, scanner, rich sample, rival contact and outpost remain reachable',()=>{

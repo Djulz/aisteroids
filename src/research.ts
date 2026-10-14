@@ -15,8 +15,8 @@ export type DiscoveryId=keyof typeof TECH_DISCOVERIES;
 export const discoveryIds=Object.keys(TECH_DISCOVERIES) as DiscoveryId[];
 export const TECH={
  laserMining:{name:'Laser Mining',branch:'Extraction',cost:1,description:'Unlock Laser Miners: ranged one-fragment extraction, cargo 3.',requires:[]},
- impactRecovery:{name:'Impact Recovery',branch:'Extraction',cost:1,description:'Shorter post-impact reset for every Impact Miner.',requires:[]},
- rapidCooling:{name:'Rapid Cooling',branch:'Extraction',cost:2,description:'Laser Miners fire again sooner; still one fragment per shot.',requires:['laserMining']},
+ impactRecovery:{name:'Impact Recovery',branch:'Extraction',cost:1,description:'Ram cooldown 1.0 → 0.65s; quicker physical recovery.',requires:[]},
+ rapidCooling:{name:'Rapid Cooling',branch:'Extraction',cost:2,description:'Laser interval 2.0 → 1.6s; one fragment per shot.',requires:['laserMining']},
  escortProgram:{name:'Escort Program',branch:'Security',cost:1,description:'Assign Escorts to purchased fleet slots after rival contact.',requires:[]},
  threatTracking:{name:'Threat Tracking',branch:'Security',cost:1,description:'Escorts prioritize hostiles closest to miners.',requires:['escortProgram']},
  haulerOperation:{name:'Hauler Operation',branch:'Logistics',cost:1,description:'Unlock Haulers: collect loose ore, accept Miner cargo and deliver up to 10.',requires:[]},
