@@ -77,7 +77,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  for(let i=0;i<144;i++){c.fillStyle=i%4===0?'#71929a66':'#71929a2b';c.fillRect((i*137+19)%W,(i*83+41)%H,i%4===0?1.4:1,1);}
  c.strokeStyle='#68828c3b';for(let i=0;i<9;i++){const x=35+i%3*165,y=34+Math.floor(i/3)*230;c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}
  c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME FIELD',30,32);c.fillText('FAR BELT',850,32);c.fillText('OUTER REACH',1700,1450);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
- // The same explored/visible bitsets drive both field and radar. Unknown cells
+ // Explored/visible bitsets drive the field. Unknown cells
  // never get object drawing; known terrain remains a subdued map memory.
  const mask=fogImage(w);c.drawImage(mask,0,0);
  for(const site of POIS){if(!w.discoveredPois.has(site.id))continue;
@@ -150,21 +150,4 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    c.globalAlpha=1;
  }
  c.restore();
- // Compact world overview, including viewport and off-screen fleet positions.
- const mx=VIEW_W-88,my=VIEW_H-112,mw=76,mh=88,kx=mw/W,ky=mh/H;
- c.fillStyle='#08131deb';c.fillRect(mx-4,my-4,mw+8,mh+8);c.strokeStyle='#52707d';c.lineWidth=.7;c.strokeRect(mx,my,mw,mh);
- c.fillStyle='#18313c';c.fillRect(mx,my,mw,mh);c.drawImage(mask,0,0,W,H,mx,my,mw,mh);
- for(const r of w.rocks){if(!exploredAt(w,r)||r.hp<=0)continue;c.fillStyle=r.rich&&w.progress.farSurveyed?'#7bd4be':'#a8bac2';c.fillRect(mx+r.x*kx-1,my+r.y*ky-1,2.2,2.2);}
- for(const o of w.ores){if(!exploredAt(w,o))continue;c.fillStyle=gold;c.fillRect(mx+o.x*kx-1,my+o.y*ky-1,2,2);}
- for(const site of POIS){if(!w.discoveredPois.has(site.id))continue;c.fillStyle=investigated(w,site.id)?'#55797c':w.activeTarget===site.id?'#f5b743':'#8ee3d3';c.fillRect(mx+site.x*kx-1.5,my+site.y*ky-1.5,3,3);}
- c.fillStyle='#e7e2cf';c.fillRect(mx+HOME.x*kx-2,my+HOME.y*ky-2,4,4);if(w.company.outpost){c.fillStyle='#83d8cf';c.fillRect(mx+FAR.x*kx-2,my+FAR.y*ky-2,4,4);}
-
- for(const d of w.drones){if(d.state==='dead'||d.state==='docked')continue;c.fillStyle=gold;c.beginPath();c.arc(mx+d.x*kx,my+d.y*ky,2,0,7);c.fill();}
- for(const h of w.haulers){if(h.state==='dead'||h.state==='docked')continue;c.fillStyle='#a9ded1';c.fillRect(mx+h.x*kx-2,my+h.y*ky-2,4,4);}
- for(const s of w.scouts){if(s.state==='dead'||s.state==='docked')continue;c.fillStyle='#9a9ef2';c.fillRect(mx+s.x*kx-1.5,my+s.y*ky-1.5,3,3);}
- for(const e of w.enemies){if(e.hp<=0||!visibleAt(w,e))continue;c.fillStyle='#e6747d';c.fillRect(mx+e.x*kx-1.5,my+e.y*ky-1.5,3,3);}
- const left=Math.max(0,camera.x-VIEW_W/camera.zoom/2),top=Math.max(0,camera.y-VIEW_H/camera.zoom/2);
- const right=Math.min(W,camera.x+VIEW_W/camera.zoom/2),bottom=Math.min(H,camera.y+VIEW_H/camera.zoom/2);
- c.strokeStyle='#8fd6ca';c.strokeRect(mx+left*kx,my+top*ky,(right-left)*kx,(bottom-top)*ky);
- c.font='8px monospace';c.fillStyle='#9eb4be';c.fillText('DRAG TO EXPLORE',12,VIEW_H-28);
 }

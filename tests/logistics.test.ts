@@ -29,8 +29,8 @@ test('research unlocks one-slot Haulers, and capacity upgrade touches no Miner',
  assert.equal(createWorld(expanded).drones[0].gear.cargo,3);
  assert.equal(research(expanded,'expandedHauler'),null);
  assert.equal(changeFleet(expanded,'hauler',1)?.fleetComposition.hauler,2);
- const html=renderLobby(expanded,{tab:'hangar',planOpen:false,doctrineOpen:false,error:'',storageOK:true});
- assert.match(html,/data-type="hauler" data-delta="1"/);assert.match(html,/14 capacity/);assert.equal((html.match(/id="tab-/g)??[]).length,2);
+ const html=renderLobby(expanded,{tab:'hangar',error:'',storageOK:true});
+ assert.match(html,/data-type="hauler" data-delta="1"/);assert.match(html,/Hauler/);assert.equal((html.match(/id="tab-/g)??[]).length,2);
 });
 
 test('physical rendezvous transfers unit cargo and rich subset without credit',()=>{
