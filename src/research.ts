@@ -1,4 +1,5 @@
 import type {Company} from './sim.ts';
+import {POIS,type PoiId} from './knowledge.ts';
 
 export const TECH_DISCOVERIES={
  far_belt_charted:'Far Belt Charted',
@@ -37,9 +38,10 @@ export function research(c:Company,id:TechnologyId):Company|null{
  if(!Object.hasOwn(TECH,id)||researchReason(c,id))return null;
  const unlockedTechnologies=[...c.unlockedTechnologies,id];
  return {...c,unlockedTechnologies,techPointsAvailable:c.techPointsAvailable-TECH[id].cost,
-  unlockedTypes:['impactMiner',...(unlockedTechnologies.includes('laserMining')?['laserMiner'] as const:[]),...(unlockedTechnologies.includes('escortProgram')?['escort'] as const:[]),...(unlockedTechnologies.includes('haulerOperation')?['hauler'] as const:[])]};
+  unlockedTypes:['impactMiner','scout',...(unlockedTechnologies.includes('laserMining')?['laserMiner'] as const:[]),...(unlockedTechnologies.includes('escortProgram')?['escort'] as const:[]),...(unlockedTechnologies.includes('haulerOperation')?['hauler'] as const:[])]};
 }
 export function awardTech(c:Company,ids:readonly DiscoveryId[]):Company{
  const unique=ids.filter((id,i)=>Object.hasOwn(TECH_DISCOVERIES,id)&&ids.indexOf(id)===i&&!c.uniqueTechDiscoveries.includes(id));
- return {...c,uniqueTechDiscoveries:[...c.uniqueTechDiscoveries,...unique],techPointsEarned:c.techPointsEarned+unique.length,techPointsAvailable:c.techPointsAvailable+unique.length};
+ const sites=unique.filter((id):id is PoiId=>POIS.some(p=>p.id===id));
+ return {...c,discoveredPois:[...new Set([...c.discoveredPois,...sites])],uniqueTechDiscoveries:[...c.uniqueTechDiscoveries,...unique],techPointsEarned:c.techPointsEarned+unique.length,techPointsAvailable:c.techPointsAvailable+unique.length};
 }

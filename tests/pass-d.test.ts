@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorld,freshCompany,step,STEP,ORE_PICKUP_DELAY,ROUND_TIME,settle,type World} from '../src/sim.ts';
+import {updateKnowledge,createWorld,freshCompany,step,STEP,ORE_PICKUP_DELAY,ROUND_TIME,settle,type World} from '../src/sim.ts';
 import {changeFleet} from '../src/fleet.ts';
 import {awardTech,research} from '../src/research.ts';
 import {loadCompany,SAVE_KEY,type SaveStore} from '../src/storage.ts';
@@ -68,7 +68,7 @@ test('claims release on recall, destruction, disappearance, and Hauler rendezvou
  w.ores=w.ores.filter(o=>o.id!==next.id);step(w);assert.equal(w.oreClaims.has(next.id),false);
  w.time=ROUND_TIME;step(w);assert.equal(w.oreClaims.size,0);
  const rendezvous=createWorld(fleet(1,true)),d=rendezvous.drones[0],carrier=rendezvous.haulers[0];
- d.x=100;d.y=100;carrier.x=530;carrier.y=700;rendezvous.ores=[ore(901,550,710)];
+ d.x=100;d.y=100;carrier.x=530;carrier.y=700;rendezvous.ores=[ore(901,550,710)];updateKnowledge(rendezvous);
  step(rendezvous);assert.equal(carrier.targetOre,901);assert.equal(rendezvous.oreClaims.get(901)?.ownerKind,'hauler');
  d.cargo=3;d.x=carrier.x+40;d.y=carrier.y;step(rendezvous);
  assert.equal(d.state,'handoff');assert.equal(carrier.targetOre,-1);assert.equal(rendezvous.oreClaims.has(901),false);

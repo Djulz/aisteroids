@@ -7,7 +7,7 @@ test('each doctrine snapshots at launch and finishes a seeded mission',()=>{
  for(const doctrine of doctrineIds){const c={...freshCompany(),doctrine},w=createWorld(c,7);assert.equal(w.doctrine,doctrine);assert.equal(w.company.doctrine,doctrine);run(w);assert.equal(w.phase,'done');assert.ok(w.drones.length>0);}
 });
 test('careful retreat and convoy coordination still apply to type-based fleet',()=>{
- const c:Company={...freshCompany(),fleetCapacity:3,fleetComposition:{impactMiner:2,laserMiner:0,escort:1,hauler:0,miningRig:0},progress:{...freshCompany().progress,rivalSeen:true,richSampled:true},unlockedTypes:['impactMiner','escort'],doctrine:'convoy'};
+ const c:Company={...freshCompany(),fleetCapacity:3,fleetComposition:{impactMiner:2,laserMiner:0,escort:1,hauler:0,scout:0,miningRig:0},progress:{...freshCompany().progress,rivalSeen:true,richSampled:true},unlockedTypes:['impactMiner','escort'],doctrine:'convoy'};
  const convoy=createWorld(c),careful=createWorld({...c,doctrine:'careful'});
  assert.equal(convoy.drones.length,2);assert.equal(convoy.guards.length,1);
  for(const w of [convoy,careful]){w.enemies.push({id:99,x:w.drones[0].x+30,y:w.drones[0].y-20,vx:0,vy:0,hp:3,cooldown:1,path:[],pathKey:'',pathAge:0});step(w,STEP);}

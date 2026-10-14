@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorld,freshCompany,handoff,step,settle,STEP,ORE_PICKUP_DELAY,dockingSpots,type Company,type World} from '../src/sim.ts';
+import {createWorld,freshCompany,handoff,step,settle,updateKnowledge,lockTarget,STEP,ORE_PICKUP_DELAY,dockingSpots,type Company,type World} from '../src/sim.ts';
 import {awardTech,research,researchReason,discoveryIds,TECH} from '../src/research.ts';
 import {changeFleet,fleetError,usedSlots} from '../src/fleet.ts';
 import {parseSave,loadCompany,SAVE_KEY,type SaveStore} from '../src/storage.ts';
@@ -125,8 +125,8 @@ test('v8 max-spent companies migrate intact, new nodes and fleet counts persist;
  for(const id of ['laserMining','impactRecovery','rapidCooling','escortProgram','threatTracking'] as const)c=research(c,id)!;
  c=changeFleet(c,'laserMiner',1)!;c=changeFleet(c,'escort',1)!;
  assert.equal(c.techPointsAvailable,0);
- const legacy={...c,version:8};const {api,map}=store({'aisteroids-company-v8':JSON.stringify(legacy),'unrelated':'keep'});
- let migrated=loadCompany(api);assert.equal(migrated.version,9);assert.equal(migrated.techPointsAvailable,0);
+ const legacy={...c,version:8,fleetComposition:{impactMiner:c.fleetComposition.impactMiner,laserMiner:c.fleetComposition.laserMiner,escort:c.fleetComposition.escort,hauler:0,miningRig:0}};const {api,map}=store({'aisteroids-company-v8':JSON.stringify(legacy),'unrelated':'keep'});
+ let migrated=loadCompany(api);assert.equal(migrated.version,10);assert.equal(migrated.techPointsAvailable,0);
  assert.equal(migrated.credits,37);assert.equal(migrated.rounds,12);assert.equal(migrated.fleetCapacity,4);
  assert.equal(migrated.fleetComposition.escort,1);assert.equal(migrated.fleetComposition.laserMiner,1);
  assert.equal(migrated.rockHp[0],9);assert.equal(migrated.ores[0].rich,true);
@@ -141,18 +141,21 @@ test('v8 max-spent companies migrate intact, new nodes and fleet counts persist;
  for(let v=1;v<=6;v++)assert.deepEqual(parseSave(JSON.stringify({...legacy,version:v})),freshCompany());
 });
 
-test('three discoverable signals are navigable, one-time, abortable and not all granted in one ordinary shift',()=>{
+test('three freight signals require Escort investigation and remain one-time and abortable',()=>{
  for(let seed=1;seed<=20;seed++){const w=createWorld(freshCompany(),seed);for(const p of LOGISTICS_SITES)assert.ok(clearSegment(p,p,w.rocks,-1,15),`${p.name} blocked on seed ${seed}`);}
- let c=freshCompany();for(const site of LOGISTICS_SITES){
-  const w=run(createWorld({...c,directive:'investigateFreight'}));
-  assert.ok(w.pendingTech.some(e=>e.id===site.id),`${site.name} not recovered autonomously`);
-  assert.equal(w.pendingTech.filter(e=>LOGISTICS_SITES.some(p=>p.id===e.id)).length,1);
+ let c={...freshCompany(),fleetCapacity:2,fleetComposition:{...freshCompany().fleetComposition,escort:1},progress:{...freshCompany().progress,rivalSeen:true},unlockedTypes:['impactMiner','escort']};
+ for(const site of LOGISTICS_SITES){
+  const w=createWorld(c);w.guards[0].x=site.x+25;w.guards[0].y=site.y;updateKnowledge(w);
+  assert.ok(w.discoveredPois.has(site.id));assert.equal(w.pendingTech.some(e=>e.id===site.id),false);
+  assert.equal(lockTarget(w,site.id).ok,true);
+  for(let i=0;i<300&&w.activeTarget;i++)step(w,STEP);
+  assert.ok(w.pendingTech.some(e=>e.id===site.id),`${site.name} not investigated physically`);
   assert.equal(c.uniqueTechDiscoveries.includes(site.id),false,'abort leaves source unclaimed');
-  c=settle({...c,directive:'investigateFreight'},w);assert.equal(c.directive,'auto');
+  c=settle(c,w);assert.equal(createWorld(c).activeTarget,null);
  }
  assert.equal(c.uniqueTechDiscoveries.filter(id=>LOGISTICS_SITES.some(s=>s.id===id)).length,3);
  assert.equal(discoveryIds.length,9);assert.equal(Object.values(TECH).reduce((n,v)=>n+v.cost,0),9);
- const later=run(createWorld(c));assert.equal(later.pendingTech.filter(e=>LOGISTICS_SITES.some(s=>s.id===e.id)).length,0);
+ const later=createWorld(c);for(const site of LOGISTICS_SITES)assert.equal(lockTarget(later,site.id).ok,false);
 });
 
 test('ten seeded mixed missions recall, dock, conserve every fragment and remain deterministic',()=>{

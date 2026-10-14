@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorld,freshCompany,step,settle,STEP,ORE_PICKUP_DELAY,FAR,dockingSpots,type Company,type World} from '../src/sim.ts';
+import {updateKnowledge,createWorld,freshCompany,step,settle,STEP,ORE_PICKUP_DELAY,FAR,dockingSpots,type Company,type World} from '../src/sim.ts';
 import {parseSave,loadCompany,SAVE_KEY,type SaveStore} from '../src/storage.ts';
 import {changeFleet} from '../src/fleet.ts';
 
@@ -66,11 +66,11 @@ test('Laser and Impact fixtures have distinct attack mechanics and finish determ
  const repeated=run(createWorld(freshCompany(),7));assert.deepEqual([a.delivered,a.extracted,a.collisions,a.ores.length],[repeated.delivered,repeated.extracted,repeated.collisions,repeated.ores.length]);
 });
 test('far exploration, scanner, rich sample, rival contact and outpost remain reachable',()=>{
- let c=freshCompany();let w=createWorld(c);w.drones[0].x=FAR.x;w.drones[0].y=FAR.y;step(w,STEP);assert.equal(w.progress.farSurveyed,true);assert.equal(w.progress.outpostSurveyed,true);
+ let c=freshCompany();let w=createWorld(c);w.drones[0].x=FAR.x;w.drones[0].y=FAR.y;updateKnowledge(w);step(w,STEP);assert.equal(w.progress.farSurveyed,true);assert.equal(w.progress.outpostSurveyed,true);
  c=settle(c,w);assert.equal(c.progress.farSurveyed,true);assert.equal(c.progress.outpostSurveyed,true);
- const next=createWorld(c);next.progress.richSampled=true;next.time=11;step(next,STEP);assert.equal(next.progress.rivalSeen,true);assert.ok(next.enemies.length>0);
- const advanced:Company={...c,fleetCapacity:2,fleetComposition:{...c.fleetComposition,escort:1},unlockedTypes:['impactMiner','escort'],progress:{...c.progress,richSampled:true,rivalSeen:true,outpostSurveyed:false},directive:'surveyOutpost'};
- const surveyed=run(createWorld(advanced));assert.equal(surveyed.progress.outpostSurveyed,true);assert.equal(surveyed.phase,'done');
+ const next=createWorld(c);next.progress.richSampled=true;next.time=11;step(next,STEP);assert.ok(next.enemies.length>0);next.enemies[0].x=next.drones[0].x+30;next.enemies[0].y=next.drones[0].y;updateKnowledge(next);assert.equal(next.progress.rivalSeen,true);
+ const advanced:Company={...c,fleetCapacity:2,fleetComposition:{...c.fleetComposition,escort:1},unlockedTypes:['impactMiner','escort'],progress:{...c.progress,richSampled:true,rivalSeen:true,outpostSurveyed:false}};
+ const surveyed=createWorld(advanced);surveyed.drones[0].x=FAR.x;surveyed.drones[0].y=FAR.y;updateKnowledge(surveyed);assert.equal(surveyed.progress.outpostSurveyed,true);assert.equal(run(surveyed).phase,'done');
 });
 
 test('old v1-v6 are discarded; v8 persists and only game company keys are removed',()=>{

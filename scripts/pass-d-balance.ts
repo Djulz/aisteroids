@@ -28,7 +28,7 @@ function fixture(seed:number,composition:{impactMiner:number;laserMiner:number;h
  const discoveries:DiscoveryId[]=['abandoned_research_station','experimental_probe_salvaged','abandoned_cargo_relay','first_rival_contact','far_belt_charted','first_rich_sample','outpost_site_surveyed','derelict_freight_shuttle','automated_sorting_archive'];
  c=awardTech(c,discoveries);c={...c,progress:{...c.progress,rivalSeen:true}};
  for(const id of ['laserMining',...(options.recovery?['impactRecovery']:[]),...(options.cooling?['rapidCooling']:[]),'haulerOperation','escortProgram'] as const){const next=research(c,id);if(!next)throw Error(`Fixture research ${id}`);c=next;}
- c={...c,fleetComposition:{impactMiner:composition.impactMiner,laserMiner:composition.laserMiner,hauler:composition.hauler,escort:composition.escort,miningRig:0},progress:{...c.progress,richSampled:!!options.hostile,rivalSeen:!!options.hostile},outpost:!!options.far,launchSite:options.far?'far':'home',directive:'auto',ores:options.salvage?Array.from({length:32},(_,i)=>({x:460+i%8*15,y:620+Math.floor(i/8)*15,value:1 as const,rich:false})):[]};
+ c={...c,fleetComposition:{impactMiner:composition.impactMiner,laserMiner:composition.laserMiner,hauler:composition.hauler,escort:composition.escort,scout:0,miningRig:0},progress:{...c.progress,richSampled:!!options.hostile,rivalSeen:!!options.hostile},outpost:!!options.far,launchSite:options.far?'far':'home',ores:options.salvage?Array.from({length:32},(_,i)=>({x:460+i%8*15,y:620+Math.floor(i/8)*15,value:1 as const,rich:false})):[]};
  return c;
 }
 // Entitlements in fleet comparisons are controlled fixtures. Only progression
