@@ -1,10 +1,11 @@
 import {LOGISTICS_SITES} from './logistics-sites.ts';
 import type {DiscoveryId} from './research.ts';
+import {W as MAP_W,H as MAP_H,CELL,COLS,ROWS,CELLS,MAP_BYTES,HOME,FAR} from './geometry.ts';
+export {MAP_W,MAP_H,CELL,COLS,ROWS,CELLS,MAP_BYTES};
 
-export const MAP_W=800, MAP_H=930, CELL=25, COLS=32, ROWS=38, CELLS=COLS*ROWS, MAP_BYTES=Math.ceil(CELLS/8);
 export const POIS=[
- {id:'abandoned_research_station',name:'Derelict Research Station',x:260,y:390},
- {id:'experimental_probe_salvaged',name:'Experimental Probe',x:420,y:700},
+ {id:'abandoned_research_station',name:'Derelict Research Station',x:830,y:300},
+ {id:'experimental_probe_salvaged',name:'Experimental Probe',x:1190,y:1120},
  ...LOGISTICS_SITES.map(s=>({...s,name:s.name})),
 ] as const satisfies readonly {id:DiscoveryId;name:string;x:number;y:number}[];
 export type PoiId=(typeof POIS)[number]['id'];
@@ -24,7 +25,14 @@ export function reveal(bits:Uint8Array,sensors:Sensor[]){bits.fill(0);for(const 
 export function mergeMap(explored:Uint8Array,visible:Uint8Array){for(let i=0;i<MAP_BYTES;i++)explored[i]|=visible[i];}
 export function encodeMap(bits:Uint8Array){return Array.from(bits,b=>b.toString(16).padStart(2,'0')).join('');}
 export function decodeMap(value:string){if(typeof value!=='string'||!new RegExp(`^[0-9a-f]{${MAP_BYTES*2}}$`).test(value))return null;return Uint8Array.from({length:MAP_BYTES},(_,i)=>parseInt(value.slice(i*2,i*2+2),16));}
-export function mapCount(bits:Uint8Array){let n=0;for(const b of bits){let k=b;while(k){k&=k-1;n++;}}return n;}
-export function seededMap(progress:{farSurveyed:boolean;outpostSurveyed:boolean},outpost:boolean,investigated:readonly string[]=[]){
- const bits=blankMap(),v=blankMap();reveal(v,[{x:200,y:550,radius:115},...(outpost?[{x:535,y:770,radius:115}]:[]),...(progress.farSurveyed?[{x:430,y:500,radius:55}]:[]),...(progress.outpostSurveyed?[{x:535,y:770,radius:55}]:[]),...POIS.filter(p=>investigated.includes(p.id)).map(p=>({...p,radius:45}))]);mergeMap(bits,v);return encodeMap(bits);
+export function migrateV10Map(value:string){
+ if(typeof value!=='string'||!/^[0-9a-f]{304}$/.test(value))return null;
+ const old=Uint8Array.from({length:152},(_,i)=>parseInt(value.slice(i*2,i*2+2),16)),next=blankMap();
+ for(let i=0;i<1216;i++)if(old[i>>3]&(1<<(i&7))){const col=i%32,row=Math.floor(i/32);setCell(next,(col+.5)*CELL,(row+.5)*CELL);}
+ return next;
 }
+export function mapCount(bits:Uint8Array){let n=0;for(const b of bits){let k=b;while(k){k&=k-1;n++;}}return n;}
+export function seedKnown(bits:Uint8Array,progress:{farSurveyed:boolean;outpostSurveyed:boolean},outpost:boolean,known:readonly string[]=[]){
+ const v=blankMap();reveal(v,[{...HOME,radius:115},...(outpost?[{...FAR,radius:115}]:[]),...(progress.farSurveyed?[{x:430,y:500,radius:55}]:[]),...(progress.outpostSurveyed?[{...FAR,radius:55}]:[]),...POIS.filter(p=>known.includes(p.id)).map(p=>({...p,radius:45}))]);mergeMap(bits,v);return encodeMap(bits);
+}
+export function seededMap(progress:{farSurveyed:boolean;outpostSurveyed:boolean},outpost:boolean,known:readonly string[]=[]){return seedKnown(blankMap(),progress,outpost,known);}

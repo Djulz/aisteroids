@@ -2,9 +2,30 @@
 export type Point = { x: number; y: number };
 export type Obstacle = Point & { r: number; hp: number; id: number };
 const CELL = 18;
+const SECTOR=100;
+const indices=new WeakMap<Obstacle[],Map<string,Obstacle[]>>();
+const routeMasks=new WeakMap<Obstacle[],{signature:string;width:number;height:number;open:Uint8Array}>();
+function spatial(rocks:Obstacle[]){
+ let index=indices.get(rocks);if(index)return index;
+ index=new Map();for(const r of rocks){
+  const span=r.r+12;
+  for(let x=Math.floor((r.x-span)/SECTOR);x<=Math.floor((r.x+span)/SECTOR);x++)
+   for(let y=Math.floor((r.y-span)/SECTOR);y<=Math.floor((r.y+span)/SECTOR);y++){
+    const key=x+':'+y,list=index.get(key)??[];list.push(r);index.set(key,list);
+   }
+ }
+ indices.set(rocks,index);return index;
+}
+function candidates(a:Point,b:Point,rocks:Obstacle[]){
+ const index=spatial(rocks),seen=new Set<number>(),result:Obstacle[]=[];
+ const pad=52,left=Math.floor((Math.min(a.x,b.x)-pad)/SECTOR),right=Math.floor((Math.max(a.x,b.x)+pad)/SECTOR);
+ const top=Math.floor((Math.min(a.y,b.y)-pad)/SECTOR),bottom=Math.floor((Math.max(a.y,b.y)+pad)/SECTOR);
+ for(let x=left;x<=right;x++)for(let y=top;y<=bottom;y++)for(const r of index.get(x+':'+y)??[])if(!seen.has(r.id)){seen.add(r.id);result.push(r);}
+ return result;
+}
 export function clearSegment(a: Point, b: Point, rocks: Obstacle[], ignore = -1, margin = 11) {
  const dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
- return rocks.every(r=>{
+ return candidates(a,b,rocks).every(r=>{
   if(r.hp<=0||r.id===ignore)return true;
   const t=len?Math.max(0,Math.min(1,((r.x-a.x)*dx+(r.y-a.y)*dy)/len)):0;
   return Math.hypot(a.x+dx*t-r.x,a.y+dy*t-r.y)>=r.r+margin;
@@ -20,9 +41,27 @@ export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=40
   if(escape.x>=8&&escape.x<=width-8&&escape.y>=8&&escape.y<=height-8&&clearSegment(start,escape,rocks,ignore,8.01))return [escape,...route(escape,goal,rocks,ignore,width,height)];
  }
  if(clearSegment(start,goal,rocks,ignore))return [goal];
- const openCell=new Uint8Array(COLS*ROWS);
- for(let id=0;id<openCell.length;id++)openCell[id]=+clearSegment(point(id),point(id),rocks,ignore);
- const nearest=(p:Point)=>{let best=-1,bestDist=Infinity;for(let id=0;id<openCell.length;id++){if(!openCell[id])continue;const q=point(id),dist=Math.hypot(q.x-p.x,q.y-p.y);if(dist<bestDist&&clearSegment(p,q,rocks,ignore,8.1)){best=id;bestDist=dist;}}return best;};
+ const signature=rocks.map(r=>r.hp>0&&r.id!==ignore?'1':'0').join('');
+ let mask=routeMasks.get(rocks);
+ if(!mask||mask.signature!==signature||mask.width!==width||mask.height!==height){
+  const open=new Uint8Array(COLS*ROWS);
+  for(let id=0;id<open.length;id++)open[id]=+clearSegment(point(id),point(id),rocks,ignore);
+  mask={signature,width,height,open};routeMasks.set(rocks,mask);
+ }
+ const openCell=mask.open;
+ const nearest=(p:Point)=>{
+  const cx=Math.max(0,Math.min(COLS-1,Math.round((p.x-10)/CELL))),cy=Math.max(0,Math.min(ROWS-1,Math.round((p.y-10)/CELL)));
+  for(let radius=0;radius<=15;radius++){
+   let best=-1,bestDist=Infinity;
+   for(let y=Math.max(0,cy-radius);y<=Math.min(ROWS-1,cy+radius);y++)for(let x=Math.max(0,cx-radius);x<=Math.min(COLS-1,cx+radius);x++){
+    if(radius&&Math.max(Math.abs(x-cx),Math.abs(y-cy))!==radius)continue;
+    const id=y*COLS+x;if(!openCell[id])continue;const q=point(id),dist=Math.hypot(q.x-p.x,q.y-p.y);
+    if(dist<bestDist&&clearSegment(p,q,rocks,ignore,8.1)){best=id;bestDist=dist;}
+   }
+   if(best>=0)return best;
+  }
+  return -1;
+ };
  const from=nearest(start),to=nearest(goal);if(from<0||to<0)return [];
  const parent=new Int32Array(openCell.length).fill(-1),queue=[from];parent[from]=from;
  for(let head=0;head<queue.length&&parent[to]<0;head++){

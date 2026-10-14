@@ -1,6 +1,6 @@
-# AIsteroid Mining · Alpha 0.15.0
+# AIsteroid Mining · Alpha 0.16.0
 
-A mobile-first autonomous mining game. Configure fleet counts, doctrine and launch site, then Deploy into a 30-second active shift followed by physical recall and delivery. Every mission starts **Mine Freely**. Friendly sensors reveal a persistent chart; the Scout maps new territory and detects signals. Tap a discovered signal during the live mission to assign an available Escort, or ignore it while mining continues. Rock depletion, charted cells, discovered signals and loose ore persist after completed shifts; Abort rolls the active shift back.
+A mobile-first autonomous mining game. Configure fleet counts, doctrine and launch site, then Deploy into a 30-second active shift, upgradeable to 45, 60 and 90 seconds, followed by physical recall and delivery. Every mission starts **Mine Freely**. Friendly sensors reveal a persistent chart across a 2600 × 2400 world; the Scout maps new territory and detects signals. Tap a discovered signal during the live mission to assign an available Escort, or ignore it while mining continues. Rock depletion, charted cells, discovered signals and loose ore persist after completed shifts; Abort rolls the active shift back.
 
 ## Run
 
@@ -10,6 +10,7 @@ npm test
 npm run build
 npm run balance
 npm run explore
+npm run frontier
 npm run dev
 ```
 
@@ -21,7 +22,7 @@ Impact Miners have 15 HP and lose 1 per valid ram; they stop deliberately rammin
 
 A shared transient ore-claim registry spreads Miners across distinct fragments; each may queue only as many claims as its free cargo and a Hauler cannot steal a Miner claim. Claims release on pickup, retasking, recall or loss. Hauler Operation (1 Tech Point) unlocks a Hauler in the Hangar. Each Hauler consumes one purchased Fleet Slot, carries 10 fragments, collects loose ore, takes nearby Miner cargo at a physical rendezvous and unloads at the selected station. Expanded Hauler (2 Tech Points, requires Hauler Operation) raises its capacity to 14. It does not mine or fight. Miners can still deliver independently; a full Miner only waits briefly for a nearby available Hauler and otherwise returns normally. Cargo ownership changes atomically; only station delivery credits Minerals. Haulers have hull, can be attacked, and drop their entire cargo as unit salvage on destruction. Shared berths prevent miners and Haulers double-booking a docking spot.
 
-Workshop sells only physical Fleet Slots (28, 58, 155, 340, 480 Minerals), HQ Turret (18) and Outer Outpost (38). Hangar adjusts Impact Miner, researched Laser Miner, researched Hauler, researched Escort and unarmed Scout counts up to purchased capacity. At least one Miner is always required; the Scout consumes a purchased slot, maps a wide area and carries no ore or weapon. Mobile Mining Rig remains unavailable. Research is an optional focused panel; Workshop and Hangar remain the two main tabs. Doctrine and the HQ/Outpost launch-site control stay beside Deploy. The old objective picker and omniscient scanner have been removed.
+Workshop sells physical Fleet Slots (28, 58, 155, 340, 480 Minerals), HQ Turret (18), Outer Outpost (450), and sequential Shift Endurance upgrades (75, 180, 400 Minerals). Hangar adjusts Impact Miner, researched Laser Miner, researched Hauler, researched Escort and unarmed Scout counts up to purchased capacity. At least one Miner is always required; the Scout consumes a purchased slot, cruises at 85 units/second, avoids danger at 105, senses within 165, and carries no ore or weapon. Mobile Mining Rig remains unavailable. Research is an optional focused panel; Workshop and Hangar remain the two main tabs. Doctrine and the HQ/Outpost launch-site control stay beside Deploy. The old objective picker and omniscient scanner have been removed.
 
 ## Discoveries and Research
 
@@ -41,10 +42,10 @@ The nine one-time Tech sources fund the nine total node costs; Minerals and Tech
 
 ## Saves
 
-Valid v9, v8 and v7 companies migrate to v10 without a progression reset. Credits, rounds, slots and fleet mix, spent/earned Tech, prior investigated sites, minerals, doctrine, infrastructure and depleted world remain. Legacy pre-Deploy objectives are discarded. Existing fleets receive **zero** Scouts, and explored map memory is seeded only around known sites and milestones. v10 saves validate the compact 1,216-cell map, POI IDs, fleet and Tech ledger. Live targets and live visibility are never saved; unrelated browser storage is untouched.
+Valid v10, v9, v8 and v7 companies migrate to v11 without a progression reset. Credits, rounds, slots and fleet mix, spent/earned Tech, prior investigated sites, minerals, doctrine, infrastructure and depleted world remain. The old 32 × 38 bitset is converted cell by cell into the 104 × 96 map, and known site footprints move with the relocated sites. Asteroid IDs 0–29 keep their seeded geometry and HP; new frontier rocks use IDs 30–167. Legacy pre-Deploy objectives are discarded. Existing fleets receive zero new Scouts, and new endurance starts at 30 seconds. Live targets and live visibility are never saved; unrelated browser storage is untouched.
 
 ## Validation and balance
 
-`npm run balance` reproduces the Pass D fixed-step ten-seed baseline, equal-slot fleet comparisons and multi-mission persistent-field price calibration. `npm run explore` measures matched two-slot mining versus Scout exploration, midgame progression and an actual Escort investigation. Results and limitations are in [the Pass E report](docs/pass-e-fog-scout-targets.md) and [the Pass D balance report](docs/pass-d-balance.md). `npm test` includes deterministic fog, Scout, target, research, migration, ore conservation, last-Miner loss and four-doctrine regressions. Normal shift completion waits for loaded surviving Haulers and returning Scouts.
+`npm run balance` reproduces the Pass D fixed-step ten-seed baseline, equal-slot fleet comparisons and multi-mission price calibration. `npm run explore` measures matched two-slot mining versus Scout exploration and live Escort investigation in the expanded world. `npm run frontier` measures all shift tiers and a purchase-driven campaign through an Outpost launch. Results and limitations are in [the Pass F report](docs/pass-f-frontier.md), [the Pass E report](docs/pass-e-fog-scout-targets.md) and [the Pass D report](docs/pass-d-balance.md). `npm test` includes deterministic fog, Scout, target, research, v10 map migration, ore conservation, last-Miner loss and four-doctrine regressions. Normal shift completion waits for loaded surviving Haulers and returning Scouts.
 
 Mobile Mining Rig and individual drone customization remain out of scope. Drones cannot be steered, fired or micromanaged in mission.

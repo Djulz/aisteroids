@@ -22,9 +22,13 @@ for(let i=1;i<=12;i++){const w=run(createWorld(scoutCompany,scoutCompany.worldSe
  if(i===3){scoutCompany=buy(scoutCompany,'fleetSlot')!;scoutCompany=changeFleet(scoutCompany,'scout',1)!;}
  if(!scoutOutpostRound&&scoutCompany.progress.outpostSurveyed)scoutOutpostRound=i;
 }
-const base=freshCompany(),escortCompany:Company={...base,fleetCapacity:3,fleetComposition:{...base.fleetComposition,scout:1,escort:1},unlockedTypes:['impactMiner','scout','escort'],progress:{...base.progress,rivalSeen:true}};
-const investigation=createWorld(escortCompany),site=POIS[0];let detection=-1,locked=-1,completed=-1;
-for(let i=0;i<ROUND_TIME/STEP+1500&&investigation.phase!=='done';i++){
+const base=freshCompany(),escortCompany:Company={...base,enduranceLevel:3,fleetCapacity:3,fleetComposition:{...base.fleetComposition,scout:1,escort:1},unlockedTypes:['impactMiner','scout','escort'],progress:{...base.progress,rivalSeen:true}};
+const investigation=createWorld(escortCompany),site=POIS[0];
+// Repeatable local detection fixture; the campaign benchmark covers travel from HQ.
+investigation.scouts[0].x=site.x-120;investigation.scouts[0].y=site.y;
+investigation.guards[0].x=site.x-100;investigation.guards[0].y=site.y;
+let detection=-1,locked=-1,completed=-1;
+for(let i=0;i<escortCompany.enduranceLevel*1800+1500&&investigation.phase!=='done';i++){
  step(investigation);if(detection<0&&investigation.discoveredPois.has(site.id)){detection=investigation.time;const result=lockTarget(investigation,site.id);if(!result.ok)throw Error(result.reason);locked=investigation.time;}
  if(completed<0&&investigation.pendingTech.some(e=>e.id===site.id))completed=investigation.time;
 }
@@ -39,4 +43,4 @@ for(let i=1;i<=65;i++){
  }
  if(mixed.fleetComposition.scout&&mixed.fleetComposition.escort&&mixed.fleetComposition.hauler){mixedMilestone=i;const final=run(createWorld(mixed,mixed.worldSeed));mixedOutput={delivered:final.delivered,signals:final.discoveredPois.size,cells:mapCount(final.explored),scouts:final.scouts.map(s=>s.state),researched:mixed.unlockedTechnologies};break;}
 }
-console.log(JSON.stringify({seeds,matchedResults,mean,minerOnly:{slot2Round,farRound,richRound,rivalRound,outpostRound,after35:company.credits},minerScout:{outpostRound:scoutOutpostRound,after12:scoutCompany.credits},mixedFleet:{assembledRound:mixedMilestone,mission:mixedOutput},investigation:{detected:+detection.toFixed(2),locked:+locked.toFixed(2),completed:+completed.toFixed(2),secondsAfterLock:+(completed-locked).toFixed(2),pendingBeforeSettle:investigation.pendingTech.some(e=>e.id===site.id)},constants:{workShift:ROUND_TIME,scoutSensor:165,scoutSpeed:125}},null,2));
+console.log(JSON.stringify({seeds,matchedResults,mean,minerOnly:{slot2Round,farRound,richRound,rivalRound,outpostRound,after35:company.credits},minerScout:{outpostRound:scoutOutpostRound,after12:scoutCompany.credits},mixedFleet:{assembledRound:mixedMilestone,mission:mixedOutput},investigation:{detected:+detection.toFixed(2),locked:+locked.toFixed(2),completed:+completed.toFixed(2),secondsAfterLock:locked<0||completed<0?null:+(completed-locked).toFixed(2),pendingBeforeSettle:investigation.pendingTech.some(e=>e.id===site.id)},constants:{workShift:ROUND_TIME,scoutSensor:165,scoutSpeed:85}},null,2));

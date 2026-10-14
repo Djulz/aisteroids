@@ -14,5 +14,5 @@ test('built Outpost keeps a launch and unload site choice',()=>{
  const c={...freshCompany(),outpost:true,launchSite:'far' as const};
  const html=renderLobby(c,view);
  assert.match(html,/LAUNCH SITE/);assert.match(html,/data-site="home"/);assert.match(html,/data-site="far"/);
- assert.equal(createWorld(c).base.x,535);assert.equal(createWorld(c).activeTarget,null);
+ assert.equal(createWorld(c).base.x,1900);assert.equal(createWorld(c).activeTarget,null);
 });

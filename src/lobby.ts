@@ -1,4 +1,4 @@
-import {cost,unlocked,type Company,type Purchase} from './sim.ts';
+import {cost,unlocked,missionDuration,ENDURANCE_DURATIONS,type Company,type Purchase} from './sim.ts';
 import {DOCTRINES,doctrineIds} from './doctrines.ts';
 import {fleetError,usedSlots,MAX_FLEET_CAPACITY,type FleetType,type FleetComposition,typeAvailable} from './fleet.ts';
 import {TECH,technologyIds,researched,researchReason} from './research.ts';
@@ -6,18 +6,18 @@ import {TECH,technologyIds,researched,researchReason} from './research.ts';
 export type LobbyTab='workshop'|'hangar';
 export type LobbyView={tab:LobbyTab;doctrineOpen:boolean;planOpen:boolean;researchOpen?:boolean;error:string;storageOK:boolean};
 const fmt=(n:number)=>n.toLocaleString('en-US');
-const names:Record<Purchase,string>={fleetSlot:'Fleet Slot',turret:'HQ Turret',outpost:'Outer Outpost'};
-const descriptions:Record<Purchase,string>={fleetSlot:'Room for one more autonomous liability.',turret:'Fixed defense near HQ.',outpost:'Launch and unload in the Outer Reach.'};
-const icons:Record<Purchase,string>={fleetSlot:'⬡',turret:'⌖',outpost:'⌂'};
+const names:Record<Purchase,string>={fleetSlot:'Fleet Slot',turret:'HQ Turret',outpost:'Outer Outpost',endurance:'Extended Shifts'};
+const descriptions:Record<Purchase,string>={fleetSlot:'Room for one more autonomous liability.',turret:'Fixed defense near HQ.',outpost:'Launch and unload in the remote frontier.',endurance:'More time before recall.'};
+const icons:Record<Purchase,string>={fleetSlot:'⬡',turret:'⌖',outpost:'⌂',endurance:'◷'};
 const labels:Record<FleetType,string>={impactMiner:'Impact Miner',laserMiner:'Laser Miner',escort:'Escort',hauler:'Hauler',scout:'Scout',miningRig:'Mobile Mining Rig'};
 
 function workshop(c:Company){return `<div class="workshop-groups"><section class="upgrade-group"><div class="section-line"><span>PHYSICAL EXPANSION</span></div><div class="upgrades">${(['fleetSlot','turret','outpost'] as Purchase[]).map(item=>{
- const maxed=item==='fleetSlot'?c.fleetCapacity>=MAX_FLEET_CAPACITY:c[item],locked=!unlocked(c,item),price=cost(c,item),affordable=c.credits>=price;
+ const maxed=item==='fleetSlot'?c.fleetCapacity>=MAX_FLEET_CAPACITY:item==='endurance'?c.enduranceLevel>=3:c[item],locked=!unlocked(c,item),price=cost(c,item),affordable=c.credits>=price;
  const state=maxed?'INSTALLED':locked?'LOCKED':affordable?`BUY ◆ ${price}`:`◆ ${price} NEEDED`;
  const detail=item==='fleetSlot'?`${c.fleetCapacity} / ${MAX_FLEET_CAPACITY} SLOTS`:maxed?'BUILT':'NOT BUILT';
  const reason=locked?item==='turret'?' Rival contact required.':' Survey the Outer Reach site.':'';
  return `<button class="upgrade ${maxed?'installed':''}" data-buy="${item}" ${maxed||locked||!affordable?'disabled':''} aria-label="${names[item]}, ${detail}, ${state}"><span class="upgrade-icon">${icons[item]}</span><span class="upgrade-copy"><b>${names[item]}</b><small>${detail} · ${descriptions[item]}${reason}</small></span><span class="price">${state}</span></button>`;
- }).join('')}</div></section></div>`;}
+ }).join('')}<button class="upgrade ${c.enduranceLevel===3?'installed':''}" data-buy="endurance" ${c.enduranceLevel===3||c.credits<cost(c,'endurance')?'disabled':''} aria-label="Mission Endurance, ${missionDuration(c)} seconds, ${c.enduranceLevel===3?'maximum':cost(c,'endurance')+' Minerals'}"><span class="upgrade-icon">◷</span><span class="upgrade-copy"><b>${['Extended Shifts','Deep Operations','Long-Haul License','Mission Endurance'][c.enduranceLevel]}</b><small>${missionDuration(c)}s ${c.enduranceLevel===3?'· MAX SHIFT':`→ ${ENDURANCE_DURATIONS[c.enduranceLevel+1]}s · More time before recall.`}</small></span><span class="price">${c.enduranceLevel===3?'MAX':c.credits>=cost(c,'endurance')?'BUY ◆ '+cost(c,'endurance'):'◆ '+cost(c,'endurance')+' NEEDED'}</span></button></div></section></div>`;}
 function hangar(c:Company){
  const f=c.fleetComposition,slots=usedSlots(f);
  const row=(type:'impactMiner'|'laserMiner'|'escort'|'hauler'|'scout',description:string)=>{
@@ -43,7 +43,7 @@ export function renderLobby(c:Company,view:LobbyView){
  <div class="tab-content" id="lobby-content">${view.researchOpen?researchPanel(c):view.tab==='workshop'?workshop(c):hangar(c)}</div>
  <div class="lobby-dock"><div class="doctrine-quick"><div><span class="eyebrow">FLEET DOCTRINE</span><b>${chosen.name}</b><small>${chosen.flavor}</small></div><button id="change-doctrine" aria-expanded="${view.doctrineOpen}">${view.doctrineOpen?'CLOSE':'CHANGE'}</button></div>
  ${view.doctrineOpen?`<div class="doctrine-picker">${doctrineIds.map(id=>{const item=DOCTRINES[id];return `<button class="doctrine-option" data-doctrine="${id}" aria-pressed="${c.doctrine===id}"><b>${item.name}</b><small>${item.flavor}</small><span>↑ ${item.benefit}<br>↓ ${item.tradeoff}</span></button>`;}).join('')}</div>`:''}
- <section class="mission-plan" aria-label="Launch site"><div class="plan-quick"><div><span class="eyebrow">LAUNCH SITE · NEXT SHIFT</span><b>${c.launchSite==='far'&&c.outpost?'OUTPOST':'HQ'}</b><small>Start and unload location</small></div>${c.outpost?`<button id="change-plan" aria-expanded="${view.planOpen}" aria-controls="mission-plan-options">${view.planOpen?'CLOSE':'CHANGE'}</button>`:''}</div>
+ <section class="mission-plan" aria-label="Launch site"><div class="plan-quick"><div><span class="eyebrow">LAUNCH SITE · NEXT SHIFT</span><b>${c.launchSite==='far'&&c.outpost?'OUTPOST':'HQ'}</b><small>Start and unload location · ${missionDuration(c)}s active shift</small></div>${c.outpost?`<button id="change-plan" aria-expanded="${view.planOpen}" aria-controls="mission-plan-options">${view.planOpen?'CLOSE':'CHANGE'}</button>`:''}</div>
  ${view.planOpen&&c.outpost?`<div class="plan-options" id="mission-plan-options"><div class="plan-group"><div class="plan-site-options"><button data-site="home" aria-pressed="${c.launchSite==='home'}"><b>⌂ HQ</b><small>Home Field</small></button><button data-site="far" aria-pressed="${c.launchSite==='far'}"><b>⌖ OUTPOST</b><small>Outer Reach</small></button></div></div></div>`:''}</section>
  <div class="deploy-summary"><b>${slots} ACTIVE DRONE${slots===1?'':'S'}</b><span>${summary}</span></div><div class="plan-summary">${chosen.name} · ${c.launchSite==='far'&&c.outpost?'Outpost':'HQ'} · MINE FREELY — NO TARGET SELECTED</div><button class="primary" id="launch" ${error?'disabled':''}>DEPLOY FLEET <span>↗</span></button>${error?`<p class="form-error">${error} <button id="fix-fleet">OPEN HANGAR</button></p>`:''}</div>
  ${!view.storageOK?'<p class="save-warning">Saving is unavailable. Progress will be lost when you close this page.</p>':''}

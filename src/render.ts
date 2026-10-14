@@ -1,6 +1,6 @@
 import {type Camera,newCamera} from './camera.ts';
 import { HOME, FAR, W, H, ORE_PICKUP_DELAY, visibleAt, exploredAt, investigated, type World } from './sim.ts';
-import {POIS,CELL,COLS,ROWS,hasCell} from './knowledge.ts';
+import {POIS,CELL,COLS,ROWS} from './knowledge.ts';
 const gold = '#f5b743', cream = '#e7e2cf';
 function drawOutpost(c:CanvasRenderingContext2D,active:boolean,t:number,bounce=0){
  c.save();c.translate(FAR.x,FAR.y);c.scale(1+bounce,1+bounce);c.strokeStyle=active?'#83d8cf':'#598d94';c.fillStyle='#122e36';c.lineWidth=2;
@@ -51,18 +51,24 @@ export function drawMother(c: CanvasRenderingContext2D, t:number,bounce=0,base=H
  c.font='bold 7px monospace';c.textAlign='center';c.fillStyle='#243b47';c.fillText('01',0,31);
  c.restore();
 }
-const fogCache=new WeakMap<World,{revision:number;canvas:HTMLCanvasElement}>();
+const fogCache=new WeakMap<World,{revision:number;bits:Uint8Array;canvas:HTMLCanvasElement}>();
 function fogImage(w:World){
- const cached=fogCache.get(w);if(cached?.revision===w.mapRevision)return cached.canvas;
- const canvas=cached?.canvas??document.createElement('canvas');canvas.width=W;canvas.height=H;
- const c=canvas.getContext('2d')!;c.clearRect(0,0,W,H);
- for(let row=0;row<ROWS;row++)for(let col=0;col<COLS;col++){
-  const x=col*CELL,y=row*CELL;
-  if(!hasCell(w.visible,x+CELL/2,y+CELL/2)){
-   c.fillStyle=hasCell(w.explored,x+CELL/2,y+CELL/2)?'#071621c9':'#050d16';c.fillRect(x,y,CELL+.4,CELL+.4);
-  }
+ let cached=fogCache.get(w);
+ if(cached?.revision===w.mapRevision)return cached.canvas;
+ if(!cached){const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
+  const c=canvas.getContext('2d')!;c.fillStyle='#050d16';c.fillRect(0,0,W,H);
+  cached={revision:-1,bits:new Uint8Array(w.explored.length),canvas};fogCache.set(w,cached);
  }
- fogCache.set(w,{revision:w.mapRevision,canvas});return canvas;
+ const c=cached.canvas.getContext('2d')!;
+ for(let i=0;i<w.explored.length;i++){
+  const added=w.explored[i]&~cached.bits[i];if(!added)continue;
+  for(let bit=0;bit<8;bit++)if(added&(1<<bit)){
+   const cell=i*8+bit,col=cell%COLS,row=Math.floor(cell/COLS);
+   if(row<ROWS)c.clearRect(col*CELL,row*CELL,CELL,CELL);
+  }
+  cached.bits[i]=w.explored[i];
+ }
+ cached.revision=w.mapRevision;return cached.canvas;
 }
 export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camera:Camera=newCamera()) {
  const c = canvas.getContext('2d')!; const VIEW_W=camera.width,VIEW_H=camera.height;const sx=canvas.width/VIEW_W, sy=canvas.height/VIEW_H;
@@ -70,7 +76,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  c.strokeStyle='#26404d35';c.lineWidth=.6; c.beginPath(); for(let x=0;x<W;x+=25){c.moveTo(x,0);c.lineTo(x,H);}for(let y=0;y<H;y+=25){c.moveTo(0,y);c.lineTo(W,y);}c.stroke();
  for(let i=0;i<144;i++){c.fillStyle=i%4===0?'#71929a66':'#71929a2b';c.fillRect((i*137+19)%W,(i*83+41)%H,i%4===0?1.4:1,1);}
  c.strokeStyle='#68828c3b';for(let i=0;i<9;i++){const x=35+i%3*165,y=34+Math.floor(i/3)*230;c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}
- c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME FIELD',30,32);c.fillText('FAR BELT',460,32);c.fillText('OUTER REACH',400,720);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
+ c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME FIELD',30,32);c.fillText('FAR BELT',850,32);c.fillText('OUTER REACH',1700,1450);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
  // The same explored/visible bitsets drive both field and radar. Unknown cells
  // never get object drawing; known terrain remains a subdued map memory.
  const mask=fogImage(w);c.drawImage(mask,0,0);
@@ -82,8 +88,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  }
  for(const r of w.rocks){
    if(!exploredAt(w,r))continue;
-   if(!visibleAt(w,r)){c.fillStyle='#273945';c.beginPath();c.arc(r.x,r.y,r.r*.8,0,7);c.fill();continue;}
-   if(r.hp<=0) continue;
+   if(r.hp<=0)continue;
    const impact=w.effects.find(e=>e.type==='hit'&&e.x===r.x&&e.y===r.y);const pulse=impact?impact.life/impact.max:0;
    c.save();c.translate(r.x+Math.sin(pulse*24)*pulse*2,r.y+Math.cos(pulse*19)*pulse*2);c.rotate(r.id*.73);c.scale(1+pulse*.07,1+pulse*.07);
    const points=r.shape.map((n,i)=>[Math.cos(i/r.shape.length*Math.PI*2)*r.r*n,Math.sin(i/r.shape.length*Math.PI*2)*r.r*n]);
@@ -97,7 +102,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    if(scanned){c.fillStyle='#7bd4be';for(let i=0;i<3;i++){c.beginPath();c.arc(Math.cos(i*2.1)*r.r*.52,Math.sin(i*2.1)*r.r*.52,2.5,0,7);c.fill();}c.rotate(-r.id*.73);c.strokeStyle='#7bd4be88';c.lineWidth=1;c.beginPath();c.arc(0,0,r.r+6,-Math.PI/2,-Math.PI/2+Math.PI*2*r.hp/r.max);c.stroke();}
    c.restore();
  }
- for(const o of w.ores){if(!visibleAt(w,o))continue;const age=o.age??1,t=Math.min(1,age/ORE_PICKUP_DELAY),flight=1-(1-t)*(1-t);
+ for(const o of w.ores){if(!exploredAt(w,o))continue;const age=o.age??1,t=Math.min(1,age/ORE_PICKUP_DELAY),flight=1-(1-t)*(1-t);
   const originX=o.originX??o.x,originY=o.originY??o.y,dx=o.x-originX,dy=o.y-originY;
   const x=originX+dx*flight,y=originY+dy*flight;
   if(t<1){c.strokeStyle='#f5b74377';c.lineWidth=2;c.beginPath();c.moveTo(x-dx*(1-t)*.18,y-dy*(1-t)*.18);c.lineTo(x,y);c.stroke();}
@@ -149,7 +154,8 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  const mx=VIEW_W-88,my=VIEW_H-112,mw=76,mh=88,kx=mw/W,ky=mh/H;
  c.fillStyle='#08131deb';c.fillRect(mx-4,my-4,mw+8,mh+8);c.strokeStyle='#52707d';c.lineWidth=.7;c.strokeRect(mx,my,mw,mh);
  c.fillStyle='#18313c';c.fillRect(mx,my,mw,mh);c.drawImage(mask,0,0,W,H,mx,my,mw,mh);
- for(const r of w.rocks){if(!exploredAt(w,r))continue;c.fillStyle=visibleAt(w,r)&&r.rich&&r.hp>0?'#7bd4be':visibleAt(w,r)&&r.hp>0?'#60717e':'#324852';c.fillRect(mx+r.x*kx,my+r.y*ky,1.8,1.8);}
+ for(const r of w.rocks){if(!exploredAt(w,r)||r.hp<=0)continue;c.fillStyle=r.rich&&w.progress.farSurveyed?'#7bd4be':'#a8bac2';c.fillRect(mx+r.x*kx-1,my+r.y*ky-1,2.2,2.2);}
+ for(const o of w.ores){if(!exploredAt(w,o))continue;c.fillStyle=gold;c.fillRect(mx+o.x*kx-1,my+o.y*ky-1,2,2);}
  for(const site of POIS){if(!w.discoveredPois.has(site.id))continue;c.fillStyle=investigated(w,site.id)?'#55797c':w.activeTarget===site.id?'#f5b743':'#8ee3d3';c.fillRect(mx+site.x*kx-1.5,my+site.y*ky-1.5,3,3);}
  c.fillStyle='#e7e2cf';c.fillRect(mx+HOME.x*kx-2,my+HOME.y*ky-2,4,4);if(w.company.outpost){c.fillStyle='#83d8cf';c.fillRect(mx+FAR.x*kx-2,my+FAR.y*ky-2,4,4);}
 

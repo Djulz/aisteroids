@@ -112,7 +112,7 @@ test('four real types deploy together; a full Hauler unloads at the selected Out
  c=changeFleet(c,'laserMiner',1)!;c=changeFleet(c,'escort',1)!;
  const w=createWorld(c),h=w.haulers[0];
  assert.deepEqual(w.drones.map(d=>d.kind),['impactMiner','laserMiner']);assert.equal(w.guards.length,1);assert.equal(w.haulers.length,1);
- assert.equal(new Set([...w.drones,...w.haulers].map(d=>d.id)).size,3);assert.deepEqual(w.base,{x:535,y:770});
+ assert.equal(new Set([...w.drones,...w.haulers].map(d=>d.id)).size,3);assert.deepEqual(w.base,{x:1900,y:1620});
  h.cargo=10;h.richCargo=1;const berth=dockingSpots(w.base)[0];h.x=berth.x;h.y=berth.y;h.vx=h.vy=0;
  step(w);assert.equal(h.state,'unload');
  for(let i=0;i<75;i++)step(w);
@@ -126,7 +126,7 @@ test('v8 max-spent companies migrate intact, new nodes and fleet counts persist;
  c=changeFleet(c,'laserMiner',1)!;c=changeFleet(c,'escort',1)!;
  assert.equal(c.techPointsAvailable,0);
  const legacy={...c,version:8,fleetComposition:{impactMiner:c.fleetComposition.impactMiner,laserMiner:c.fleetComposition.laserMiner,escort:c.fleetComposition.escort,hauler:0,miningRig:0}};const {api,map}=store({'aisteroids-company-v8':JSON.stringify(legacy),'unrelated':'keep'});
- let migrated=loadCompany(api);assert.equal(migrated.version,10);assert.equal(migrated.techPointsAvailable,0);
+ let migrated=loadCompany(api);assert.equal(migrated.version,11);assert.equal(migrated.techPointsAvailable,0);
  assert.equal(migrated.credits,37);assert.equal(migrated.rounds,12);assert.equal(migrated.fleetCapacity,4);
  assert.equal(migrated.fleetComposition.escort,1);assert.equal(migrated.fleetComposition.laserMiner,1);
  assert.equal(migrated.rockHp[0],9);assert.equal(migrated.ores[0].rich,true);
