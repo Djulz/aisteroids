@@ -6,6 +6,7 @@ export type MissionObjective={id:Directive;title:string;description:string};
 // The unlocked options follow the original survey progression.
 export function missionObjectives(c:Company):MissionObjective[]{
  const options:MissionObjective[]=[{id:'auto',title:'Free Mining',description:'Mine and collect minerals wherever the fleet finds them.'}];
+ if(!c.progress.farSurveyed)options.push({id:'chartFar',title:'Chart Far Belt',description:'Send a drone to the Far Belt, then resume mining.'});
  if(c.progress.farSurveyed&&!c.progress.richSampled)options.push({id:'surveyFar',title:'Recover Rich Sample',description:'Prioritize rich deposits in the Far Belt.'});
  if(c.progress.farSurveyed&&c.progress.rivalSeen&&!c.progress.outpostSurveyed)options.push({id:'surveyOutpost',title:'Survey Outpost Site',description:'Travel to Outer Reach and chart the future outpost.'});
  return options;

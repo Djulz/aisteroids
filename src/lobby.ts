@@ -2,9 +2,10 @@ import {cost,unlocked,createWorld,type Company,type Purchase} from './sim.ts';
 import {DOCTRINES,doctrineIds} from './doctrines.ts';
 import {fleetError,usedSlots,MAX_FLEET_CAPACITY,type FleetType,type FleetComposition,typeAvailable} from './fleet.ts';
 import {effectiveDirective,missionObjectiveName,missionObjectives} from './mission-plan.ts';
+import {TECH,technologyIds,researched,researchReason} from './research.ts';
 
 export type LobbyTab='workshop'|'hangar';
-export type LobbyView={tab:LobbyTab;doctrineOpen:boolean;planOpen:boolean;error:string;storageOK:boolean};
+export type LobbyView={tab:LobbyTab;doctrineOpen:boolean;planOpen:boolean;researchOpen?:boolean;error:string;storageOK:boolean};
 const fmt=(n:number)=>n.toLocaleString('en-US');
 const names:Record<Purchase,string>={fleetSlot:'Fleet Slot',turret:'HQ Turret',outpost:'Outer Outpost'};
 const descriptions:Record<Purchase,string>={fleetSlot:'Room for one more autonomous liability.',turret:'Fixed defense near HQ.',outpost:'Launch and unload in the Outer Reach.'};
@@ -22,9 +23,16 @@ function hangar(c:Company){
  const f=c.fleetComposition,slots=usedSlots(f);
  const row=(type:'impactMiner'|'laserMiner'|'escort',description:string)=>{
   const available=typeAvailable(c,type),count=f[type],canRemove=available&&count>0&&(type==='escort'||f.impactMiner+f.laserMiner>1),canAdd=available&&slots<c.fleetCapacity;
-  return `<div class="fleet-row"><span class="fleet-icon">${type==='escort'?'✥':type==='laserMiner'?'↗':'⬡'}</span><div class="fleet-info"><b>${labels[type]}</b><small>${available?description:type==='laserMiner'?'Future Research unlock':'Encounter a rival scout to unlock'}</small></div>${available?`<div class="fleet-stepper"><button data-type="${type}" data-delta="-1" aria-label="Remove ${labels[type]}" ${canRemove?'':'disabled'}>−</button><strong>${count}</strong><button data-type="${type}" data-delta="1" aria-label="Add ${labels[type]}" ${canAdd?'':'disabled'}>+</button></div>`:'<span class="fleet-locked">LOCKED</span>'}</div>`;
+  return `<div class="fleet-row"><span class="fleet-icon">${type==='escort'?'✥':type==='laserMiner'?'↗':'⬡'}</span><div class="fleet-info"><b>${labels[type]}</b><small>${available?description:type==='laserMiner'?'Research Laser Mining to unlock':c.progress.rivalSeen?'Research Escort Program to unlock':'Encounter a rival scout, then research Escort Program'}</small></div>${available?`<div class="fleet-stepper"><button data-type="${type}" data-delta="-1" aria-label="Remove ${labels[type]}" ${canRemove?'':'disabled'}>−</button><strong>${count}</strong><button data-type="${type}" data-delta="1" aria-label="Add ${labels[type]}" ${canAdd?'':'disabled'}>+</button></div>`:'<span class="fleet-locked">LOCKED</span>'}</div>`;
  };
  return `<section class="fleet-builder"><div class="section-line"><span>YOUR FLEET</span><span>${slots} / ${c.fleetCapacity} DRONE SLOTS</span></div><div class="capacity-meter"><span style="width:${slots/c.fleetCapacity*100}%"></span></div>${row('impactMiner','Rams asteroids · 2 fragments · cargo 3')}${row('laserMiner','Ranged extraction · 1 fragment · cargo 3')}${row('escort','Intercepts hostiles · no cargo')}<p class="hangar-hint">Hauler and Mobile Mining Rig await future engineering.</p></section>`;
+}
+function researchPanel(c:Company){
+ return `<section class="research-panel" aria-label="Technology research"><div class="research-head"><button id="close-research" aria-label="Back to Mission Control">← BACK</button><div><span class="eyebrow">RECOVERED KNOWLEDGE</span><b>◈ ${c.techPointsAvailable} TECH POINT${c.techPointsAvailable===1?'':'S'}</b></div></div>
+ ${(['Extraction','Security'] as const).map(branch=>`<div class="research-branch"><div class="section-line">${branch.toUpperCase()}</div>${technologyIds.filter(id=>TECH[id].branch===branch).map(id=>{
+  const node=TECH[id],owned=researched(c,id),reason=researchReason(c,id);
+  return `<div class="research-node"><div><b>${node.name}</b><small>${node.description}</small><span>${owned?'RESEARCHED':reason??'AVAILABLE'} · ${node.cost} ◈${c.grandfatheredEscort&&id==='escortProgram'?' · LEGACY ENTITLEMENT':''}</span></div><button data-research="${id}" ${reason?'disabled':''} aria-label="Research ${node.name}, cost ${node.cost} Tech Point${node.cost===1?'':'s'}">${owned?'OWNED':reason?'LOCKED':'RESEARCH'}</button></div>`;
+ }).join('')}</div>`).join('')}</section>`;
 }
 export function renderLobby(c:Company,view:LobbyView){
  const chosen=DOCTRINES[c.doctrine],error=fleetError(c),slots=usedSlots(c.fleetComposition),f=c.fleetComposition;
@@ -32,9 +40,9 @@ export function renderLobby(c:Company,view:LobbyView){
  const scanned=view.planOpen&&c.progress.farSurveyed?createWorld(c,c.worldSeed).rocks.filter(r=>r.hp>0):[],rich=scanned.filter(r=>r.rich);
  const milestone=!c.progress.farSurveyed?'Reach the Far Belt with a drone.':!c.progress.richSampled?'Bring a teal mineral sample home.':!c.progress.rivalSeen?'Investigate rival activity in the Far Belt.':!c.progress.outpostSurveyed?'Reach the marked Outer Reach site.':!c.outpost?'Build the Outer Outpost.':'Expand the company beyond the home field.';
  const summary=([['impactMiner',f.impactMiner],['laserMiner',f.laserMiner],['escort',f.escort]] as [FleetType,number][]).filter(([,n])=>n>0).map(([type,n])=>`${n} ${labels[type]}${n===1?'':'s'}`).join(' · ');
- return `<div class="workshop lobby"><div class="lobby-top"><div class="eyebrow">MISSION CONTROL · NEXT SHIFT ${String(c.rounds+1).padStart(2,'0')}</div><div class="balance"><div><span class="eyebrow">AVAILABLE MINERALS</span><strong><i>◆</i> ${fmt(c.credits)}</strong></div><div class="lifetime">${fmt(c.total)} earned<br>${c.rounds} mission${c.rounds===1?'':'s'}</div></div><div class="milestone">NEXT · ${milestone.toUpperCase()}</div></div>
+ return `<div class="workshop lobby"><div class="lobby-top"><div class="eyebrow">MISSION CONTROL · NEXT SHIFT ${String(c.rounds+1).padStart(2,'0')}</div><div class="balance"><div><span class="eyebrow">AVAILABLE MINERALS</span><strong><i>◆</i> ${fmt(c.credits)}</strong></div><div class="lifetime">${fmt(c.total)} earned<br>${c.rounds} mission${c.rounds===1?'':'s'}</div></div><div class="research-quick"><span>◈ ${c.techPointsAvailable} TECH POINT${c.techPointsAvailable===1?'':'S'}${technologyIds.some(id=>!researchReason(c,id))?' · RESEARCH AVAILABLE':''}</span><button id="open-research">RESEARCH ↗</button></div><div class="milestone">NEXT · ${milestone.toUpperCase()}</div></div>
  <nav class="lobby-tabs" aria-label="Mission Control"><button id="tab-workshop" aria-current="${view.tab==='workshop'?'page':'false'}">WORKSHOP <small>WHAT YOU OWN</small></button><button id="tab-hangar" aria-current="${view.tab==='hangar'?'page':'false'}">HANGAR <small>${slots} DRONE${slots===1?'':'S'}</small></button></nav>
- <div class="tab-content" id="lobby-content">${view.tab==='workshop'?workshop(c):hangar(c)}</div>
+ <div class="tab-content" id="lobby-content">${view.researchOpen?researchPanel(c):view.tab==='workshop'?workshop(c):hangar(c)}</div>
  <div class="lobby-dock"><div class="doctrine-quick"><div><span class="eyebrow">FLEET DOCTRINE</span><b>${chosen.name}</b><small>${chosen.flavor}</small></div><button id="change-doctrine" aria-expanded="${view.doctrineOpen}">${view.doctrineOpen?'CLOSE':'CHANGE'}</button></div>
  ${view.doctrineOpen?`<div class="doctrine-picker">${doctrineIds.map(id=>{const item=DOCTRINES[id];return `<button class="doctrine-option" data-doctrine="${id}" aria-pressed="${c.doctrine===id}"><b>${item.name}</b><small>${item.flavor}</small><span>↑ ${item.benefit}<br>↓ ${item.tradeoff}</span></button>`;}).join('')}</div>`:''}
  <section class="mission-plan" aria-label="Next mission plan"><div class="plan-quick"><div><span class="eyebrow">MISSION PLAN · NEXT SHIFT</span><b>${c.launchSite==='far'&&c.outpost?'OUTPOST':'HQ'} · ${missionObjectiveName(c)}</b><small>Start and unload location · Mission objective</small></div>${canEditPlan?`<button id="change-plan" aria-expanded="${view.planOpen}" aria-controls="mission-plan-options">${view.planOpen?'CLOSE':'CHANGE'}</button>`:''}</div>

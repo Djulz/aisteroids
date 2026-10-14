@@ -1,5 +1,5 @@
 import {type Camera,newCamera} from './camera.ts';
-import { HOME, FAR, W, H, ORE_PICKUP_DELAY, type World } from './sim.ts';
+import { HOME, FAR, W, H, ORE_PICKUP_DELAY, RESEARCH_STATION, EXPERIMENTAL_PROBE, type World } from './sim.ts';
 const gold = '#f5b743', cream = '#e7e2cf';
 function drawOutpost(c:CanvasRenderingContext2D,active:boolean,t:number,bounce=0){
  c.save();c.translate(FAR.x,FAR.y);c.scale(1+bounce,1+bounce);c.strokeStyle=active?'#83d8cf':'#598d94';c.fillStyle='#122e36';c.lineWidth=2;
@@ -48,6 +48,11 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  for(let i=0;i<144;i++){c.fillStyle=i%4===0?'#71929a66':'#71929a2b';c.fillRect((i*137+19)%W,(i*83+41)%H,i%4===0?1.4:1,1);}
  c.strokeStyle='#68828c3b';for(let i=0;i<9;i++){const x=35+i%3*165,y=34+Math.floor(i/3)*230;c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}
  c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME FIELD',30,32);c.fillText('FAR BELT',460,32);c.fillText('OUTER REACH',400,720);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
+ // One-shot research POIs remain on the persistent map as completed sites.
+ const stationDone=w.company.uniqueTechDiscoveries.includes('abandoned_research_station')||w.pendingTech.some(e=>e.id==='abandoned_research_station');
+ c.save();c.translate(RESEARCH_STATION.x,RESEARCH_STATION.y);c.fillStyle=stationDone?'#304e52':'#174851';c.strokeStyle=stationDone?'#648080':'#8ee3d3';c.lineWidth=1.4;c.fillRect(-12,-9,24,18);c.strokeRect(-12,-9,24,18);c.fillStyle=stationDone?'#7a9b9c':'#a8f0e6';c.fillRect(-4,-5,8,5);c.fillRect(-16,8,32,3);c.font='8px monospace';c.textAlign='center';c.fillText(stationDone?'RESEARCH LOGGED':'RESEARCH SITE',0,-15);c.restore();
+ const probeDone=w.company.uniqueTechDiscoveries.includes('experimental_probe_salvaged')||w.pendingTech.some(e=>e.id==='experimental_probe_salvaged');
+ c.save();c.translate(EXPERIMENTAL_PROBE.x,EXPERIMENTAL_PROBE.y);c.fillStyle=probeDone?'#46656a':'#94e6d8';c.strokeStyle='#6cbeb2';c.lineWidth=1.2;c.beginPath();c.moveTo(0,-9);c.lineTo(9,0);c.lineTo(0,9);c.lineTo(-9,0);c.closePath();c.fill();c.stroke();c.fillStyle='#8cb7b8';c.font='8px monospace';c.textAlign='center';c.fillText(probeDone?'PROBE RECOVERED':'PROBE SIGNAL',0,-15);c.restore();
  for(const r of w.rocks){
    if(r.hp<=0) continue;
    const impact=w.effects.find(e=>e.type==='hit'&&e.x===r.x&&e.y===r.y);const pulse=impact?impact.life/impact.max:0;
@@ -109,6 +114,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  const mx=VIEW_W-88,my=VIEW_H-112,mw=76,mh=88,kx=mw/W,ky=mh/H;
  c.fillStyle='#08131deb';c.fillRect(mx-4,my-4,mw+8,mh+8);c.strokeStyle='#52707d';c.lineWidth=.7;c.strokeRect(mx,my,mw,mh);
  for(const r of w.rocks){if(r.hp<=0)continue;c.fillStyle=w.company.progress.farSurveyed&&r.rich?'#7bd4be':'#60717e';c.fillRect(mx+r.x*kx,my+r.y*ky,w.company.progress.farSurveyed&&r.rich?2:1.5,w.company.progress.farSurveyed&&r.rich?2:1.5);}
+ for(const [p,id] of [[RESEARCH_STATION,'abandoned_research_station'],[EXPERIMENTAL_PROBE,'experimental_probe_salvaged']] as const){c.fillStyle=w.company.uniqueTechDiscoveries.includes(id)||w.pendingTech.some(e=>e.id===id)?'#55797c':'#8ee3d3';c.fillRect(mx+p.x*kx-1.5,my+p.y*ky-1.5,3,3);}
  c.fillStyle='#e7e2cf';c.fillRect(mx+HOME.x*kx-2,my+HOME.y*ky-2,4,4);if(w.company.outpost){c.fillStyle='#83d8cf';c.fillRect(mx+FAR.x*kx-2,my+FAR.y*ky-2,4,4);}
  else if(w.company.directive==='surveyOutpost'&&!w.progress.outpostSurveyed){c.strokeStyle='#83d8cf';c.strokeRect(mx+FAR.x*kx-2,my+FAR.y*ky-2,4,4);}
  for(const d of w.drones){if(d.state==='dead'||d.state==='docked')continue;c.fillStyle=gold;c.beginPath();c.arc(mx+d.x*kx,my+d.y*ky,2,0,7);c.fill();}

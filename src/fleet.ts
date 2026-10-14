@@ -8,7 +8,7 @@ export const MAX_FLEET_CAPACITY=6;
 export const freshComposition=():FleetComposition=>({impactMiner:1,laserMiner:0,escort:0,hauler:0,miningRig:0});
 export const usedSlots=(fleet:FleetComposition)=>fleet.impactMiner+fleet.laserMiner+fleet.escort;
 export type FleetOwner={fleetCapacity:number;fleetComposition:FleetComposition;unlockedTypes:FleetType[];progress:{rivalSeen:boolean}};
-export const typeAvailable=(c:FleetOwner,type:FleetType)=>type==='impactMiner'||type==='escort'&&c.progress.rivalSeen||type==='laserMiner'&&c.unlockedTypes.includes('laserMiner');
+export const typeAvailable=(c:FleetOwner,type:FleetType)=>type==='impactMiner'||type==='escort'&&c.progress.rivalSeen&&c.unlockedTypes.includes('escort')||type==='laserMiner'&&c.unlockedTypes.includes('laserMiner');
 export function fleetError(c:FleetOwner):string|undefined{
  const f=c.fleetComposition;
  if(!Number.isInteger(c.fleetCapacity)||c.fleetCapacity<1||c.fleetCapacity>MAX_FLEET_CAPACITY)return 'Invalid fleet capacity.';

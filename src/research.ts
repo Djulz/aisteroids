@@ -1,0 +1,40 @@
+import type {Company} from './sim.ts';
+
+export const TECH_DISCOVERIES={
+ far_belt_charted:'Far Belt Charted',
+ first_rich_sample:'First Rich Sample',
+ first_rival_contact:'First Contact: Rival Scout',
+ outpost_site_surveyed:'Outpost Site Surveyed',
+ abandoned_research_station:'Abandoned Research Station',
+ experimental_probe_salvaged:'Experimental Probe Salvaged',
+} as const;
+export type DiscoveryId=keyof typeof TECH_DISCOVERIES;
+export const discoveryIds=Object.keys(TECH_DISCOVERIES) as DiscoveryId[];
+export const TECH={
+ laserMining:{name:'Laser Mining',branch:'Extraction',cost:1,description:'Unlock Laser Miners: ranged one-fragment extraction, cargo 3.',requires:[]},
+ impactRecovery:{name:'Impact Recovery',branch:'Extraction',cost:1,description:'Shorter post-impact reset for every Impact Miner.',requires:[]},
+ rapidCooling:{name:'Rapid Cooling',branch:'Extraction',cost:2,description:'Laser Miners fire again sooner; still one fragment per shot.',requires:['laserMining']},
+ escortProgram:{name:'Escort Program',branch:'Security',cost:1,description:'Assign Escorts to purchased fleet slots after rival contact.',requires:[]},
+ threatTracking:{name:'Threat Tracking',branch:'Security',cost:1,description:'Escorts prioritize hostiles closest to miners.',requires:['escortProgram']},
+} as const;
+export type TechnologyId=keyof typeof TECH;
+export const technologyIds=Object.keys(TECH) as TechnologyId[];
+export const researched=(c:Company,id:TechnologyId)=>c.unlockedTechnologies.includes(id);
+export const techSpent=(ids:readonly string[],grandfatheredEscort=false)=>ids.reduce((n,id)=>n+(id==='escortProgram'&&grandfatheredEscort?0:TECH[id as TechnologyId]?.cost??0),0);
+export function researchReason(c:Company,id:TechnologyId):string|undefined{
+ if(researched(c,id))return 'Already researched.';
+ if(id==='escortProgram'&&!c.progress.rivalSeen)return 'Encounter a rival scout first.';
+ const prerequisite=TECH[id].requires.find(required=>!researched(c,required));
+ if(prerequisite)return `Requires ${TECH[prerequisite].name}.`;
+ if(c.techPointsAvailable<TECH[id].cost)return `Requires ${TECH[id].cost} Tech Point${TECH[id].cost===1?'':'s'}.`;
+}
+export function research(c:Company,id:TechnologyId):Company|null{
+ if(!Object.hasOwn(TECH,id)||researchReason(c,id))return null;
+ const unlockedTechnologies=[...c.unlockedTechnologies,id];
+ return {...c,unlockedTechnologies,techPointsAvailable:c.techPointsAvailable-TECH[id].cost,
+  unlockedTypes:['impactMiner',...(unlockedTechnologies.includes('laserMining')?['laserMiner'] as const:[]),...(unlockedTechnologies.includes('escortProgram')?['escort'] as const:[])]};
+}
+export function awardTech(c:Company,ids:readonly DiscoveryId[]):Company{
+ const unique=ids.filter((id,i)=>Object.hasOwn(TECH_DISCOVERIES,id)&&ids.indexOf(id)===i&&!c.uniqueTechDiscoveries.includes(id));
+ return {...c,uniqueTechDiscoveries:[...c.uniqueTechDiscoveries,...unique],techPointsEarned:c.techPointsEarned+unique.length,techPointsAvailable:c.techPointsAvailable+unique.length};
+}

@@ -5,8 +5,8 @@ import {effectiveDirective,missionObjectives} from '../src/mission-plan.ts';
 import {renderLobby,type LobbyView} from '../src/lobby.ts';
 const view:LobbyView={tab:'hangar',doctrineOpen:false,planOpen:true,error:'',storageOK:true};
 
-test('early plan stays compact and independent of Hangar',()=>{
- const html=renderLobby(freshCompany(),view);assert.match(html,/HQ · Free Mining/);assert.doesNotMatch(html,/data-directive=|data-site=|id="change-plan"/);
+test('early plan offers reachable Far Belt exploration without Hangar controls',()=>{
+ const html=renderLobby(freshCompany(),view);assert.match(html,/HQ · Free Mining/);assert.match(html,/data-directive="chartFar"/);assert.doesNotMatch(html,/data-site=/);
 });
 test('Far Belt discovery unlocks interim scanner and rich objective without Workshop purchase',()=>{
  const c={...freshCompany(),progress:{...freshCompany().progress,farSurveyed:true}};

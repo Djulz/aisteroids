@@ -3,18 +3,19 @@ import assert from 'node:assert/strict';
 import {buy,cost,freshCompany,createWorld,type Company} from '../src/sim.ts';
 import {changeFleet,fleetError,usedSlots} from '../src/fleet.ts';
 import {renderLobby,type LobbyView} from '../src/lobby.ts';
+import {awardTech,research} from '../src/research.ts';
 const view:LobbyView={tab:'hangar',doctrineOpen:false,planOpen:false,error:'',storageOK:true};
 const rich=(c:Company)=>({...c,credits:100,progress:{...c.progress,rivalSeen:true,outpostSurveyed:true}});
 
 test('one slot, one Impact Miner; slots cost minerals but do not spawn or purchase individuals',()=>{
- const c=freshCompany();assert.equal(c.version,7);assert.equal(c.fleetCapacity,1);assert.equal(c.fleetComposition.impactMiner,1);
+ const c=freshCompany();assert.equal(c.version,8);assert.equal(c.fleetCapacity,1);assert.equal(c.fleetComposition.impactMiner,1);
  assert.equal(changeFleet(c,'escort',1),null);assert.equal(changeFleet(c,'impactMiner',1),null);assert.equal(changeFleet(c,'impactMiner',-1),null);
  const paid=buy({...c,credits:cost(c,'fleetSlot')},'fleetSlot')!;assert.equal(paid.fleetCapacity,2);assert.equal(paid.fleetComposition.impactMiner,1);assert.equal(paid.credits,0);
  const expanded=changeFleet(paid,'impactMiner',1)!;assert.equal(usedSlots(expanded.fleetComposition),2);assert.equal(createWorld(expanded).drones.length,2);
  assert.equal(changeFleet(expanded,'impactMiner',1),null);
 });
-test('encounter unlocks Escort free of Bodyguard entitlements; last miner and capacity stay valid',()=>{
- const c=rich({...freshCompany(),fleetCapacity:3});const mix=changeFleet(c,'escort',1)!;
+test('rival encounter plus Escort Program unlocks role without unit purchase; capacity stays valid',()=>{
+ const c=research(awardTech(rich({...freshCompany(),fleetCapacity:3}),['first_rival_contact']),'escortProgram')!;const mix=changeFleet(c,'escort',1)!;
  assert.equal(mix.fleetComposition.escort,1);assert.equal(mix.credits,100);assert.equal(createWorld(mix).guards.length,1);
  assert.equal(changeFleet(mix,'impactMiner',-1),null);assert.equal(changeFleet(mix,'escort',1)?.fleetComposition.escort,2);
  assert.equal(changeFleet({...c,progress:{...c.progress,rivalSeen:false}},'escort',1),null);
@@ -27,12 +28,13 @@ test('Laser fixture is real but ordinary players cannot equip locked technology'
 });
 test('Workshop only sells physical expansion; Hangar shows counts and only two main tabs',()=>{
  const c=freshCompany();const h=renderLobby(c,view),w=renderLobby(c,{...view,tab:'workshop'});
- assert.match(h,/DRONE SLOTS/);assert.match(h,/IMPACT MINER|Impact Miner/);assert.match(h,/Future Research unlock/);
+ assert.match(h,/DRONE SLOTS/);assert.match(h,/IMPACT MINER|Impact Miner/);assert.match(h,/Research Laser Mining to unlock/);
  assert.doesNotMatch(h,/TINKER|MODULE A|DISPLAY NAME|data-site=|data-directive=/);
  assert.match(w,/Fleet Slot/);assert.match(w,/HQ Turret/);assert.match(w,/Outer Outpost/);
  assert.doesNotMatch(w,/Reinforced Hull|Mining Laser|Expanded Cargo|Ion Drive|Bodyguard Drone|data-buy="scanner"/);
  assert.equal((h.match(/id="tab-/g)??[]).length,2);
- const later=renderLobby(changeFleet(rich({...c,fleetCapacity:3}),'escort',1)!,view);
+ const entitled=research(awardTech(rich({...c,fleetCapacity:3}),['first_rival_contact']),'escortProgram')!;
+ const later=renderLobby(changeFleet(entitled,'escort',1)!,view);
  assert.match(later,/2 \/ 3 DRONE SLOTS/);assert.match(later,/data-type="escort" data-delta="1"/);
  assert.match(later,/1 Impact Miner · 1 Escort/);
 });
