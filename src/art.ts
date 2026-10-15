@@ -1,5 +1,6 @@
 import type {Rock} from './sim.ts';
 import type {PoiId} from './knowledge.ts';
+import type {BiomeId} from './biomes.ts';
 
 // Local ship coordinates point forward/up. The simulation's angle is an
 // atan2 heading, so the common wrapper rotates by angle + PI/2.
@@ -93,16 +94,32 @@ export function drawTurret(c:C,x:number,y:number,t=0){c.save();c.translate(x,y);
 // Only canonical distinctions select art in the live world. Future economic
 // tiers 3–5 are drawn in the gallery without assigning invented payouts.
 export function rockArtTier(r:Pick<Rock,'rich'>,richRevealed:boolean):RockArtTier{return r.rich&&richRevealed?2:1;}
-const markerColor:Record<RockArtTier,string>={1:'#a8adb2',2:'#9eac95',3:'#e9b34a',4:'#a2c9e3',5:'#b39bd4'};
-export function drawRock(c:C,r:Pick<Rock,'id'|'x'|'y'|'r'|'hp'|'max'|'shape'>,tier:RockArtTier,pulse=0){
+export type RockPalette={fill:string;edge:string;crater:string};
+export const ROCK_PALETTES:Record<BiomeId,RockPalette>={
+ home_belt:{fill:slate,edge,crater},
+ scrap_fields:{fill:'#46453f',edge:'#888c84',crater:'#333630'},
+ contested:{fill:'#423c48',edge:'#88838e',crater:'#2e2b36'},
+ ion_storm:{fill:'#39435a',edge:'#8593aa',crater:'#293247'},
+ dead_zone:{fill:'#3c473e',edge:'#838f83',crater:'#2a352e'},
+};
+export function rockPalette(id:BiomeId):RockPalette{return ROCK_PALETTES[id];}
+export const mineralColor:Record<RockArtTier,string>={1:'#a8adb2',2:'#b4b29a',3:'#e9b34a',4:'#a2c9e3',5:'#b39bd4'};
+type RockDetails={craters:{x:number;y:number;r:number}[];inclusions:{x:number;y:number;r:number}[]};
+const detailCache=new WeakMap<object,Partial<Record<RockArtTier,RockDetails>>>();
+export function rockDetails(r:Pick<Rock,'id'|'r'>,tier:RockArtTier){
+ let cache=detailCache.get(r);if(!cache){cache={};detailCache.set(r,cache);}
+ if(cache[tier])return cache[tier];
+ const craters=Array.from({length:5},(_,i)=>{const angle=i*2.4+r.id,radius=r.r*(i%2?.43:.23);return {x:Math.cos(angle)*radius,y:Math.sin(angle)*radius,r:r.r*(i%3===0?.18:.095)};});
+ const inclusions=Array.from({length:tier===1?1:3},(_,i)=>{const angle=r.id*.71+i*2.3+1.1,radius=r.r*(i%2?.49:.36);return {x:Math.cos(angle)*radius,y:Math.sin(angle)*radius,r:tier===1?1.1:1.65};});
+ return cache[tier]={craters,inclusions};
+}
+export function drawRock(c:C,r:Pick<Rock,'id'|'x'|'y'|'r'|'hp'|'max'|'shape'>,tier:RockArtTier,pulse=0,palette:RockPalette=ROCK_PALETTES.home_belt){
  c.save();c.translate(r.x+Math.sin(pulse*24)*pulse*2,r.y+Math.cos(pulse*19)*pulse*2);c.rotate(r.id*.73);c.scale(1+pulse*.07,1+pulse*.07);
  const points=r.shape.map((n,i)=>[Math.cos(i/r.shape.length*Math.PI*2)*r.r*n,Math.sin(i/r.shape.length*Math.PI*2)*r.r*n] as Point);
- poly(c,points,pulse>.75?'#879096':slate,pulse>.4?'#c1b9aa':edge,1.1);
- for(let i=0;i<5;i++){const angle=i*2.4+r.id,radius=r.r*(i%2?.43:.23),x=Math.cos(angle)*radius,y=Math.sin(angle)*radius;
-  c.beginPath();c.arc(x,y,r.r*(i%3===0?.18:.095),0,7);c.fillStyle=crater;c.fill();}
- const count=tier===1?1:3;
- for(let i=0;i<count;i++){const a=r.id*.71+i*2.3+1.1,radius=r.r*(i%2?.49:.36),x=Math.cos(a)*radius,y=Math.sin(a)*radius;
-  c.beginPath();c.arc(x,y,tier===1?1.1:1.65,0,7);c.fillStyle=markerColor[tier];c.fill();}
+ poly(c,points,pulse>.75?'#879096':palette.fill,pulse>.4?'#c1b9aa':palette.edge,1.1);
+ const details=rockDetails(r,tier);
+ for(const mark of details.craters){c.beginPath();c.arc(mark.x,mark.y,mark.r,0,7);c.fillStyle=palette.crater;c.fill();}
+ for(const mark of details.inclusions){c.beginPath();c.arc(mark.x,mark.y,mark.r,0,7);c.fillStyle=mineralColor[tier];c.fill();}
  const damage=1-r.hp/r.max;
  if(damage>.12){c.strokeStyle='#182833';c.lineWidth=1.2+damage*2;c.beginPath();c.moveTo(-r.r*.7,0);c.lineTo(-3,3);c.lineTo(3,-5);c.lineTo(r.r*.5,-r.r*.55);c.stroke();}
  if(damage>.45){c.beginPath();c.moveTo(-3,3);c.lineTo(-r.r*.12,r.r*.46);c.lineTo(r.r*.18,r.r*.66);c.stroke();}

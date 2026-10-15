@@ -1,9 +1,21 @@
 import {type Camera,newCamera} from './camera.ts';
 import { HOME, FAR, W, H, ORE_PICKUP_DELAY, visibleAt, exploredAt, investigated, type World } from './sim.ts';
 import {POIS,CELL,COLS,ROWS} from './knowledge.ts';
-import {drawShip,drawMother,drawOutpost,drawTurret,drawRock,rockArtTier,drawPoi} from './art.ts';
+import {drawShip,drawMother,drawOutpost,drawTurret,drawRock,rockArtTier,drawPoi,rockPalette,type RockPalette} from './art.ts';
 import {BIOMES,biomeAt} from './biomes.ts';
+import {newTrailState,updateTrails,drawTrails,type TrailSource,type TrailState} from './trails.ts';
 const gold='#f5b743';
+const rockPalettes=new WeakMap<object,RockPalette>();
+const trailStates=new WeakMap<World,TrailState>();
+function activeTrails(w:World):TrailSource[]{
+ const sources:TrailSource[]=[];
+ for(const d of w.drones)if(d.state==='mine'||d.state==='return')sources.push({id:`miner:${d.id}`,kind:d.kind,x:d.x,y:d.y,angle:d.angle});
+ for(const h of w.haulers)if(h.state==='work'||h.state==='return')sources.push({id:`hauler:${h.id}`,kind:'hauler',x:h.x,y:h.y,angle:h.angle});
+ for(const g of w.guards)if(g.hp>0)sources.push({id:`escort:${g.id}`,kind:'escort',x:g.x,y:g.y,angle:g.angle});
+ for(const s of w.scouts)if(s.state==='exploring'||s.state==='avoiding'||s.state==='return')sources.push({id:`scout:${s.id}`,kind:'scout',x:s.x,y:s.y,angle:s.angle});
+ for(const e of w.enemies)if(e.hp>0&&visibleAt(w,e))sources.push({id:`enemy:${e.id}`,kind:'enemyScout',x:e.x,y:e.y,angle:Math.hypot(e.vx,e.vy)>.01?Math.atan2(e.vy,e.vx):-Math.PI/2});
+ return sources;
+}
 let biomeCanvas:HTMLCanvasElement|undefined;
 function biomeImage(){
  if(biomeCanvas)return biomeCanvas;
@@ -71,8 +83,12 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  for(const r of w.rocks){
   if(!exploredAt(w,r)||r.hp<=0)continue;
   const impact=w.effects.find(e=>e.type==='hit'&&e.x===r.x&&e.y===r.y),pulse=impact?impact.life/impact.max:0;
-  drawRock(c,r,rockArtTier(r,w.progress.farSurveyed),pulse);
+  let palette=rockPalettes.get(r);if(!palette){palette=rockPalette(biomeAt(r.x,r.y));rockPalettes.set(r,palette);}
+  drawRock(c,r,rockArtTier(r,w.progress.farSurveyed),pulse,palette);
  }
+ let trails=trailStates.get(w);if(!trails){trails=newTrailState();trailStates.set(w,trails);}
+ updateTrails(trails,w.time,activeTrails(w));
+ drawTrails(c,trails,w.time,left,top,right,bottom);
  for(const o of w.ores){if(!exploredAt(w,o))continue;const age=o.age??1,t=Math.min(1,age/ORE_PICKUP_DELAY),flight=1-(1-t)*(1-t);
   const originX=o.originX??o.x,originY=o.originY??o.y,dx=o.x-originX,dy=o.y-originY;
   const x=originX+dx*flight,y=originY+dy*flight;
@@ -118,10 +134,11 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
     c.globalAlpha=1;c.fillStyle=gold;c.shadowColor=gold;c.shadowBlur=8;c.save();c.translate(x,y);c.rotate(t*4);c.fillRect(-3,-3,6,6);c.restore();c.shadowBlur=0;
    }
    else if(e.type==='deposit'||e.type==='ore'){c.font=`bold ${e.type==='deposit'?16:10}px monospace`;c.textAlign='center';c.fillStyle=e.type==='deposit'?'#a4e0cc':gold;c.fillText(`+${e.amount}`,e.x,e.y-(1-a)*23);c.textAlign='left';}
-   else {if(e.type==='hit'){
-    c.strokeStyle='#ffe3a1';c.lineWidth=2*a;c.beginPath();c.arc(e.x,e.y,(1-a)*42*(e.amount??1)+3,0,7);c.stroke();
-    for(let j=0;j<12;j++){const angle=j*2.399+(e.x%9),radius=(1-a)*((e.amount??1)*25+15+j%3*8);c.fillStyle=j%3?'#d8a05b':'#a9bab9';c.fillRect(e.x+Math.cos(angle)*radius,e.y+Math.sin(angle)*radius,2+a*2,2+a*2);}
-   }c.strokeStyle=e.type==='dead'||e.type==='enemyDead'?'#ee845e':gold;c.lineWidth=1.5;for(let i=0;i<7;i++){const angle=i*.898;const r=(1-a)*25+5;c.beginPath();c.moveTo(e.x+Math.cos(angle)*r,e.y+Math.sin(angle)*r);c.lineTo(e.x+Math.cos(angle)*(r+5),e.y+Math.sin(angle)*(r+5));c.stroke();}}
+   else if(e.type==='hit'){
+    c.strokeStyle='#ffe3a1';c.lineWidth=1.4*a;c.beginPath();c.arc(e.x,e.y,3+(1-a)*17,0,7);c.stroke();
+    for(let j=0;j<3;j++){const angle=j*2.399+(e.x%9),radius=5+(1-a)*(11+j*2);c.fillStyle=j%2?'#d8a05b':'#a9bab9';c.fillRect(e.x+Math.cos(angle)*radius,e.y+Math.sin(angle)*radius,2.5,2.5);}
+   }
+   else {c.strokeStyle=e.type==='dead'||e.type==='enemyDead'?'#ee845e':gold;c.lineWidth=1.5;for(let i=0;i<7;i++){const angle=i*.898;const r=(1-a)*25+5;c.beginPath();c.moveTo(e.x+Math.cos(angle)*r,e.y+Math.sin(angle)*r);c.lineTo(e.x+Math.cos(angle)*(r+5),e.y+Math.sin(angle)*(r+5));c.stroke();}}
    c.globalAlpha=1;
  }
  c.restore();

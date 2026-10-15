@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.19.0
+# AIsteroid Mining · Alpha 0.20.0
 
 A mobile-first autonomous mining game. Choose upgrades and fleet composition, then Deploy into a 30-second active shift, upgradeable to 45, 60 and 90 seconds, followed by physical recall and delivery. The asteroid field fills the mission screen: drag to pan, pinch to zoom, tap a discovered signal to assign an available Escort, and use the contextual Follow Fleet control to return to your drones. The HUD shows time left and minerals delivered; the 1×/2× button changes simulation speed. Friendly sensors reveal a persistent chart across a 2600 × 2400 world. Rock depletion, charted cells, discovered signals and loose ore persist after completed shifts.
 
@@ -20,6 +20,8 @@ GitHub Pages publishes [the game](https://djulz.github.io/aisteroids/) after tes
 Pass H redraws in-world ships, Outpost, five real POIs and asteroids as small flat Canvas shapes from the approved asset sheet. The current map has common rocks and an existing `rich` distinction, not five economic tiers. Only revealed rich rocks receive the second visual motif; tiers 3–5 and the enemy Fighter are future art shown in the direct-URL [asset gallery](https://djulz.github.io/aisteroids/?assetGallery=1), with no new spawn or payout. See [Pass H art notes](docs/pass-h-art.md).
 
 Pass I adds five fixed, persistent regions: Home Belt, Scrap Fields, Contested Territory, Ion Storm and Dead Zone. Their subdued color and ambient marks appear only where sensors have charted the map. A regional rival patrol stays near Contested Territory; Ion Storm reduces sensor reach and movement; Dead Zone slowly damages exposed hulls. Scouts explore automatically, weigh known hazards and may receive an optional, mission-only **Focus Scouting** preference by tapping a charted area or its immediate fog edge. A discovered signal still takes precedence and **Lock Target** controls Escorts independently. The Workshop offers three one-time fleet-wide Mineral purchases after physical POI investigation: Advanced Sensors (125), Navigation Stabilizers (240), and Radiation Shielding (350). See [Pass I region notes](docs/pass-i-regions-biomes.md).
+
+Pass J adds a few small square engine puffs behind moving ships and quiet biome-specific stone colors to charted asteroids. Mineral inclusions retain their own colors and existing reveal gate. The developer-only asset gallery compares moving ships and the same T1/T2 rock across all five regions. No simulation, economy or save schema changed. See [Pass J visual notes](docs/pass-j-visual-polish.md).
 
 ## Fleet and logistics
 
