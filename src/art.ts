@@ -76,16 +76,17 @@ export function drawMother(c:C,t:number,bounce=0,x=200,y=440){
 }
 export function drawOutpost(c:C,x:number,y:number,active:boolean,t:number,bounce=0){
  c.save();c.translate(x,y);c.scale(1+bounce,1+bounce);
- c.setLineDash([4,8]);ring(c,0,0,48,active?'#6db4ad77':'#557f8788');c.setLineDash([]);
- // An exposed octagonal platform, two cargo-side arms and a circular port;
- // the lower prongs keep its outline distinct from the taller HQ.
- poly(c,[[-27,-22],[-16,-33],[16,-33],[27,-22],[30,17],[19,30],[-19,30],[-30,17]],'#263844','#68828a');
- poly(c,[[-20,-20],[-11,-28],[11,-28],[20,-20],[22,15],[13,23],[-13,23],[-22,15]],cream);
- rect(c,-9,-35,18,22,hull,gold,1.8);
- for(const side of [-1,1]){const left=side<0?-42:30;rect(c,left,-16,12,32,hull,gold,1.6);rect(c,left+3,-10,6,20,cream);for(let i=0;i<3;i++)rect(c,left+4,-5+i*5,4,2,'#314550');rect(c,side*25-2,-17,4,7,amber);}
- poly(c,[[-24,25],[-18,31],[-11,31],[-12,24]],gold);poly(c,[[24,25],[18,31],[11,31],[12,24]],gold);
- c.beginPath();c.arc(0,3,14,0,7);c.fillStyle=hull;c.fill();c.strokeStyle=amber;c.lineWidth=2.5;c.stroke();
- c.beginPath();c.arc(0,3,9,t,t+Math.PI*1.45);c.strokeStyle=active?'#8bd4c7':'#578e91';c.lineWidth=1.8;c.stroke();c.restore();
+ c.setLineDash([4,8]);ring(c,0,0,47,active?'#6db4ad77':'#557f8788');c.setLineDash([]);
+ // Round remote platform and horizontal cargo outriggers. HQ remains a tall
+ // octagon with vertical bars; the Outpost reads as a separate station.
+ rect(c,-39,-4,78,8,'#374b53',gold,1);
+ poly(c,[[-25,-12],[-16,-24],[16,-24],[25,-12],[25,12],[16,24],[-16,24],[-25,12]],'#263844','#70848c');
+ poly(c,[[-20,-10],[-12,-19],[12,-19],[20,-10],[20,10],[12,19],[-12,19],[-20,10]],cream);
+ rect(c,-7,-34,14,13,hull,gold,1.8);rect(c,-4,-31,8,4,amber);
+ for(const side of [-1,1]){const left=side<0?-46:34;rect(c,left,-12,12,24,hull,gold,1.6);rect(c,left+3,-8,6,16,cream);for(let i=0;i<2;i++)rect(c,left+4,-4+i*6,4,2,'#314550');}
+ poly(c,[[-17,22],[-12,28],[-7,27],[-8,21]],gold);poly(c,[[17,22],[12,28],[7,27],[8,21]],gold);
+ c.beginPath();c.arc(0,0,13,0,7);c.fillStyle=hull;c.fill();c.strokeStyle=amber;c.lineWidth=2.5;c.stroke();
+ c.beginPath();c.arc(0,0,8,t,t+Math.PI*1.45);c.strokeStyle=active?'#8bd4c7':'#578e91';c.lineWidth=1.8;c.stroke();c.restore();
 }
 export function drawTurret(c:C,x:number,y:number,t=0){c.save();c.translate(x,y);c.fillStyle='#193741';c.strokeStyle='#9fe2d5';c.lineWidth=1.6;c.beginPath();c.arc(0,0,11,0,7);c.fill();c.stroke();c.rotate(t);rect(c,-3,-16,6,15,'#263f48','#9fe2d5',1.6);rect(c,-2,-4,4,4,teal);c.restore();}
 
@@ -98,10 +99,10 @@ export function drawRock(c:C,r:Pick<Rock,'id'|'x'|'y'|'r'|'hp'|'max'|'shape'>,ti
  const points=r.shape.map((n,i)=>[Math.cos(i/r.shape.length*Math.PI*2)*r.r*n,Math.sin(i/r.shape.length*Math.PI*2)*r.r*n] as Point);
  poly(c,points,pulse>.75?'#879096':slate,pulse>.4?'#c1b9aa':edge,1.1);
  for(let i=0;i<5;i++){const angle=i*2.4+r.id,radius=r.r*(i%2?.43:.23),x=Math.cos(angle)*radius,y=Math.sin(angle)*radius;
-  c.beginPath();c.arc(x,y,r.r*(i%3===0?.135:.09),0,7);c.fillStyle=crater;c.fill();}
- const count=tier===1?1:tier===2?2:3;
+  c.beginPath();c.arc(x,y,r.r*(i%3===0?.18:.095),0,7);c.fillStyle=crater;c.fill();}
+ const count=tier===1?1:3;
  for(let i=0;i<count;i++){const a=r.id*.71+i*2.3+1.1,radius=r.r*(i%2?.49:.36),x=Math.cos(a)*radius,y=Math.sin(a)*radius;
-  c.beginPath();c.arc(x,y,tier===1?1.1:1.45,0,7);c.fillStyle=markerColor[tier];c.fill();}
+  c.beginPath();c.arc(x,y,tier===1?1.1:1.65,0,7);c.fillStyle=markerColor[tier];c.fill();}
  const damage=1-r.hp/r.max;
  if(damage>.12){c.strokeStyle='#182833';c.lineWidth=1.2+damage*2;c.beginPath();c.moveTo(-r.r*.7,0);c.lineTo(-3,3);c.lineTo(3,-5);c.lineTo(r.r*.5,-r.r*.55);c.stroke();}
  if(damage>.45){c.beginPath();c.moveTo(-3,3);c.lineTo(-r.r*.12,r.r*.46);c.lineTo(r.r*.18,r.r*.66);c.stroke();}
