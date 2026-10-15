@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.17.0
+# AIsteroid Mining · Alpha 0.18.0
 
 A mobile-first autonomous mining game. Choose upgrades and fleet composition, then Deploy into a 30-second active shift, upgradeable to 45, 60 and 90 seconds, followed by physical recall and delivery. The asteroid field fills the mission screen: drag to pan, pinch to zoom, tap a discovered signal to assign an available Escort, and use the contextual Follow Fleet control to return to your drones. The HUD shows time left and minerals delivered; the 1×/2× button changes simulation speed. Friendly sensors reveal a persistent chart across a 2600 × 2400 world. Rock depletion, charted cells, discovered signals and loose ore persist after completed shifts.
 
@@ -15,6 +15,8 @@ npm run dev
 ```
 
 GitHub Pages publishes [the game](https://djulz.github.io/aisteroids/) after tests and build on `main`.
+
+Pass H redraws in-world ships, Outpost, five real POIs and asteroids as small flat Canvas shapes from the approved asset sheet. The current map has common rocks and an existing `rich` distinction, not five economic tiers. Only revealed rich rocks receive the second visual motif; tiers 3–5 and the enemy Fighter are future art shown in the direct-URL [asset gallery](https://djulz.github.io/aisteroids/?assetGallery=1), with no new spawn or payout. See [Pass H art notes](docs/pass-h-art.md).
 
 ## Fleet and logistics
 
