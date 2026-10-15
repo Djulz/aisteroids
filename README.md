@@ -1,4 +1,4 @@
-# AIsteroid Mining · Alpha 0.18.0
+# AIsteroid Mining · Alpha 0.19.0
 
 A mobile-first autonomous mining game. Choose upgrades and fleet composition, then Deploy into a 30-second active shift, upgradeable to 45, 60 and 90 seconds, followed by physical recall and delivery. The asteroid field fills the mission screen: drag to pan, pinch to zoom, tap a discovered signal to assign an available Escort, and use the contextual Follow Fleet control to return to your drones. The HUD shows time left and minerals delivered; the 1×/2× button changes simulation speed. Friendly sensors reveal a persistent chart across a 2600 × 2400 world. Rock depletion, charted cells, discovered signals and loose ore persist after completed shifts.
 
@@ -11,12 +11,15 @@ npm run build
 npm run balance
 npm run explore
 npm run frontier
+npm run biomes
 npm run dev
 ```
 
 GitHub Pages publishes [the game](https://djulz.github.io/aisteroids/) after tests and build on `main`.
 
 Pass H redraws in-world ships, Outpost, five real POIs and asteroids as small flat Canvas shapes from the approved asset sheet. The current map has common rocks and an existing `rich` distinction, not five economic tiers. Only revealed rich rocks receive the second visual motif; tiers 3–5 and the enemy Fighter are future art shown in the direct-URL [asset gallery](https://djulz.github.io/aisteroids/?assetGallery=1), with no new spawn or payout. See [Pass H art notes](docs/pass-h-art.md).
+
+Pass I adds five fixed, persistent regions: Home Belt, Scrap Fields, Contested Territory, Ion Storm and Dead Zone. Their subdued color and ambient marks appear only where sensors have charted the map. A regional rival patrol stays near Contested Territory; Ion Storm reduces sensor reach and movement; Dead Zone slowly damages exposed hulls. Scouts explore automatically, weigh known hazards and may receive an optional, mission-only **Focus Scouting** preference by tapping a charted area or its immediate fog edge. A discovered signal still takes precedence and **Lock Target** controls Escorts independently. The Workshop offers three one-time fleet-wide Mineral purchases after physical POI investigation: Advanced Sensors (125), Navigation Stabilizers (240), and Radiation Shielding (350). See [Pass I region notes](docs/pass-i-regions-biomes.md).
 
 ## Fleet and logistics
 
@@ -46,7 +49,7 @@ The nine one-time Tech sources fund the nine total node costs; Minerals and Tech
 
 ## Saves
 
-Pass G keeps the v11 save schema unchanged. Valid v10, v9, v8 and v7 companies migrate to v11 without a progression reset. Credits, rounds, slots and fleet mix, spent/earned Tech, prior investigated sites, minerals, doctrine, infrastructure and depleted world remain. The old 32 × 38 bitset is converted cell by cell into the 104 × 96 map, and known site footprints move with the relocated sites. Asteroid IDs 0–29 keep their seeded geometry and HP; new frontier rocks use IDs 30–167. Legacy pre-Deploy objectives are discarded. Existing fleets receive zero new Scouts, and new endurance starts at 30 seconds. Live targets and live visibility are never saved; unrelated browser storage is untouched.
+Pass I stores installed environment upgrades in v12. Valid v11 and historical v7–v10 companies migrate without a reset; v11's 104 × 96 chart is copied unchanged. Credits, rounds, fleet, spent/earned Tech, investigated sites, doctrine, infrastructure, endurance, depleted rocks and loose ore persist. Prior investigations count as blueprint unlocks, while installed upgrades start empty. Legacy v10's 32 × 38 bitset is converted cell by cell. Live Scout focus and Escort targets are never saved; unrelated browser storage is untouched.
 
 ## Validation and balance
 

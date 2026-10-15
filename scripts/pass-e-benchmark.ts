@@ -36,7 +36,7 @@ let mixed=freshCompany(),mixedMilestone=0,mixedOutput:unknown=null;
 for(let i=1;i<=65;i++){
  const w=run(createWorld(mixed,mixed.worldSeed));mixed=settle(mixed,w);
  for(const id of ['haulerOperation','escortProgram'] as const){const next=research(mixed,id);if(next)mixed=next;}
- if(mixed.fleetCapacity<4&&mixed.credits>=cost(mixed,'fleetSlot')){
+ if(mixed.fleetCapacity<4&&(mixed.fleetCapacity===1||mixed.fleetCapacity===2&&mixed.unlockedTypes.includes('escort')||mixed.fleetCapacity===3&&mixed.unlockedTypes.includes('hauler'))&&mixed.credits>=cost(mixed,'fleetSlot')){
   mixed=buy(mixed,'fleetSlot')!;
   const role=mixed.fleetCapacity===2?'scout':mixed.fleetCapacity===3?'escort':'hauler';
   mixed=changeFleet(mixed,role,1)??mixed;

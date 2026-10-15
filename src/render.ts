@@ -2,7 +2,25 @@ import {type Camera,newCamera} from './camera.ts';
 import { HOME, FAR, W, H, ORE_PICKUP_DELAY, visibleAt, exploredAt, investigated, type World } from './sim.ts';
 import {POIS,CELL,COLS,ROWS} from './knowledge.ts';
 import {drawShip,drawMother,drawOutpost,drawTurret,drawRock,rockArtTier,drawPoi} from './art.ts';
+import {BIOMES,biomeAt} from './biomes.ts';
 const gold='#f5b743';
+let biomeCanvas:HTMLCanvasElement|undefined;
+function biomeImage(){
+ if(biomeCanvas)return biomeCanvas;
+ const image=document.createElement('canvas');image.width=130;image.height=120;
+ const ctx=image.getContext('2d')!;
+ for(let y=0;y<image.height;y++)for(let x=0;x<image.width;x++){
+  const px=(x+.5)*W/image.width,py=(y+.5)*H/image.height,color=[0,0,0];
+  // A one-time spatial filter gives organic ~100-unit transitions without
+  // a per-frame pixel pass or biome-sized square seams at Fog cells.
+  for(const ox of [-50,0,50])for(const oy of [-50,0,50]){
+   const sample=BIOMES[biomeAt(px+ox,py+oy)].color;
+   for(let channel=0;channel<3;channel++)color[channel]+=sample[channel]/9;
+  }
+  ctx.fillStyle=`rgb(${color.map(Math.round).join(',')})`;ctx.fillRect(x,y,1,1);
+ }
+ biomeCanvas=image;return image;
+}
 const fogCache=new WeakMap<World,{revision:number;bits:Uint8Array;canvas:HTMLCanvasElement}>();
 function fogImage(w:World){
  let cached=fogCache.get(w);
@@ -25,13 +43,26 @@ function fogImage(w:World){
 export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camera:Camera=newCamera()) {
  const c = canvas.getContext('2d')!; const VIEW_W=camera.width,VIEW_H=camera.height;const sx=canvas.width/VIEW_W, sy=canvas.height/VIEW_H;
  c.setTransform(sx,0,0,sy,0,0);c.fillStyle='#07121b';c.fillRect(0,0,VIEW_W,VIEW_H);c.save();c.translate(VIEW_W/2,VIEW_H/2);c.scale(camera.zoom,camera.zoom);c.translate(-camera.x,-camera.y);c.fillStyle='#0a1a25';c.fillRect(0,0,W,H);
+ const left=Math.max(0,Math.floor(camera.x-VIEW_W/(2*camera.zoom)-30)),top=Math.max(0,Math.floor(camera.y-VIEW_H/(2*camera.zoom)-30));
+ const right=Math.min(W,Math.ceil(camera.x+VIEW_W/(2*camera.zoom)+30)),bottom=Math.min(H,Math.ceil(camera.y+VIEW_H/(2*camera.zoom)+30));
+ const bw=Math.max(0,right-left),bh=Math.max(0,bottom-top);
+ if(bw&&bh){const image=biomeImage();c.imageSmoothingEnabled=true;c.drawImage(image,left*image.width/W,top*image.height/H,bw*image.width/W,bh*image.height/H,left,top,bw,bh);}
+ // Inert, sparse region texture sits below Fog and every game object.
+ for(let i=0;i<165;i++){
+  const x=(i*947+131)%W,y=(i*631+47)%H,id=biomeAt(x,y);
+  if(id==='scrap_fields'){c.strokeStyle='#978f6640';c.beginPath();c.moveTo(x-3,y+1);c.lineTo(x+3,y-1);c.stroke();}
+  else if(id==='contested'){c.fillStyle='#9e626735';c.fillRect(x,y,2,2);}
+  else if(id==='ion_storm'){c.strokeStyle='#707aab38';c.beginPath();c.moveTo(x-6,y+3);c.lineTo(x+5,y-2);c.stroke();}
+  else if(id==='dead_zone'){c.fillStyle='#77795f38';c.fillRect(x,y,2,1);}
+ }
  c.strokeStyle='#26404d35';c.lineWidth=.6; c.beginPath(); for(let x=0;x<W;x+=25){c.moveTo(x,0);c.lineTo(x,H);}for(let y=0;y<H;y+=25){c.moveTo(0,y);c.lineTo(W,y);}c.stroke();
  for(let i=0;i<144;i++){c.fillStyle=i%4===0?'#71929a66':'#71929a2b';c.fillRect((i*137+19)%W,(i*83+41)%H,i%4===0?1.4:1,1);}
  c.strokeStyle='#68828c3b';for(let i=0;i<9;i++){const x=35+i%3*165,y=34+Math.floor(i/3)*230;c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}
  c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME FIELD',30,32);c.fillText('FAR BELT',850,32);c.fillText('OUTER REACH',1700,1450);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
  // Explored/visible bitsets drive the field. Unknown cells
  // never get object drawing; known terrain remains a subdued map memory.
- const mask=fogImage(w);c.drawImage(mask,0,0);
+ const mask=fogImage(w);if(bw&&bh)c.drawImage(mask,left,top,bw,bh,left,top,bw,bh);
+ if(w.surveyFocus){c.strokeStyle='#8abdc499';c.setLineDash([5,8]);c.lineWidth=1;c.beginPath();c.arc(w.surveyFocus.x,w.surveyFocus.y,28,0,Math.PI*2);c.stroke();c.setLineDash([]);}
  for(const site of POIS){if(!w.discoveredPois.has(site.id))continue;
   const done=investigated(w,site.id),locked=w.activeTarget===site.id;
   drawPoi(c,site.id,site.x,site.y,done,locked);

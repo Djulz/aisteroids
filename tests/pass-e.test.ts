@@ -68,18 +68,18 @@ test('early progression works from Mine Freely and same-step replays are determi
  const a=createWorld(fleet(1)),b=createWorld(fleet(1));for(let i=0;i<1800;i++){step(a);step(b);}
  assert.deepEqual([a.delivered,a.extracted,a.pendingTech,a.newSignals,[...a.explored],a.scouts.map(s=>[s.x,s.y,s.state])],[b.delivered,b.extracted,b.pendingTech,b.newSignals,[...b.explored],b.scouts.map(s=>[s.x,s.y,s.state])]);
 });
-test('without Scout or preselected orders, surveys and rival research unlock naturally across missions',()=>{
+test('autonomous Scout discovers geographic patrols and Outpost without preselected orders',()=>{
  let c=freshCompany(),slotRound=0,farRound=0,richRound=0,rivalRound=0,outpostRound=0;
  for(let round=1;round<=35;round++){
   c=settle(c,run(createWorld(c,c.worldSeed)));
-  if(!slotRound&&c.credits>=28)slotRound=round;
+  if(!slotRound&&c.credits>=28){slotRound=round;c=changeFleet(buy(c,'fleetSlot')!,'scout',1)!;}
   if(!farRound&&c.progress.farSurveyed)farRound=round;
   if(!richRound&&c.progress.richSampled)richRound=round;
   if(!rivalRound&&c.progress.rivalSeen)rivalRound=round;
   if(!outpostRound&&c.progress.outpostSurveyed)outpostRound=round;
  }
- assert.equal(slotRound,3);assert.ok(farRound&&richRound&&rivalRound);assert.equal(outpostRound,0);
- assert.equal(c.uniqueTechDiscoveries.includes('outpost_site_surveyed'),false);
+ assert.equal(slotRound,3);assert.ok(farRound&&richRound&&rivalRound&&outpostRound);
+ assert.equal(c.uniqueTechDiscoveries.includes('first_rival_contact'),true);
 });
 test('an ignored discovered signal survives a completed shift without becoming a Tech award',()=>{
  const c={...fleet(1),enduranceLevel:3},w=run(createWorld(c)),site=w.newSignals[0];assert.ok(site);

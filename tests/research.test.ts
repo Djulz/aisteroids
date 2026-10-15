@@ -17,21 +17,21 @@ test('v9 company migrates credits, rock/ore, infrastructure, research and legacy
  const owned=research(original as unknown as Company,'escortProgram')!;
  const {map,storage}=store({'aisteroids-company-v9':JSON.stringify({...owned,version:9,directive:'investigateFreight',fleetComposition:original.fleetComposition}),unrelated:'keep'});
  const c=loadCompany(storage);
- assert.equal(c.version,11);assert.equal(c.credits,81);assert.equal(c.total,213);assert.equal(c.rounds,14);assert.equal(c.fleetCapacity,3);assert.equal(c.fleetComposition.escort,1);assert.equal(c.fleetComposition.scout,0);
+ assert.equal(c.version,12);assert.equal(c.credits,81);assert.equal(c.total,213);assert.equal(c.rounds,14);assert.equal(c.fleetCapacity,3);assert.equal(c.fleetComposition.escort,1);assert.equal(c.fleetComposition.scout,0);
  assert.equal(c.rockHp[0],17);assert.equal(c.ores[0].rich,true);assert.equal(c.outpost,true);assert.equal(c.turret,true);assert.equal(c.launchSite,'far');assert.equal(c.doctrine,'convoy');
  assert.equal(c.uniqueTechDiscoveries.includes('abandoned_research_station'),true);assert.equal(c.discoveredPois.includes('abandoned_research_station'),true);
  assert.ok(mapCount(decodeMap(c.explored)!)<9984);assert.equal(createWorld(c).activeTarget,null);assert.equal(map.get('unrelated'),'keep');assert.equal(map.has('aisteroids-company-v9'),false);assert.deepEqual(loadCompany(storage),c);
 });
 test('v7 and v8 still migrate through validated ledgers and unrelated storage survives',()=>{
  const v7=legacy(7,{directive:'auto',credits:31,total:48,rounds:8,fleetCapacity:2,fleetComposition:{impactMiner:1,laserMiner:0,escort:1,hauler:0,miningRig:0},progress:{farSurveyed:true,richSampled:true,rivalSeen:true,outpostSurveyed:false}});
- const a=loadCompany(store({'aisteroids-company-v7':v7}).storage);assert.equal(a.version,11);assert.equal(a.credits,31);assert.equal(a.grandfatheredEscort,true);assert.equal(a.techPointsEarned,3);assert.equal(a.techPointsAvailable,3);
- const v8=legacy(8,{directive:'surveyFar',credits:72,rounds:7});const b=loadCompany(store({'aisteroids-company-v8':v8}).storage);assert.equal(b.version,11);assert.equal(b.credits,72);assert.equal(b.rounds,7);
+ const a=loadCompany(store({'aisteroids-company-v7':v7}).storage);assert.equal(a.version,12);assert.equal(a.credits,31);assert.equal(a.grandfatheredEscort,true);assert.equal(a.techPointsEarned,3);assert.equal(a.techPointsAvailable,3);
+ const v8=legacy(8,{directive:'surveyFar',credits:72,rounds:7});const b=loadCompany(store({'aisteroids-company-v8':v8}).storage);assert.equal(b.version,12);assert.equal(b.credits,72);assert.equal(b.rounds,7);
  for(let v=1;v<=6;v++)assert.deepEqual(parseSave(JSON.stringify({...freshCompany(),version:v})),freshCompany());
 });
 test('v10 validates compact map, POI IDs, fleet keys, counts and Tech budget',()=>{
  const c=freshCompany();assert.deepEqual(parseSave(JSON.stringify(c)),c);
  for(const altered of [{...c,explored:'bad'},{...c,discoveredPois:['unknown']},{...c,fleetComposition:{...c.fleetComposition,scout:8}},{...c,fleetComposition:{...c.fleetComposition,unknown:1}},{...c,unlockedTypes:['impactMiner','unknown']},{...c,techPointsAvailable:5}])assert.deepEqual(parseSave(JSON.stringify(altered)),freshCompany());
- assert.equal(SAVE_KEY,'aisteroids-company-v11');
+ assert.equal(SAVE_KEY,'aisteroids-company-v12');
 });
 test('research costs, prerequisites, Scout entitlement and one-time discoveries remain bounded',()=>{
  let c=freshCompany();assert.match(researchReason(c,'escortProgram')!,/Encounter/);assert.equal(research(c,'laserMining'),null);assert.equal(changeFleet(c,'scout',1),null);

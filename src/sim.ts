@@ -4,6 +4,7 @@ import {fleetError,freshComposition,MAX_FLEET_CAPACITY,type FleetComposition,typ
 import {awardTech,TECH_DISCOVERIES,researched,type DiscoveryId} from './research.ts';
 import {POIS,blankMap,decodeMap,encodeMap,hasCell,mapCount,mergeMap,reveal,type PoiId,type Sensor,CELL,COLS,ROWS,MAP_W,MAP_H} from './knowledge.ts';
 import {W,H,HOME,FAR} from './geometry.ts';
+import {biomeAt,environmentAt,sensorFactor,movementFactor,radiationRate,ENVIRONMENT_UPGRADES,environmentIds,inWorld,type BiomeId,type EnvironmentUpgrade} from './biomes.ts';
 // Fixed-step seeded simulation: independent of browser and rendering.
 export {W,H,HOME,FAR};
 export const ROUND_TIME=30,STEP=1/60,CAPACITY=3,OUTPOST_COST=450;
@@ -12,8 +13,8 @@ export type LaunchSite='home'|'far';
 export type Progress={farSurveyed:boolean;richSampled:boolean;rivalSeen:boolean;outpostSurveyed:boolean};
 export const freshProgress=():Progress=>({farSurveyed:false,richSampled:false,rivalSeen:false,outpostSurveyed:false});
 export type StoredOre={x:number;y:number;value:1;rich:boolean};
-export type Company={version:11;enduranceLevel:number;credits:number;fleetCapacity:number;fleetComposition:FleetComposition;unlockedTypes:FleetType[];techPointsAvailable:number;techPointsEarned:number;uniqueTechDiscoveries:DiscoveryId[];unlockedTechnologies:string[];grandfatheredEscort:boolean;turret:boolean;rounds:number;total:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;explored:string;discoveredPois:PoiId[];doctrine:DoctrineId};
-export const freshCompany=():Company=>({version:11,enduranceLevel:0,credits:0,fleetCapacity:1,fleetComposition:freshComposition(),unlockedTypes:['impactMiner','scout'],techPointsAvailable:0,techPointsEarned:0,uniqueTechDiscoveries:[],unlockedTechnologies:[],grandfatheredEscort:false,turret:false,rounds:0,total:0,outpost:false,launchSite:'home',worldSeed:7,rockHp:{},ores:[],progress:freshProgress(),explored:encodeMap(blankMap()),discoveredPois:[],doctrine:'standard'});
+export type Company={version:12;environmentUpgrades:EnvironmentUpgrade[];enduranceLevel:number;credits:number;fleetCapacity:number;fleetComposition:FleetComposition;unlockedTypes:FleetType[];techPointsAvailable:number;techPointsEarned:number;uniqueTechDiscoveries:DiscoveryId[];unlockedTechnologies:string[];grandfatheredEscort:boolean;turret:boolean;rounds:number;total:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;explored:string;discoveredPois:PoiId[];doctrine:DoctrineId};
+export const freshCompany=():Company=>({version:12,environmentUpgrades:[],enduranceLevel:0,credits:0,fleetCapacity:1,fleetComposition:freshComposition(),unlockedTypes:['impactMiner','scout'],techPointsAvailable:0,techPointsEarned:0,uniqueTechDiscoveries:[],unlockedTechnologies:[],grandfatheredEscort:false,turret:false,rounds:0,total:0,outpost:false,launchSite:'home',worldSeed:7,rockHp:{},ores:[],progress:freshProgress(),explored:encodeMap(blankMap()),discoveredPois:[],doctrine:'standard'});
 export const missionDuration=(c:Company)=>ENDURANCE_DURATIONS[c.enduranceLevel]??ROUND_TIME;
 export type Purchase='fleetSlot'|'turret'|'outpost'|'endurance';
 export function unlocked(c:Company,item:Purchase){return item==='turret'?c.progress.rivalSeen:item==='outpost'?c.progress.outpostSurveyed:true;}
@@ -22,6 +23,12 @@ export function cost(c:Company,item:Purchase){return item==='fleetSlot'?FLEET_SL
 export function buy(c:Company,item:Purchase):Company|null{
  if(!['fleetSlot','turret','outpost','endurance'].includes(item)||!unlocked(c,item)||c.credits<cost(c,item)||(item==='fleetSlot'?c.fleetCapacity>=MAX_FLEET_CAPACITY:item==='endurance'?c.enduranceLevel>=3:c[item]))return null;
  return {...c,credits:c.credits-cost(c,item),...(item==='fleetSlot'?{fleetCapacity:c.fleetCapacity+1}:item==='endurance'?{enduranceLevel:c.enduranceLevel+1}:{[item]:true})};
+}
+export function buyEnvironment(c:Company,id:EnvironmentUpgrade):Company|null{
+ if(!environmentIds.includes(id)||c.environmentUpgrades.includes(id))return null;
+ const upgrade=ENVIRONMENT_UPGRADES[id];
+ if(!c.uniqueTechDiscoveries.includes(upgrade.site)||c.credits<upgrade.cost)return null;
+ return {...c,credits:c.credits-upgrade.cost,environmentUpgrades:[...c.environmentUpgrades,id]};
 }
 export const capacity=()=>CAPACITY;
 export const baseFor=(c:Company)=>c.outpost&&c.launchSite==='far'?FAR:HOME;
@@ -34,14 +41,14 @@ const minerCapabilities=(c:Company):MinerCapabilities=>({cargo:3,speed:1,accel:1
 const guardCapabilities=(c:Company):GuardCapabilities=>({speed:1,accel:1,guardRange:135,guardCooldown:1.05,threatTracking:researched(c,'threatTracking')});
 export type Drone={id:number;kind:MinerType;name:string;gear:MinerCapabilities;x:number;y:number;angle:number;hp:number;maxHp:number;cargo:number;richCargo:number;oreQueue:number[];cooldown:number;targetX:number;targetY:number;wander:number;vx:number;vy:number;recoil:number;armed:boolean;lastRock:number;targetRock:number;targetHold:number;approachX:number;approachY:number;recoveryX:number;recoveryY:number;ramTarget:boolean;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;meetX:number;meetY:number;handoffUntil:number;haulerId:number;state:'mine'|'handoff'|'unload'|'return'|'docked'|'dead'};
 export type Hauler={id:number;name:string;x:number;y:number;vx:number;vy:number;angle:number;hp:number;maxHp:number;cargo:number;richCargo:number;capacity:10|14;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;assignedMiner:number;targetOre:number;blockedOre:number;blockedUntil:number;lastWork:number;state:'work'|'return'|'unload'|'docked'|'dead';task:'Collecting'|'Rendezvous'|'Returning'|'Unloading'|'Assisting'|'Docked'|'Destroyed'};
-export type Enemy={id:number;x:number;y:number;vx:number;vy:number;hp:number;cooldown:number;path:Point[];pathKey:string;pathAge:number};
+export type Enemy={id:number;x:number;y:number;vx:number;vy:number;hp:number;cooldown:number;path:Point[];pathKey:string;pathAge:number;home?:Point};
 export type Guard={id:number;name:string;gear:GuardCapabilities;maxHp:number;x:number;y:number;vx:number;vy:number;angle:number;hp:number;cooldown:number;path:Point[];pathKey:string;pathAge:number};
 export type Scout={id:number;name:string;x:number;y:number;vx:number;vy:number;angle:number;hp:number;maxHp:number;targetX:number;targetY:number;targetUntil:number;path:Point[];pathKey:string;pathAge:number;state:'exploring'|'avoiding'|'return'|'docked'|'dead'};
 export type Effect={type:'transfer'|'handoff'|'hit'|'laser'|'ore'|'deposit'|'dead'|'enemyShot'|'guardShot'|'turretShot'|'enemyDead';x:number;y:number;tx?:number;ty?:number;life:number;max:number;amount?:number;richAmount?:number};
 export type TechEvent={id:DiscoveryId;time:number};
 export const RESEARCH_STATION={x:830,y:300}, EXPERIMENTAL_PROBE={x:1190,y:1120};
 export type OreClaim={ownerKind:'miner'|'hauler';ownerId:number};
-export type World={time:number;missionDuration:number;recallFailures:number;phase:'mining'|'recall'|'aftermath'|'done';aftermath:number;company:Company;doctrine:DoctrineId;progress:Progress;rocks:Rock[];ores:Ore[];oreClaims:Map<number,OreClaim>;claimsAssigned:number;claimsReleased:number;drones:Drone[];haulers:Hauler[];scouts:Scout[];enemies:Enemy[];guards:Guard[];effects:Effect[];pendingTech:TechEvent[];explored:Uint8Array;visible:Uint8Array;mapRevision:number;discoveredPois:Set<PoiId>;newSignals:PoiId[];activeTarget:PoiId|null;investigationTime:number;investigatorId:number;scanTicks:number;delivered:number;transferred:number;haulerPickups:number;minerPickups:number;haulerDelivered:number;minerReturnTime:number;haulerStalledTime:number;extracted:number;richExtracted:number;lost:number;collisions:number;shots:number;mined:number;attacks:number;intercepts:number;disengagements:number;idleTime:number;wave:number;base:typeof HOME;rng:()=>number;nextId:number;turretCooldown:number};
+export type World={time:number;missionDuration:number;recallFailures:number;phase:'mining'|'recall'|'aftermath'|'done';aftermath:number;company:Company;doctrine:DoctrineId;progress:Progress;rocks:Rock[];ores:Ore[];oreClaims:Map<number,OreClaim>;claimsAssigned:number;claimsReleased:number;drones:Drone[];haulers:Hauler[];scouts:Scout[];enemies:Enemy[];guards:Guard[];effects:Effect[];pendingTech:TechEvent[];explored:Uint8Array;visible:Uint8Array;mapRevision:number;knownRegions:Set<BiomeId>;newRegions:BiomeId[];discoveredPois:Set<PoiId>;newSignals:PoiId[];activeTarget:PoiId|null;surveyFocus:Point|null;investigationTime:number;investigatorId:number;scanTicks:number;delivered:number;transferred:number;haulerPickups:number;minerPickups:number;haulerDelivered:number;minerReturnTime:number;haulerStalledTime:number;extracted:number;richExtracted:number;lost:number;collisions:number;shots:number;mined:number;attacks:number;intercepts:number;disengagements:number;idleTime:number;wave:number;base:typeof HOME;rng:()=>number;nextId:number;turretCooldown:number};
 export function discover(w:World,id:DiscoveryId){if(!Object.hasOwn(TECH_DISCOVERIES,id)||w.company.uniqueTechDiscoveries.includes(id)||w.pendingTech.some(e=>e.id===id))return;w.pendingTech.push({id,time:w.time});}
 export function random(seed:number){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
 export function createWorld(company:Company,seed=7):World{
@@ -50,7 +57,8 @@ export function createWorld(company:Company,seed=7):World{
  const doctrine=validDoctrine(company.doctrine);
  if(fleetError(company))throw new Error(fleetError(company));
  const composition={...company.fleetComposition};
- const w:World={time:0,missionDuration:missionDuration(company),recallFailures:0,phase:'mining',aftermath:0,company:{...company,fleetComposition:composition,unlockedTypes:[...company.unlockedTypes],doctrine},doctrine,progress:{...company.progress},rocks:[],ores:company.ores.map((o,i)=>({...o,id:100+i,age:1})),oreClaims:new Map(),claimsAssigned:0,claimsReleased:0,drones:[],haulers:[],scouts:[],enemies:[],guards:[],effects:[],pendingTech:[],explored:decodeMap(company.explored)??blankMap(),visible:blankMap(),mapRevision:0,discoveredPois:new Set(company.discoveredPois),newSignals:[],activeTarget:null,investigationTime:0,investigatorId:-1,scanTicks:0,delivered:0,transferred:0,haulerPickups:0,minerPickups:0,haulerDelivered:0,minerReturnTime:0,haulerStalledTime:0,extracted:0,richExtracted:0,lost:0,collisions:0,shots:0,mined:0,attacks:0,intercepts:0,disengagements:0,idleTime:0,wave:0,base,rng,nextId:100+company.ores.length,turretCooldown:0};
+ const w:World={time:0,missionDuration:missionDuration(company),recallFailures:0,phase:'mining',aftermath:0,company:{...company,fleetComposition:composition,unlockedTypes:[...company.unlockedTypes],environmentUpgrades:[...company.environmentUpgrades],doctrine},doctrine,progress:{...company.progress},rocks:[],ores:company.ores.map((o,i)=>({...o,id:100+i,age:1})),oreClaims:new Map(),claimsAssigned:0,claimsReleased:0,drones:[],haulers:[],scouts:[],enemies:[],guards:[],effects:[],pendingTech:[],explored:decodeMap(company.explored)??blankMap(),visible:blankMap(),mapRevision:0,knownRegions:new Set(),newRegions:[],discoveredPois:new Set(company.discoveredPois),newSignals:[],activeTarget:null,surveyFocus:null,investigationTime:0,investigatorId:-1,scanTicks:0,delivered:0,transferred:0,haulerPickups:0,minerPickups:0,haulerDelivered:0,minerReturnTime:0,haulerStalledTime:0,extracted:0,richExtracted:0,lost:0,collisions:0,shots:0,mined:0,attacks:0,intercepts:0,disengagements:0,idleTime:0,wave:0,base,rng,nextId:100+company.ores.length,turretCooldown:0};
+ for(let cell=0;cell<COLS*ROWS;cell++)if(w.explored[cell>>3]&(1<<(cell&7)))w.knownRegions.add(biomeAt((cell%COLS+.5)*CELL,(Math.floor(cell/COLS)+.5)*CELL));
  const locations=[[200,440],[74,100],[285,91],[160,165],[337,224],[60,281],[242,309],[119,377],[337,419],[50,461],[296,165],[157,65]];
  locations.forEach(([x,y],id)=>{const r=id===0?18:21+rocksRng()*15,max=id===0?45:38+Math.round(r*.45);w.rocks.push({id,x:x+(id?(rocksRng()-.5)*18:0),y,r,hp:company.rockHp[id]??max,max,shape:Array.from({length:11},()=>.77+rocksRng()*.23)});});
  // Extended test field: original starting pocket plus two outer resource clusters.
@@ -89,6 +97,7 @@ export function createWorld(company:Company,seed=7):World{
  for(let i=0;i<composition.escort;i++){const gear=guardCapabilities(company);w.guards.push({id:i,name:`Escort ${i+1}`,gear,maxHp:6,x:base.x+(i?24:-24),y:base.y-85,vx:0,vy:0,angle:-Math.PI/2,hp:6,cooldown:0,path:[],pathKey:'',pathAge:0});}
  for(let i=0;i<composition.scout;i++)w.scouts.push({id:1000+i,name:`Scout ${i+1}`,x:base.x+(i?22:-22),y:base.y+55,vx:0,vy:0,angle:-Math.PI/2,hp:6,maxHp:6,targetX:base.x,targetY:base.y,targetUntil:0,path:[],pathKey:'',pathAge:0,state:'exploring'});
  updateKnowledge(w);
+ w.newRegions.length=0; // Home is known at launch, not an interrupting alert.
  return w;
 }
 const distance=(a:Point,b:Point)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -103,16 +112,33 @@ export function canTarget(w:World,id:PoiId):string|undefined{
 }
 export function lockTarget(w:World,id:PoiId){const reason=canTarget(w,id);if(reason)return {ok:false,reason};w.activeTarget=id;w.investigatorId=-1;w.investigationTime=0;for(const g of w.guards)g.pathKey='';return {ok:true};}
 export function clearTarget(w:World){w.activeTarget=null;w.investigatorId=-1;w.investigationTime=0;for(const g of w.guards)g.pathKey='';}
+export function focusSurvey(w:World,p:Point){
+ if(w.phase!=='mining'||!w.scouts.some(s=>s.state!=='dead'&&s.state!=='docked')||!inWorld(p))return false;
+ // One immediate neighboring cell may be unknown; a deep fog click cannot reveal its region.
+ if(!exploredAt(w,p)&&![[-CELL,0],[CELL,0],[0,-CELL],[0,CELL]].some(([x,y])=>exploredAt(w,{x:p.x+x,y:p.y+y})))return false;
+ w.surveyFocus={x:p.x,y:p.y};for(const s of w.scouts)if(s.state==='exploring')s.targetUntil=0;
+ return true;
+}
+export function clearSurvey(w:World){w.surveyFocus=null;for(const s of w.scouts)if(s.state==='exploring')s.targetUntil=0;}
+export const knownBiomeAt=(w:World,p:Point)=>exploredAt(w,p)?biomeAt(p.x,p.y):null;
 function sensors(w:World):Sensor[]{return [
  {x:HOME.x,y:HOME.y,radius:115},...(w.company.outpost?[{x:FAR.x,y:FAR.y,radius:115}]:[]),
- ...w.drones.filter(d=>d.state!=='dead'&&d.state!=='docked').map(d=>({x:d.x,y:d.y,radius:90})),
- ...w.haulers.filter(h=>h.state!=='dead'&&h.state!=='docked').map(h=>({x:h.x,y:h.y,radius:78})),
- ...w.guards.filter(g=>g.hp>0).map(g=>({x:g.x,y:g.y,radius:100})),
- ...w.scouts.filter(s=>s.state!=='dead'&&s.state!=='docked').map(s=>({x:s.x,y:s.y,radius:165})),
+ ...w.drones.filter(d=>d.state!=='dead'&&d.state!=='docked').map(d=>({x:d.x,y:d.y,radius:90*sensorFactor(d,w.company.environmentUpgrades,w.company.outpost)})),
+ ...w.haulers.filter(h=>h.state!=='dead'&&h.state!=='docked').map(h=>({x:h.x,y:h.y,radius:78*sensorFactor(h,w.company.environmentUpgrades,w.company.outpost)})),
+ ...w.guards.filter(g=>g.hp>0).map(g=>({x:g.x,y:g.y,radius:100*sensorFactor(g,w.company.environmentUpgrades,w.company.outpost)})),
+ ...w.scouts.filter(s=>s.state!=='dead'&&s.state!=='docked').map(s=>({x:s.x,y:s.y,radius:165*(w.company.environmentUpgrades.includes('advancedSensors')?1.2:1)*sensorFactor(s,w.company.environmentUpgrades,w.company.outpost)})),
 ];}
 export function updateKnowledge(w:World){
  const sources=sensors(w);reveal(w.visible,sources);
- for(let i=0;i<w.explored.length;i++){const merged=w.explored[i]|w.visible[i];if(merged!==w.explored[i]){w.explored[i]=merged;w.mapRevision++;}}
+ for(let i=0;i<w.explored.length;i++){
+  const added=w.visible[i]&~w.explored[i];if(!added)continue;
+  w.explored[i]|=added;w.mapRevision++;
+  for(let bit=0;bit<8;bit++)if(added&(1<<bit)){
+   const cell=i*8+bit;if(cell>=COLS*ROWS)continue;
+   const id=biomeAt((cell%COLS+.5)*CELL,(Math.floor(cell/COLS)+.5)*CELL);
+   if(!w.knownRegions.has(id)){w.knownRegions.add(id);w.newRegions.push(id);}
+  }
+ }
  for(const p of POIS)if(!w.discoveredPois.has(p.id)&&sources.some(s=>distance(s,p)<=s.radius)){
   w.discoveredPois.add(p.id);w.newSignals.push(p.id);
  }
@@ -125,11 +151,20 @@ function frontier(w:World,unit:Point,radius:number,peerTargets:Point[]=[],speed=
  let best:Point|undefined,score=-Infinity;
  for(let row=1;row<ROWS-1;row+=2)for(let col=1;col<COLS-1;col+=2){
   const p={x:(col+.5)*CELL,y:(row+.5)*CELL};
-  if(exploredAt(w,p)||w.rocks.some(r=>r.hp>0&&distance(p,r)<r.r+12))continue;
+  if(exploredAt(w,p)||w.rocks.some(r=>r.hp>0&&Math.abs(p.x-r.x)<r.r+12&&Math.abs(p.y-r.y)<r.r+12&&distance(p,r)<r.r+12))continue;
   const travel=distance(unit,p),uncovered=[[-radius,0],[radius,0],[0,-radius],[0,radius],[0,0]].filter(([dx,dy])=>!exploredAt(w,{x:p.x+dx,y:p.y+dy})).length;
   if(travel>Math.max(0,w.missionDuration-w.time-2)*speed)continue;
   const peer=peerTargets.some(t=>distance(t,p)<radius*1.25)?175:0;
-  const value=uncovered*32-travel*.25-distance(w.base,p)*.025-peer;
+  // Unknown terrain is never classified for routing; only charted points and
+  // the nearest observable boundary can contribute a known risk estimate.
+  const toward={x:unit.x+(p.x-unit.x)*Math.min(1,radius/Math.max(1,travel)),y:unit.y+(p.y-unit.y)*Math.min(1,radius/Math.max(1,travel))};
+  const known=knownBiomeAt(w,toward)??knownBiomeAt(w,unit);
+  const shield=w.company.environmentUpgrades.includes('radiationShielding');
+  const stabilizers=w.company.environmentUpgrades.includes('navigationStabilizers');
+  const hazard=known==='dead_zone'?(shield?28:190):known==='contested'?w.guards.some(g=>g.hp>0&&distance(g,unit)<150)?38:100:known==='ion_storm'?(stabilizers?25:90):0;
+  const observedThreat=w.enemies.some(e=>e.hp>0&&visibleAt(w,e)&&distance(e,p)<230)?w.guards.some(g=>g.hp>0&&distance(g,unit)<130)?70:165:0;
+  const focus=w.surveyFocus?Math.max(0,1-distance(p,w.surveyFocus)/360)*(known==='dead_zone'&&!shield||observedThreat?65:210):0;
+  const value=uncovered*32-travel*.25-distance(w.base,p)*.025-peer-hazard-observedThreat+focus;
   if(value>score){score=value;best=p;}
  }
  return best;
@@ -138,14 +173,18 @@ function updateScouts(w:World,dt:number){
  for(const s of w.scouts){if(s.state==='dead'||s.state==='docked')continue;
   if(w.phase!=='mining')s.state='return';
   const foe=w.enemies.filter(e=>e.hp>0&&distance(e,s)<95).sort((a,b)=>distance(a,s)-distance(b,s))[0];
-  if(foe&&s.state==='exploring')s.state='avoiding';else if(!foe&&s.state==='avoiding')s.state='exploring';
+  const radiation=environmentAt(s,w.company.outpost)==='dead_zone'&&!w.company.environmentUpgrades.includes('radiationShielding');
+  if(radiation&&s.hp<4.5&&s.state==='exploring'){s.state='return';s.pathKey='';}
+  else if(foe&&s.state==='exploring'){s.state='avoiding';s.targetUntil=w.time+16;s.pathKey='';}
+  else if(!foe&&s.state==='avoiding'&&w.time>s.targetUntil&&distance(s,w.base)<260){s.state='exploring';s.targetUntil=0;}
   if(s.state==='exploring'&&w.time>=s.targetUntil){
    const peers=w.scouts.filter(p=>p!==s&&p.state==='exploring').map(p=>({x:p.targetX,y:p.targetY}));
-   const target=frontier(w,s,165,peers,85)??w.base;s.targetX=target.x;s.targetY=target.y;s.targetUntil=w.time+Math.max(2,distance(s,target)/82+2);s.pathKey='';
+   const radius=165*(w.company.environmentUpgrades.includes('advancedSensors')?1.2:1);
+   const target=frontier(w,s,radius,peers,85)??w.base;s.targetX=target.x;s.targetY=target.y;s.targetUntil=w.time+Math.max(2,distance(s,target)/82+2);s.pathKey='';
   }
-  const target=s.state==='return'?w.base:s.state==='avoiding'&&foe?{x:Math.max(20,Math.min(W-20,s.x+(s.x-foe.x)*2)),y:Math.max(20,Math.min(H-20,s.y+(s.y-foe.y)*2))}:{x:s.targetX,y:s.targetY};
+  const target=s.state==='return'||s.state==='avoiding'&&!foe?w.base:s.state==='avoiding'&&foe?{x:Math.max(20,Math.min(W-20,s.x+(s.x-foe.x)*2)),y:Math.max(20,Math.min(H-20,s.y+(s.y-foe.y)*2))}:{x:s.targetX,y:s.targetY};
   const point=clearSegment(s,target,w.rocks,-1,9)?target:waypoint(w,s,target,`${s.state}:${Math.round(target.x)}:${Math.round(target.y)}`);
-  const dx=point.x-s.x,dy=point.y-s.y,len=Math.hypot(dx,dy),speed=s.state==='avoiding'?105:85;
+  const dx=point.x-s.x,dy=point.y-s.y,len=Math.hypot(dx,dy),speed=(s.state==='avoiding'?105:85)*movementFactor(s,w.company.environmentUpgrades,w.company.outpost);
   s.vx+=(dx/Math.max(1,len)*Math.min(speed,len*3)-s.vx)*Math.min(1,dt*5);s.vy+=(dy/Math.max(1,len)*Math.min(speed,len*3)-s.vy)*Math.min(1,dt*5);
   s.x=Math.max(10,Math.min(W-10,s.x+s.vx*dt));s.y=Math.max(10,Math.min(H-10,s.y+s.vy*dt));separateRock(w,s);
   if(Math.hypot(s.vx,s.vy)>2)s.angle=Math.atan2(s.vy,s.vx);
@@ -303,6 +342,7 @@ function updateHaulers(w:World,dt:number){
     h.assignedMiner=-1;
     // Commit to a reachable fragment until it is collected or disappears.
     const relevant=w.ores.filter(o=>exploredAt(w,o)&&(o.age??1)>=ORE_PICKUP_DELAY&&distance(h,o)<(h.cargo>=h.capacity-1?110:235)&&!(o.id===h.blockedOre&&w.time<h.blockedUntil)&&availableTo(w,o.id,'hauler',h.id)&&
+      (w.company.environmentUpgrades.includes('radiationShielding')||h.hp>3||knownBiomeAt(w,o)!=='dead_zone')&&
       (w.doctrine!=='convoy'||w.drones.some(d=>d.state==='mine'&&distance(d,o)<195)));
     relevant.sort((a,b)=>distance(h,a)-distance(h,b)||a.id-b.id);
     const selected=relevant.find(o=>o.id===h.targetOre)??relevant[0];
@@ -319,8 +359,9 @@ function updateHaulers(w:World,dt:number){
   if(!target)target=w.base;
   const point=waypoint(w,h,target,h.state==='return'?`haulHome${h.berth}`:h.assignedMiner>=0?`haulMeet${h.assignedMiner}`:h.targetOre>=0?`ore${h.targetOre}`:`haulAssist${Math.round(target.x/35)}:${Math.round(target.y/35)}`);
   const dx=point.x-h.x,dy=point.y-h.y,len=Math.hypot(dx,dy),hold=len<11;
-  h.vx+=(((hold?dx*2:dx/Math.max(1,len)*Math.min(92,len*3)))-h.vx)*Math.min(1,dt*6);
-  h.vy+=(((hold?dy*2:dy/Math.max(1,len)*Math.min(92,len*3)))-h.vy)*Math.min(1,dt*6);
+  const motor=movementFactor(h,w.company.environmentUpgrades,w.company.outpost);
+  h.vx+=(((hold?dx*2:dx/Math.max(1,len)*Math.min(92,len*3))*motor)-h.vx)*Math.min(1,dt*6);
+  h.vy+=(((hold?dy*2:dy/Math.max(1,len)*Math.min(92,len*3))*motor)-h.vy)*Math.min(1,dt*6);
   h.x=Math.max(10,Math.min(W-10,h.x+h.vx*dt));h.y=Math.max(10,Math.min(H-10,h.y+h.vy*dt));separateRock(w,h,11);
   if(Math.hypot(h.vx,h.vy)>3)h.angle=Math.atan2(h.vy,h.vx);
   if(h.state==='work'){
@@ -347,7 +388,8 @@ function miningTarget(w:World,d:Drone,room:number):Rock|undefined{
   const danger=threats.reduce((risk,e)=>risk+Math.max(0,260-distance(r,e))*Math.max(0,1-distance(d,e)/420),0);
   const nearby=peers.length?Math.min(...peers.map(p=>p.targetRock===r.id?0:distance(p,r))):260;
   const productiveImpact=w.doctrine==='fullContact'&&d.kind==='impactMiner'&&r.rich&&d.hp>1&&travel<200?48:0;
-  return travel*ai.near+danger*ai.threat+Math.max(0,nearby-65)*ai.group-productiveImpact;
+  const known=knownBiomeAt(w,r),risk=known==='dead_zone'&&!w.company.environmentUpgrades.includes('radiationShielding')?Math.max(30,130-d.hp*12):known==='contested'&&!w.guards.some(g=>g.hp>0&&distance(g,d)<150)?55:0;
+  return travel*ai.near+danger*ai.threat+Math.max(0,nearby-65)*ai.group-productiveImpact+risk;
  };
  const preferred=choices.reduce<Rock|undefined>((best,r)=>!best||score(r)<score(best)?r:best,undefined);
  const locked=choices.find(r=>r.id===d.targetRock);
@@ -374,11 +416,9 @@ function dangerRetreat(w:World,d:Drone):Point|undefined{
  return distance(foe,w.base)>distance(d,w.base)?w.base:away;
 }
 function updateRivals(w:World,dt:number){
- if(w.phase==='mining'&&(w.progress.richSampled&&w.time>=11&&w.wave===0 || w.progress.outpostSurveyed&&w.time>=30&&w.wave===1)){
-  const miners=w.drones.filter(d=>d.state==='mine'||d.state==='handoff'||d.state==='return'||d.state==='unload');
-  const target=miners.sort((a,b)=>b.x-a.x)[0];
-  const side=w.wave%2?1:-1;
-  w.enemies.push({id:w.wave++,x:Math.max(430,Math.min(W-25,(target?.x??620)+side*140)),y:Math.max(90,Math.min(H-25,(target?.y??360)-70)),vx:0,vy:0,hp:3,cooldown:1.1,path:[],pathKey:'',pathAge:0});
+ if(w.phase==='mining'&&w.wave===0){
+  const home={x:1770,y:675};
+  w.enemies.push({id:0,x:home.x,y:home.y,vx:0,vy:0,hp:3,cooldown:1.1,path:[],pathKey:'',pathAge:0,home});w.wave=1;
  }
  for(const e of w.enemies){
   if(e.hp<=0)continue;
@@ -386,15 +426,16 @@ function updateRivals(w:World,dt:number){
   const guards=w.guards.filter(g=>g.hp>0).sort((a,b)=>distance(e,a)-distance(e,b));
   const miner=miners.sort((a,b)=>distance(e,a)-distance(e,b))[0];
   const scout=w.scouts.filter(s=>s.state!=='dead'&&s.state!=='docked').sort((a,b)=>distance(e,a)-distance(e,b))[0];
-  const target=guards[0]&&distance(e,guards[0])<145?guards[0]:scout&&distance(e,scout)<95?scout:miner??scout??guards[0];
-  if(!target){e.vx*=.96;e.vy*=.96;continue;}
-  const dist=distance(e,target),point=clearSegment(e,target,w.rocks,-1,10)?target:waypoint(w,e,target,'pursue'+('state' in target?'miner':'guard')+target.id);
+  let target:Drone|Hauler|Scout|Guard|undefined=guards[0]&&distance(e,guards[0])<145?guards[0]:scout&&distance(e,scout)<95?scout:miner??scout??guards[0];
+  if(e.home&&(distance(e,e.home)>270||!target||distance(e,target)>210||distance(target,e.home)>310))target=undefined;
+  if(!target&&!e.home){e.vx*=.96;e.vy*=.96;continue;}
+  const goal=target??e.home!,dist=distance(e,goal),point=clearSegment(e,goal,w.rocks,-1,10)?goal:waypoint(w,e,goal,target?'pursue'+('state' in target?'miner':'guard')+target.id:'patrol');
   const pathDist=distance(e,point),dx=(point.x-e.x)/Math.max(1,pathDist),dy=(point.y-e.y)/Math.max(1,pathDist);
-  const desired=dist>105?82:dist<70?-35:0;
+  const desired=!target?Math.min(70,dist*2):dist>105?82:dist<70?-35:0;
   e.vx+=(dx*desired-e.vx)*Math.min(1,dt*2);e.vy+=(dy*desired-e.vy)*Math.min(1,dt*2);
   e.x=Math.max(12,Math.min(W-12,e.x+e.vx*dt));e.y=Math.max(12,Math.min(H-12,e.y+e.vy*dt));separateRock(w,e);
   e.cooldown-=dt;
-  if(distance(e,target)<145&&e.cooldown<=0&&clearSegment(e,target,w.rocks,-1,0)){
+  if(target&&distance(e,target)<145&&e.cooldown<=0&&clearSegment(e,target,w.rocks,-1,0)){
    if(!w.progress.rivalSeen){w.progress.rivalSeen=true;discover(w,'first_rival_contact');}
    effect(w,{type:'enemyShot',x:e.x,y:e.y,tx:target.x,ty:target.y},.3);w.attacks++;
    const productive=target===miner;
@@ -422,7 +463,8 @@ function updateRivals(w:World,dt:number){
   const goal=patrol&&!urgent?site!:{x:anchor.x+Math.cos(w.time*1.5+g.id*Math.PI)*offset,y:anchor.y+Math.sin(w.time*1.5+g.id*Math.PI)*offset};
   const point=clearSegment(g,goal,w.rocks,-1,10)?goal:waypoint(w,g,goal,patrol&&!urgent?'investigate:'+site!.id:'guard'+(foe?.id??-1)+':'+('id' in protect?protect.id:-1));
   const dx=point.x-g.x,dy=point.y-g.y,len=Math.hypot(dx,dy);
-  g.vx+=(dx/Math.max(1,len)*Math.min(150,len*3)*g.gear.speed-g.vx)*Math.min(1,dt*4*g.gear.accel);g.vy+=(dy/Math.max(1,len)*Math.min(150,len*3)*g.gear.speed-g.vy)*Math.min(1,dt*4*g.gear.accel);
+  const motor=movementFactor(g,w.company.environmentUpgrades,w.company.outpost);
+  g.vx+=(dx/Math.max(1,len)*Math.min(150,len*3)*g.gear.speed*motor-g.vx)*Math.min(1,dt*4*g.gear.accel);g.vy+=(dy/Math.max(1,len)*Math.min(150,len*3)*g.gear.speed*motor-g.vy)*Math.min(1,dt*4*g.gear.accel);
   g.x=Math.max(10,Math.min(W-10,g.x+g.vx*dt));g.y=Math.max(10,Math.min(H-10,g.y+g.vy*dt));separateRock(w,g);
   if(len>2)g.angle=Math.atan2(g.vy,g.vx);
   g.cooldown-=dt;
@@ -448,7 +490,7 @@ export function step(w:World,dt=STEP){
  w.time+=dt;w.effects.forEach(e=>{e.life-=dt;if(e.type==='transfer'&&e.life<=0){w.delivered+=e.amount??0;if(e.richAmount&&!w.progress.richSampled){w.progress.richSampled=true;discover(w,'first_rich_sample');}}});w.effects=w.effects.filter(e=>e.life>0);
  for(const o of w.ores)o.age=(o.age??1)+dt;
  if(w.phase==='aftermath'){w.aftermath+=dt;if(w.aftermath>=2.5&&!w.effects.some(e=>e.type==='transfer'))w.phase='done';return;}
- if(w.time>=w.missionDuration&&w.phase==='mining'){w.phase='recall';clearTarget(w);}
+ if(w.time>=w.missionDuration&&w.phase==='mining'){w.phase='recall';clearTarget(w);clearSurvey(w);}
  if(w.phase==='recall'&&w.time>w.missionDuration+180){
   for(const d of [...w.drones,...w.haulers])if(d.state!=='dead'&&d.state!=='docked'){dropCargo(w,d);d.state='dead';w.recallFailures++;}
   for(const s of w.scouts)if(s.state!=='dead'&&s.state!=='docked'){s.state='dead';w.recallFailures++;}
@@ -540,7 +582,7 @@ export function step(w:World,dt=STEP){
    // Cargo navigation is reliable; unassisted exploration oversteers and wanders.
    const turn=(controlled?3.2:1.6)*d.gear.turn;
    d.angle+=Math.max(-dt*turn,Math.min(dt*turn,delta));
-   const speed=(d.state==='return'?82:controlled?67:58)*d.gear.speed*Math.max(controlled?.12:.4,Math.cos(delta));
+   const speed=(d.state==='return'?82:controlled?67:58)*d.gear.speed*movementFactor(d,w.company.environmentUpgrades,w.company.outpost)*Math.max(controlled?.12:.4,Math.cos(delta));
    const desiredSpeed=Math.min(speed,targetDistance*4);
    const response=(controlled?8:2.2)*d.gear.accel*(retreating?d.gear.retreatAccel:1);
    const docking=d.state==='return'&&distance(d,target)<24;
@@ -584,11 +626,27 @@ export function step(w:World,dt=STEP){
   }
  }
  updateHaulers(w,dt);
+ // Environmental exposure is fixed-step simulation damage, using the same
+ // destruction and physical cargo-salvage path as combat.
+ for(const d of w.drones)if(d.state!=='dead'&&d.state!=='docked'){
+  d.hp-=radiationRate(d,w.company.environmentUpgrades,w.company.outpost)*dt;
+  if(d.hp<=0){d.hp=0;dropCargo(w,d);d.state='dead';effect(w,{type:'dead',x:d.x,y:d.y},1);}
+ }
+ for(const h of w.haulers)if(h.state!=='dead'&&h.state!=='docked'){
+  h.hp-=radiationRate(h,w.company.environmentUpgrades,w.company.outpost)*dt;
+  if(h.hp<=0){h.hp=0;dropCargo(w,h);h.state='dead';releaseHaulerClaim(w,h);effect(w,{type:'dead',x:h.x,y:h.y},1);}
+ }
+ for(const s of w.scouts)if(s.state!=='dead'&&s.state!=='docked'){
+  s.hp-=radiationRate(s,w.company.environmentUpgrades,w.company.outpost)*dt;
+  if(s.hp<=0){s.hp=0;s.state='dead';effect(w,{type:'dead',x:s.x,y:s.y},1);}
+ }
+ if(w.surveyFocus&&!w.scouts.some(s=>s.state!=='dead'&&s.state!=='docked'))clearSurvey(w);
+ for(const g of w.guards)if(g.hp>0){g.hp=Math.max(0,g.hp-radiationRate(g,w.company.environmentUpgrades,w.company.outpost)*dt);if(g.hp===0)effect(w,{type:'dead',x:g.x,y:g.y},1);}
  if(w.scanTicks%6===0)updateKnowledge(w);
  if(w.activeTarget&&!w.guards.some(g=>g.hp>0))clearTarget(w);
  const productive=[...w.drones,...w.haulers];
- if(productive.every(d=>d.state==='dead')){w.phase='aftermath';w.aftermath=0;}
- else if(productive.every(d=>d.state==='dead'||d.state==='docked')&&w.scouts.every(s=>s.state==='dead'||s.state==='docked')&&!w.effects.some(e=>e.type==='transfer'))w.phase='done';
+ if(productive.every(d=>d.state==='dead')){w.phase='aftermath';w.aftermath=0;clearTarget(w);clearSurvey(w);}
+ else if(productive.every(d=>d.state==='dead'||d.state==='docked')&&w.scouts.every(s=>s.state==='dead'||s.state==='docked')&&!w.effects.some(e=>e.type==='transfer')){w.phase='done';clearTarget(w);clearSurvey(w);}
 }
 export function settle(c:Company,w:World):Company{
  if(c.rounds>w.company.rounds)return c;

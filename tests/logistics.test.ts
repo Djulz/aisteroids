@@ -126,7 +126,7 @@ test('v8 max-spent companies migrate intact, new nodes and fleet counts persist;
  c=changeFleet(c,'laserMiner',1)!;c=changeFleet(c,'escort',1)!;
  assert.equal(c.techPointsAvailable,0);
  const legacy={...c,version:8,fleetComposition:{impactMiner:c.fleetComposition.impactMiner,laserMiner:c.fleetComposition.laserMiner,escort:c.fleetComposition.escort,hauler:0,miningRig:0}};const {api,map}=store({'aisteroids-company-v8':JSON.stringify(legacy),'unrelated':'keep'});
- let migrated=loadCompany(api);assert.equal(migrated.version,11);assert.equal(migrated.techPointsAvailable,0);
+ let migrated=loadCompany(api);assert.equal(migrated.version,12);assert.equal(migrated.techPointsAvailable,0);
  assert.equal(migrated.credits,37);assert.equal(migrated.rounds,12);assert.equal(migrated.fleetCapacity,4);
  assert.equal(migrated.fleetComposition.escort,1);assert.equal(migrated.fleetComposition.laserMiner,1);
  assert.equal(migrated.rockHp[0],9);assert.equal(migrated.ores[0].rich,true);

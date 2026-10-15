@@ -29,7 +29,7 @@ test('endurance upgrades are sequential, priced, saved and used by each shift',(
  assert.equal(c.credits,0);assert.equal(buy(c,'endurance'),null);assert.equal(missionDuration(c),90);
 });
 
-test('v10 bitset converts exact old cell coordinates and carries earned assets into v11',()=>{
+test('v10 bitset converts exact old cell coordinates and carries earned assets into v12',()=>{
  const c=freshCompany(),old=new Uint8Array(152),points=[[31,37],[17,12],[0,0]];
  for(const [col,row] of points){const i=row*32+col;old[i>>3]|=1<<(i&7);}
  const save={...c,version:10,enduranceLevel:undefined,credits:411,total:991,rounds:25,outpost:true,launchSite:'far',
@@ -37,7 +37,7 @@ test('v10 bitset converts exact old cell coordinates and carries earned assets i
  const data=new Map([['aisteroids-company-v10',JSON.stringify(save)],['unrelated','retained']]);
  const storage:SaveStore={getItem:k=>data.get(k)??null,setItem:(k,v)=>{data.set(k,v);},removeItem:k=>{data.delete(k);}};
  const migrated=loadCompany(storage),bits=decodeMap(migrated.explored)!;
- assert.equal(migrated.version,11);assert.equal(migrated.enduranceLevel,0);assert.equal(migrated.credits,411);assert.equal(migrated.rounds,25);
+ assert.equal(migrated.version,12);assert.equal(migrated.enduranceLevel,0);assert.equal(migrated.credits,411);assert.equal(migrated.rounds,25);
  assert.equal(migrated.outpost,true);assert.equal(migrated.launchSite,'far');assert.equal(migrated.rockHp[80],save.rockHp[80]);
  assert.equal(migrated.discoveredPois[0],POIS[0].id);assert.equal(data.get('unrelated'),'retained');assert.ok(data.has(SAVE_KEY));
  for(const [col,row] of points)assert.ok(hasCell(bits,(col+.5)*25,(row+.5)*25));
@@ -57,7 +57,9 @@ test('Scout maps persistent distant territory and returns physically at every du
   assert.ok(mapCount(w.explored)>previous);previous=mapCount(w.explored);
   c=settle(c,w);assert.equal(mapCount(decodeMap(c.explored)!),previous);
  }
- assert.ok(previous>4500);assert.ok(c.progress.outpostSurveyed);
+ // Cautious regional exploration no longer guarantees a remote survey after
+ // only four isolated shifts; the purchase campaign still verifies reachability.
+ assert.ok(previous>2000);assert.ok(c.progress.farSurveyed);
 });
 
 test('charted rock and ore stay full field artwork while unknown objects stay hidden',()=>{
