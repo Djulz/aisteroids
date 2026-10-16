@@ -10,13 +10,13 @@ import {biomeAt} from '../src/biomes.ts';
 const run=(w:ReturnType<typeof createWorld>)=>{for(let i=0;i<15000&&w.phase!=='done';i++)step(w);assert.equal(w.phase,'done');return w;};
 test('five physical minerals retain distinct integer credit prices and extraction gates',()=>{
  assert.deepEqual(mineralIds,['ferrite','nickel','aurite','cryonite','voidite']);
- assert.deepEqual(mineralIds.map(id=>MINERALS[id].credits),[1,3,10,30,100]);
+ assert.deepEqual(mineralIds.map(id=>MINERALS[id].credits),[1,3,8,20,60]);
  assert.deepEqual(mineralIds.map(id=>canExtract('impactMiner',id,[])),[true,true,false,false,false]);
  assert.deepEqual(mineralIds.map(id=>canExtract('laserMiner',id,[])),[true,true,false,true,false]);
  assert.equal(canExtract('laserMiner','aurite',['highPowerOptics']),true);
  assert.equal(canExtract('laserMiner','voidite',['highPowerOptics']),false);
  assert.equal(canExtract('laserMiner','voidite',['highPowerOptics','resonanceMining']),true);
- assert.equal(cargoValue([{mineral:'ferrite'},{mineral:'nickel'},{mineral:'voidite'}]),104);
+ assert.equal(cargoValue([{mineral:'ferrite'},{mineral:'nickel'},{mineral:'voidite'}]),64);
 });
 test('mineral assignments and reserves are stable through depletion and Outpost purchase',()=>{
  const c=freshCompany(),rocks=createWorld(c).rocks;
@@ -34,17 +34,17 @@ test('mixed cargo hands off physically and awards value once after station arriv
  d.cargoItems=[{mineral:'ferrite'},{mineral:'nickel'},{mineral:'voidite'}];h.x=d.x+10;h.y=d.y;
  assert.equal(handoff(w,d,h),3);assert.equal(d.cargo,0);assert.equal(h.cargo,3);assert.equal(w.delivered,0);
  h.state='unload';h.unloadCargo=3;for(let i=0;i<100;i++)step(w,STEP);
- assert.equal(h.cargo,0);assert.equal(w.deliveredFragments,3);assert.equal(w.delivered,104);
+ assert.equal(h.cargo,0);assert.equal(w.deliveredFragments,3);assert.equal(w.delivered,64);
  assert.equal(w.deliveredByMineral.ferrite,1);assert.equal(w.deliveredByMineral.nickel,1);assert.equal(w.deliveredByMineral.voidite,1);
- const saved=settle(c,w);assert.equal(saved.credits,104);assert.equal(settle(saved,w).credits,104);
+ const saved=settle(c,w);assert.equal(saved.credits,64);assert.equal(settle(saved,w).credits,64);
 });
-test('fourth Voidite does not fit Miner; expanded Hauler carries fourteen for 1400',()=>{
+test('fourth Voidite does not fit Miner; expanded Hauler carries fourteen for 840',()=>{
  const w=createWorld(freshCompany()),d=w.drones[0];d.cargoItems=Array.from({length:3},()=>({mineral:'voidite'}));
- assert.equal(d.gear.cargo-d.cargo,0);assert.equal(cargoValue(d.cargoItems),300);
+ assert.equal(d.gear.cargo-d.cargo,0);assert.equal(cargoValue(d.cargoItems),180);
  const c={...freshCompany(),fleetCapacity:2,fleetComposition:{...freshCompany().fleetComposition,hauler:1},unlockedTechnologies:['haulerOperation','expandedHauler'],unlockedTypes:['impactMiner','scout','hauler'] as Company['unlockedTypes']};
  const v=createWorld(c),h=v.haulers[0];h.cargoItems=Array.from({length:14},()=>({mineral:'voidite'}));
  assert.equal(h.capacity,14);h.state='unload';h.unloadCargo=14;for(let i=0;i<100;i++)step(v,STEP);
- assert.equal(v.delivered,1400);assert.equal(v.deliveredFragments,14);assert.equal(v.deliveredByMineral.voidite,14);
+ assert.equal(v.delivered,840);assert.equal(v.deliveredFragments,14);assert.equal(v.deliveredByMineral.voidite,14);
 });
 test('legacy v12 snapshots every untouched rock without replenishment and keeps one-credit salvage',()=>{
  const baseline=createWorld(freshCompany()).rocks;
@@ -91,7 +91,7 @@ test('two Scouts claim separate sites without stacking or duplicate Tech',()=>{
 test('wreck salvage and reload retain each mixed fragment and unearned value',()=>{
  const c=freshCompany(),w=createWorld(c),d=w.drones[0];d.cargoItems=[{mineral:'ferrite'},{mineral:'nickel'},{mineral:'voidite'}];
  d.x=2440;d.y=1950;d.hp=.001;d.state='return';step(w,STEP);
- assert.equal(d.state,'dead');assert.equal(w.lost,3);assert.equal(w.lostValue,104);
+ assert.equal(d.state,'dead');assert.equal(w.lost,3);assert.equal(w.lostValue,64);
  assert.equal(w.delivered,0);
  const salvage=w.ores.map(o=>o.mineral);assert.deepEqual(salvage,['ferrite','nickel','voidite']);
  const saved=parseSave(JSON.stringify(settle(c,w)));assert.deepEqual(saved.ores.map(o=>o.mineral),salvage);

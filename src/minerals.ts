@@ -3,9 +3,9 @@ import {biomeAt,safeHarbor,type BiomeId} from './biomes.ts';
 export const MINERALS={
  ferrite:{name:'Ferrite',credits:1,tier:1,color:'#a8adb2',description:'Ordinary impact ore',density:12,tool:'impact'},
  nickel:{name:'Nickel',credits:3,tier:2,color:'#b4b29a',description:'Dense, plentiful metal',density:18,tool:'impact'},
- aurite:{name:'Aurite',credits:10,tier:3,color:'#e9b34a',description:'Hard crust; high-power laser',density:12,tool:'highPowerOptics'},
- cryonite:{name:'Cryonite',credits:30,tier:4,color:'#a2c9e3',description:'Brittle ice crystal; laser',density:9,tool:'laser'},
- voidite:{name:'Voidite',credits:100,tier:5,color:'#b39bd4',description:'Resistant crystal; resonance laser',density:6,tool:'resonanceMining'},
+ aurite:{name:'Aurite',credits:8,tier:3,color:'#e9b34a',description:'Hard crust; high-power laser',density:12,tool:'highPowerOptics'},
+ cryonite:{name:'Cryonite',credits:20,tier:4,color:'#a2c9e3',description:'Brittle ice crystal; laser',density:9,tool:'laser'},
+ voidite:{name:'Voidite',credits:60,tier:5,color:'#b39bd4',description:'Resistant crystal; resonance laser',density:6,tool:'resonanceMining'},
 } as const;
 export type MineralId=keyof typeof MINERALS;
 export const mineralIds=Object.keys(MINERALS) as MineralId[];

@@ -4,7 +4,7 @@ import {fleetError,freshComposition,MAX_FLEET_CAPACITY,type FleetComposition,typ
 import {awardTech,TECH_DISCOVERIES,researched,type DiscoveryId} from './research.ts';
 import {POIS,blankMap,decodeMap,encodeMap,hasCell,mapCount,mergeMap,reveal,type PoiId,type Sensor,CELL,COLS,ROWS,MAP_W,MAP_H} from './knowledge.ts';
 import {W,H,HOME,FAR} from './geometry.ts';
-import {biomeAt,environmentAt,sensorFactor,movementFactor,radiationRate,ENVIRONMENT_UPGRADES,environmentIds,inWorld,type BiomeId,type EnvironmentUpgrade} from './biomes.ts';
+import {biomeAt,environmentAt,sensorFactor,movementFactor,radiationRate,scoutScanRadius,ENVIRONMENT_UPGRADES,environmentIds,inWorld,type BiomeId,type EnvironmentUpgrade} from './biomes.ts';
 import {MINERALS,mineralForRock,depositReserve,canExtract,cargoValue,type MineralId,type CargoItem} from './minerals.ts';
 import {emptyFocuses,withFocus,validFocusPoint,type Focuses,type FocusRole} from './focus.ts';
 import {workRate} from './work.ts';
@@ -149,7 +149,7 @@ export function setFocus(w:World,role:FocusRole,p:Point|null){
  if(p!==null&&!validFocusPoint(p))return false;
  w.focuses=withFocus(w.focuses,role,p);
  if(role==='scout'){w.surveyFocus=w.phase==='mining'?p:null;w.scoutPriority=null;for(const s of w.scouts)if(s.state==='exploring')s.targetUntil=0;}
- if(role==='mining')for(const d of w.drones)if(d.state==='mine')d.targetHold=-Infinity;
+ if(role==='mining')for(const d of w.drones){workDecisions.delete(d);if(d.state==='mine')d.targetHold=-Infinity;}
  return true;
 }
 export function clearSurvey(w:World){w.surveyFocus=null;for(const s of w.scouts)if(s.state==='exploring')s.targetUntil=0;}
@@ -159,7 +159,7 @@ function sensors(w:World):Sensor[]{return [
  ...w.drones.filter(d=>d.state!=='dead'&&d.state!=='docked').map(d=>({x:d.x,y:d.y,radius:90*sensorFactor(d,w.company.environmentUpgrades,w.company.outpost)})),
  ...w.haulers.filter(h=>h.state!=='dead'&&h.state!=='docked').map(h=>({x:h.x,y:h.y,radius:78*sensorFactor(h,w.company.environmentUpgrades,w.company.outpost)})),
  ...w.guards.filter(g=>g.hp>0).map(g=>({x:g.x,y:g.y,radius:100*sensorFactor(g,w.company.environmentUpgrades,w.company.outpost)})),
- ...w.scouts.filter(s=>s.state!=='dead'&&s.state!=='docked').map(s=>({x:s.x,y:s.y,radius:165*(w.company.environmentUpgrades.includes('advancedSensors')?1.2:1)*sensorFactor(s,w.company.environmentUpgrades,w.company.outpost)})),
+ ...w.scouts.filter(s=>s.state!=='dead'&&s.state!=='docked').map(s=>({x:s.x,y:s.y,radius:scoutScanRadius(w.company.environmentUpgrades)*sensorFactor(s,w.company.environmentUpgrades,w.company.outpost)})),
 ];}
 export function updateKnowledge(w:World){
  const sources=sensors(w);reveal(w.visible,sources);
@@ -223,7 +223,7 @@ function updateScouts(w:World,dt:number){
   if(site){w.investigatorClaims.set(site.id,s.id);s.targetX=site.x;s.targetY=site.y;s.targetUntil=w.time+Math.max(2,distance(s,site)/85+3);}
   if(s.state==='exploring'&&!site&&w.time>=s.targetUntil){
    const peers=w.scouts.filter(p=>p!==s&&p.state==='exploring').map(p=>({x:p.targetX,y:p.targetY}));
-   const radius=165*(w.company.environmentUpgrades.includes('advancedSensors')?1.2:1);
+   const radius=scoutScanRadius(w.company.environmentUpgrades);
    const target=frontier(w,s,radius,peers,85)??w.base;s.targetX=target.x;s.targetY=target.y;s.targetUntil=w.time+Math.max(2,distance(s,target)/82+2);s.pathKey='';
   }
   const target=s.state==='return'||s.state==='avoiding'&&!foe?w.base:s.state==='avoiding'&&foe?{x:Math.max(20,Math.min(W-20,s.x+(s.x-foe.x)*2)),y:Math.max(20,Math.min(H-20,s.y+(s.y-foe.y)*2))}:{x:s.targetX,y:s.targetY};
@@ -276,7 +276,7 @@ function hit(w:World,r:Rock,d:Drone,laser:boolean){
 }
 function waypoint(w:World,d:Pick<Drone,'x'|'y'|'path'|'pathKey'|'pathAge'>,target:Point,key:string,ignore=-1){
  d.pathAge+=STEP;
- if(d.pathKey!==key||d.pathAge>1.5||!d.path.length){d.path=route(d,target,w.rocks,ignore,W,H);d.pathKey=key;d.pathAge=0;}
+ if(d.pathKey!==key||d.pathAge>(d.path.length?1.5:.5)){d.path=route(d,target,w.rocks,ignore,W,H);d.pathKey=key;d.pathAge=0;}
  while(d.path.length>1&&distance(d,d.path[0])<9)d.path.shift();
  // Only skip a corner after the drone has a clear line, not merely because it's close.
  if(d.path.length>1&&clearSegment(d,d.path[1],w.rocks,ignore,10))d.path.shift();
@@ -285,7 +285,9 @@ function waypoint(w:World,d:Pick<Drone,'x'|'y'|'path'|'pathKey'|'pathAge'>,targe
 // An ejected fragment may sit inside an asteroid's navigation clearance while
 // still being reachable by the pickup radius. Navigate to a clear pickup point
 // instead of routing to the fragment's blocked center.
+const unreachableOre=new WeakMap<Drone|Hauler,Map<number,number>>();
 function oreApproach(w:World,d:Drone|Hauler,ore:Ore):Point|undefined{
+ if((unreachableOre.get(d)?.get(ore.id)??0)>w.time)return;
  const key='ore'+ore.id;
  if(d.pathKey===key&&d.path.length){
   const goal=d.path[d.path.length-1];
@@ -302,6 +304,9 @@ function oreApproach(w:World,d:Drone|Hauler,ore:Ore):Point|undefined{
   d.path=path;d.pathKey=key;d.pathAge=0;
   return p;
  }
+ let blocked=unreachableOre.get(d);if(!blocked){blocked=new Map();unreachableOre.set(d,blocked);}
+ if(blocked.size>=32)blocked.delete(blocked.keys().next().value!);
+ blocked.set(ore.id,w.time+1);
  return undefined;
 }
 function releaseClaim(w:World,id:number){
@@ -394,8 +399,9 @@ function updateHaulers(w:World,dt:number){
       (w.company.environmentUpgrades.includes('radiationShielding')||h.hp>3||knownBiomeAt(w,o)!=='dead_zone')&&
       (w.doctrine!=='convoy'||w.drones.some(d=>d.state==='mine'&&distance(d,o)<195)));
     const score=(o:Ore)=>workRate({credits:MINERALS[o.mineral??'ferrite'].credits,pieces:1,travel:distance(h,o),returnDistance:distance(o,w.base),actionSeconds:.8,risk:knownBiomeAt(w,o)==='dead_zone'&&!w.company.environmentUpgrades.includes('radiationShielding')?5:0,focusDistance:w.focuses.mining?distance(w.focuses.mining,o):undefined});
-    relevant.sort((a,b)=>score(b)-score(a)||a.id-b.id);
-    const held=relevant.find(o=>o.id===h.targetOre),selected=held&&score(held)>=score(relevant[0])*.82?held:relevant[0];
+    let best:Ore|undefined,held:Ore|undefined,bestRate=-Infinity,heldRate=-Infinity;
+    for(const ore of relevant){const rate=score(ore);if(rate>bestRate||rate===bestRate&&ore.id<(best?.id??Infinity)){best=ore;bestRate=rate;}if(ore.id===h.targetOre){held=ore;heldRate=rate;}}
+    const selected=held&&heldRate>=bestRate*.82?held:best;
     if(h.targetOre>=0&&selected?.id!==h.targetOre)releaseHaulerClaim(w,h);
     if(selected){target=oreApproach(w,h,selected);if(target){ownClaim(w,selected.id,'hauler',h.id);h.targetOre=selected.id;}else{releaseHaulerClaim(w,h);h.blockedOre=selected.id;h.blockedUntil=w.time+7;}h.task='Collecting';}
     if(!target){releaseHaulerClaim(w,h);const worker=w.drones.filter(d=>d.state==='mine'||d.state==='handoff').sort((a,b)=>distance(h,a)-distance(h,b))[0];
@@ -429,24 +435,41 @@ function updateHaulers(w:World,dt:number){
  }
 }
 type MinerJob={kind:'rock';rock:Rock;rate:number}|{kind:'ore';ore:Ore;rate:number};
+type WorkDecision={world:World;until:number;room:number;health:number;focus:Point|null;anchor:number;x:number;y:number;job:MinerJob|undefined;reserve:number;identified:boolean};
+const workDecisions=new WeakMap<Drone,WorkDecision>();
+const plannerCounts=new WeakMap<World,number>();
+export const miningPlannerRuns=(w:World)=>plannerCounts.get(w)??0;
 function minerWork(w:World,d:Drone,room:number):MinerJob|undefined{
+ const cached=workDecisions.get(d),job=cached?.job;
+ const valid=!job||(job.kind==='rock'?
+  w.rocks.includes(job.rock)&&job.rock.hp===cached!.reserve&&job.rock.hp>0&&w.identifiedRocks.has(job.rock.id)===cached!.identified:
+  w.ores.includes(job.ore)&&availableTo(w,job.ore.id,'miner',d.id));
+ if(cached&&cached.world===w&&cached.until>w.time&&cached.room===room&&cached.health===Math.floor(d.hp)&&cached.focus===w.focuses.mining&&cached.anchor===d.targetRock&&Math.hypot(d.x-cached.x,d.y-cached.y)<60&&valid)return job;
+ const next=planMinerWork(w,d,room);
+ workDecisions.set(d,{world:w,until:w.time+.25+(d.id%4)*.025,room,health:Math.floor(d.hp),focus:w.focuses.mining,anchor:d.targetRock,x:d.x,y:d.y,job:next,reserve:next?.kind==='rock'?next.rock.hp:0,identified:next?.kind==='rock'&&w.identifiedRocks.has(next.rock.id)});
+ return next;
+}
+// Exposed for bounded behavioral fixtures; this is the planner used in step().
+export function planMinerWork(w:World,d:Drone,room=d.gear.cargo-d.cargo):MinerJob|undefined{
+ plannerCounts.set(w,(plannerCounts.get(w)??0)+1);
  if(room<=0)return;
  const remaining=w.missionDuration-w.time,focus=w.focuses.mining;
+ const area=w.rocks.find(r=>r.id===d.targetRock);
  const threats=w.enemies.filter(e=>e.hp>0&&visibleAt(w,e));
  const peers=w.drones.filter(p=>p!==d&&p.state==='mine');
  // Dense persistent salvage would make a scan of every fragment for every
  // rock and every other fragment quadratic on long-lived company saves.
  const cellSize=80,buckets=new Map<number,Ore[]>(),available:Ore[]=[];
  const cell=(x:number,y:number)=>Math.floor(y/cellSize)*Math.ceil(W/cellSize)+Math.floor(x/cellSize);
- for(const ore of w.ores)if(exploredAt(w,ore)&&availableTo(w,ore.id,'miner',d.id)){
+ for(const ore of w.ores)if(exploredAt(w,ore)&&availableTo(w,ore.id,'miner',d.id)&&(unreachableOre.get(d)?.get(ore.id)??0)<=w.time){
   available.push(ore);const key=cell(ore.x,ore.y),list=buckets.get(key);
   if(list)list.push(ore);else buckets.set(key,[ore]);
  }
- const nearby=(p:Point,radius:number)=>{
-  const found:Ore[]=[];
+ const nearbyCount=(p:Point,radius:number,mineral?:MineralId)=>{
+  let found=0;
   for(let y=Math.floor((p.y-radius)/cellSize);y<=Math.floor((p.y+radius)/cellSize);y++)
    for(let x=Math.floor((p.x-radius)/cellSize);x<=Math.floor((p.x+radius)/cellSize);x++)
-    for(const ore of buckets.get(y*Math.ceil(W/cellSize)+x)??[])if(distance(ore,p)<radius)found.push(ore);
+    for(const ore of buckets.get(y*Math.ceil(W/cellSize)+x)??[])if((mineral===undefined||ore.mineral===mineral)&&(ore.age??1)>=ORE_PICKUP_DELAY&&(ore.x-p.x)**2+(ore.y-p.y)**2<radius*radius){if(++found>=room)return found;}
   return found;
  };
  const risk=(p:Point)=>{
@@ -465,24 +488,29 @@ function minerWork(w:World,d:Drone,room:number):MinerJob|undefined{
   const pieces=Math.min(room,rock.hp,2);
   const price=identified?MINERALS[rock.mineral].credits:1;
   const nearPeers=peers.filter(p=>p.targetRock===rock.id).length;
-  const loose=nearby(rock,rock.r+65).length;
+  const loose=nearbyCount(rock,rock.r+65);
   // Mining only creates loose units. Account for the follow-up pickup and the
   // ram's clearance/run-up; otherwise a nearby loose unit is never collected.
   const actionSeconds=d.kind==='laserMiner'?pieces*(d.gear.laserCooldown+1.4):pieces*(d.gear.ramCooldown+2.4)+2;
-  const rate=workRate({credits:price,pieces,travel,returnDistance,actionSeconds,risk:risk(rock),focusDistance:focus?distance(focus,rock):undefined,peers:nearPeers+loose/Math.max(1,room)});
+  const tidying=rock.hp<=2&&rock.hp<rock.max?2.5:1;
+  const rate=tidying*workRate({credits:price,pieces,travel,returnDistance,actionSeconds,risk:risk(rock),focusDistance:focus?distance(focus,rock):undefined,peers:nearPeers+loose/Math.max(1,room),areaDistance:area?distance(area,rock):undefined});
   jobs.push({kind:'rock',rock,rate});
  }
  for(const ore of available){
   if((ore.age??1)<ORE_PICKUP_DELAY)continue;
   const travel=distance(d,ore),returnDistance=distance(ore,w.base);
   if(travel/66+returnDistance/82>Math.max(5,remaining+3))continue;
-  const batch=nearby(ore,65).filter(o=>(o.age??1)>=ORE_PICKUP_DELAY&&o.mineral===ore.mineral);
-  const pieces=Math.min(room,batch.length),price=MINERALS[ore.mineral??'ferrite'].credits;
-  const rate=workRate({credits:price,pieces,travel,returnDistance,actionSeconds:.55*pieces+.2,risk:risk(ore),focusDistance:focus?distance(focus,ore):undefined});
+  const pieces=nearbyCount(ore,65,ore.mineral),price=MINERALS[ore.mineral??'ferrite'].credits;
+  const rate=workRate({credits:price,pieces,travel,returnDistance,actionSeconds:.55*pieces+.2,risk:risk(ore),focusDistance:focus?distance(focus,ore):undefined,areaDistance:area?distance(area,ore):undefined});
   jobs.push({kind:'ore',ore,rate});
  }
- jobs.sort((a,b)=>b.rate-a.rate||(a.kind==='rock'?a.rock.id:a.ore.id)-(b.kind==='rock'?b.rock.id:b.ore.id));
- const best=jobs[0],current=jobs.find(j=>j.kind==='rock'?j.rock.id===d.targetRock&&d.oreQueue.length===0:j.ore.id===d.oreQueue[0]);
+ const best=jobs.reduce<MinerJob|undefined>((a,b)=>!a||b.rate>a.rate||b.rate===a.rate&&(b.kind==='rock'?b.rock.id:b.ore.id)<(a.kind==='rock'?a.rock.id:a.ore.id)?b:a,undefined);
+ // Finish the last one/two pieces of the deposit we are already working.
+ // This is deliberate completion behavior, not a claim of optimal income.
+ const finish=jobs.find(j=>j.kind==='rock'&&j.rock.id===d.targetRock&&j.rock.hp<=2&&j.rock.hp<j.rock.max&&distance(d,j.rock)-j.rock.r<220&&risk(j.rock)<2&&
+  !(d.kind==='impactMiner'&&d.hp<=1)&&!peers.some(p=>p.targetRock===j.rock.id)&&(!focus||distance(focus,j.rock)<450));
+ if(finish)return finish;
+ const current=jobs.find(j=>j.kind==='rock'?j.rock.id===d.targetRock&&d.oreQueue.length===0:j.ore.id===d.oreQueue[0]);
  return current?.kind==='rock'&&(d.cooldown>0||!d.armed)?current:current&&best&&current.rate>=best.rate*.82?current:best;
 }
 function selectRock(d:Drone,r:Rock,w:World){
@@ -663,7 +691,7 @@ export function step(w:World,dt=STEP){
     else{
      w.idleTime+=dt;
      d.wander-=dt;
-     if(d.wander<=0||distance(d,{x:d.targetX,y:d.targetY})<20||exploredAt(w,{x:d.targetX,y:d.targetY})){
+     if(d.wander<=0){
       const next=frontier(w,d,90,w.drones.filter(p=>p!==d&&p.state==='mine').map(p=>({x:p.targetX,y:p.targetY})))??w.base;
       d.targetX=next.x;d.targetY=next.y;d.wander=3;d.pathKey='';
      }

@@ -4,7 +4,10 @@ export type Obstacle = Point & { r: number; hp: number; id: number };
 const CELL = 18;
 const SECTOR=100;
 const indices=new WeakMap<Obstacle[],Map<string,Obstacle[]>>();
-const routeMasks=new WeakMap<Obstacle[],{signature:string;width:number;height:number;open:Uint8Array}>();
+type Masks={signature:string;width:number;height:number;open:Map<number,Uint8Array>};
+const routeMasks=new WeakMap<Obstacle[],Masks>();
+const diagnostics=new WeakMap<Obstacle[],{calls:number;maskBuilds:number;expanded:number}>();
+export const navigationStats=(rocks:Obstacle[])=>({...diagnostics.get(rocks)??{calls:0,maskBuilds:0,expanded:0}});
 function spatial(rocks:Obstacle[]){
  let index=indices.get(rocks);if(index)return index;
  index=new Map();for(const r of rocks){
@@ -16,22 +19,21 @@ function spatial(rocks:Obstacle[]){
  }
  indices.set(rocks,index);return index;
 }
-function candidates(a:Point,b:Point,rocks:Obstacle[]){
- const index=spatial(rocks),seen=new Set<number>(),result:Obstacle[]=[];
- const pad=52,left=Math.floor((Math.min(a.x,b.x)-pad)/SECTOR),right=Math.floor((Math.max(a.x,b.x)+pad)/SECTOR);
- const top=Math.floor((Math.min(a.y,b.y)-pad)/SECTOR),bottom=Math.floor((Math.max(a.y,b.y)+pad)/SECTOR);
- for(let x=left;x<=right;x++)for(let y=top;y<=bottom;y++)for(const r of index.get(x+':'+y)??[])if(!seen.has(r.id)){seen.add(r.id);result.push(r);}
- return result;
-}
 export function clearSegment(a: Point, b: Point, rocks: Obstacle[], ignore = -1, margin = 11) {
  const dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
- return candidates(a,b,rocks).every(r=>{
-  if(r.hp<=0||r.id===ignore)return true;
+ const index=spatial(rocks);
+ const left=Math.floor((Math.min(a.x,b.x)-margin)/SECTOR),right=Math.floor((Math.max(a.x,b.x)+margin)/SECTOR);
+ const top=Math.floor((Math.min(a.y,b.y)-margin)/SECTOR),bottom=Math.floor((Math.max(a.y,b.y)+margin)/SECTOR);
+ // The index already covers each circle's footprint. No per-edge Set/array.
+ for(let x=left;x<=right;x++)for(let y=top;y<=bottom;y++)for(const r of index.get(x+':'+y)??[]){
+  if(r.hp<=0||r.id===ignore)continue;
   const t=len?Math.max(0,Math.min(1,((r.x-a.x)*dx+(r.y-a.y)*dy)/len)):0;
-  return Math.hypot(a.x+dx*t-r.x,a.y+dy*t-r.y)>=r.r+margin;
- });
+  if((a.x+dx*t-r.x)**2+(a.y+dy*t-r.y)**2<(r.r+margin)**2)return false;
+ }
+ return true;
 }
 export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=400,height=620):Point[]{
+ let stats=diagnostics.get(rocks);if(!stats){stats={calls:0,maskBuilds:0,expanded:0};diagnostics.set(rocks,stats);}stats.calls++;
  const COLS=Math.floor(width/CELL)-1,ROWS=Math.floor(height/CELL)-1;
  const point=(id:number):Point=>({x:10+(id%COLS)*CELL,y:10+Math.floor(id/COLS)*CELL});
  // A collision settles at radius+8.2, just inside route-grid clearance.
@@ -41,14 +43,23 @@ export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=40
   if(escape.x>=8&&escape.x<=width-8&&escape.y>=8&&escape.y<=height-8&&clearSegment(start,escape,rocks,ignore,8.01))return [escape,...route(escape,goal,rocks,ignore,width,height)];
  }
  if(clearSegment(start,goal,rocks,ignore))return [goal];
- const signature=rocks.map(r=>r.hp>0&&r.id!==ignore?'1':'0').join('');
+ const signature=rocks.map(r=>r.hp>0?'1':'0').join('');
  let mask=routeMasks.get(rocks);
  if(!mask||mask.signature!==signature||mask.width!==width||mask.height!==height){
-  const open=new Uint8Array(COLS*ROWS);
-  for(let id=0;id<open.length;id++)open[id]=+clearSegment(point(id),point(id),rocks,ignore);
-  mask={signature,width,height,open};routeMasks.set(rocks,mask);
+  mask={signature,width,height,open:new Map()};routeMasks.set(rocks,mask);
  }
- const openCell=mask.open;
+ let openCell=mask.open.get(ignore);
+ if(!openCell){
+  openCell=new Uint8Array(COLS*ROWS).fill(1);
+  // Rasterize only obstacle footprints, not ~19,000 spatial queries per target.
+  for(const r of rocks){if(r.hp<=0||r.id===ignore)continue;const radius=r.r+11;
+   const left=Math.max(0,Math.ceil((r.x-radius-10)/CELL)),right=Math.min(COLS-1,Math.floor((r.x+radius-10)/CELL));
+   const top=Math.max(0,Math.ceil((r.y-radius-10)/CELL)),bottom=Math.min(ROWS-1,Math.floor((r.y+radius-10)/CELL));
+   for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)if((10+x*CELL-r.x)**2+(10+y*CELL-r.y)**2<radius*radius)openCell[y*COLS+x]=0;
+  }
+  if(mask.open.size>=8)mask.open.delete(mask.open.keys().next().value!);
+  mask.open.set(ignore,openCell);stats.maskBuilds++;
+ }else{mask.open.delete(ignore);mask.open.set(ignore,openCell);}
  const nearest=(p:Point)=>{
   const cx=Math.max(0,Math.min(COLS-1,Math.round((p.x-10)/CELL))),cy=Math.max(0,Math.min(ROWS-1,Math.round((p.y-10)/CELL)));
   for(let radius=0;radius<=15;radius++){
@@ -63,16 +74,26 @@ export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=40
   return -1;
  };
  const from=nearest(start),to=nearest(goal);if(from<0||to<0)return [];
- const parent=new Int32Array(openCell.length).fill(-1),queue=[from];parent[from]=from;
- for(let head=0;head<queue.length&&parent[to]<0;head++){
-  const id=queue[head],x=id%COLS,y=Math.floor(id/COLS);
+ const parent=new Int32Array(openCell.length).fill(-1),cost=new Float64Array(openCell.length).fill(Infinity),closed=new Uint8Array(openCell.length);
+ const tx=to%COLS,ty=Math.floor(to/COLS),heuristic=(id:number)=>{const dx=Math.abs(id%COLS-tx),dy=Math.abs(Math.floor(id/COLS)-ty);return Math.max(dx,dy)+(Math.SQRT2-1)*Math.min(dx,dy);};
+ const heap:{id:number;priority:number}[]=[];
+ const less=(a:typeof heap[number],b:typeof heap[number])=>a.priority<b.priority||a.priority===b.priority&&a.id<b.id;
+ const push=(id:number,priority:number)=>{const item={id,priority};let i=heap.length;heap.push(item);while(i>0){const p=(i-1)>>1;if(!less(item,heap[p]))break;heap[i]=heap[p];i=p;}heap[i]=item;};
+ const pop=()=>{const first=heap[0],last=heap.pop()!;if(heap.length){let i=0;while(i*2+1<heap.length){let child=i*2+1;if(child+1<heap.length&&less(heap[child+1],heap[child]))child++;if(!less(heap[child],last))break;heap[i]=heap[child];i=child;}heap[i]=last;}return first.id;};
+ parent[from]=from;cost[from]=0;push(from,heuristic(from));
+ while(heap.length){
+  const id=pop();if(closed[id])continue;closed[id]=1;stats.expanded++;
+  if(id===to)break;
+  const x=id%COLS,y=Math.floor(id/COLS);
   for(const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0],[-1,-1],[1,-1],[-1,1],[1,1]]){
    const nx=x+dx,ny=y+dy,n=ny*COLS+nx;
-   if(nx<0||nx>=COLS||ny<0||ny>=ROWS||!openCell[n]||parent[n]>=0||!clearSegment(point(id),point(n),rocks,ignore))continue;
-   parent[n]=id;queue.push(n);
+   if(nx<0||nx>=COLS||ny<0||ny>=ROWS||!openCell[n]||closed[n])continue;
+   const next=cost[id]+(dx&&dy?Math.SQRT2:1);
+   if(next>=cost[n]||!clearSegment(point(id),point(n),rocks,ignore))continue;
+   parent[n]=id;cost[n]=next;push(n,next+heuristic(n));
   }
  }
- if(parent[to]<0)return [];
+ if(!closed[to])return [];
  const raw:Point[]=[goal];for(let id=to;id!==from;id=parent[id])raw.push(point(id));raw.push(point(from));raw.reverse();
  // Shorten the grid route without cutting through a collision circle.
  const result:Point[]=[];let cursor=start,index=0;
