@@ -19,7 +19,7 @@ for(let i=1;i<=35;i++){const w=run(createWorld(company,company.worldSeed));compa
 }
 let scoutCompany=freshCompany(),scoutOutpostRound=0;
 for(let i=1;i<=12;i++){const w=run(createWorld(scoutCompany,scoutCompany.worldSeed));scoutCompany=settle(scoutCompany,w);
- if(i===3){scoutCompany=buy(scoutCompany,'fleetSlot')!;scoutCompany=changeFleet(scoutCompany,'scout',1)!;}
+ if(scoutCompany.fleetCapacity===1&&scoutCompany.credits>=cost(scoutCompany,'fleetSlot')){scoutCompany=buy(scoutCompany,'fleetSlot')!;scoutCompany=changeFleet(scoutCompany,'scout',1)!;}
  if(!scoutOutpostRound&&scoutCompany.progress.outpostSurveyed)scoutOutpostRound=i;
 }
 const base=freshCompany(),escortCompany:Company={...base,enduranceLevel:3,fleetCapacity:3,fleetComposition:{...base.fleetComposition,scout:1,escort:1},unlockedTypes:['impactMiner','scout','escort'],progress:{...base.progress,rivalSeen:true}};

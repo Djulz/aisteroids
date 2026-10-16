@@ -15,7 +15,7 @@ function laserFixture():Company{let c=freshCompany();return {...c,unlockedTypes:
 test('ram conserves exactly two separate unit fragments, including rich origin',()=>{
  const w=createWorld(freshCompany());const {r}=impact(w);assert.equal(w.collisions,1);assert.equal(w.extracted,2);assert.equal(r.max-r.hp,2);
  assert.deepEqual(w.ores.map(o=>o.value),[1,1]);assert.ok(w.ores.every(o=>o.age!<ORE_PICKUP_DELAY));
- const rich=createWorld(freshCompany());rich.rocks[0].rich=true;impact(rich);assert.equal(rich.richExtracted,2);assert.deepEqual(rich.ores.map(o=>[o.value,o.rich]),[[1,true],[1,true]]);
+ const rich=createWorld(freshCompany());rich.rocks[0].rich=true;impact(rich);assert.equal(rich.richExtracted,2);assert.deepEqual(rich.ores.map(o=>[o.value,o.rich]),[[1,false],[1,false]]);
  const final=createWorld(freshCompany());const last=impact(final,1);assert.equal(last.r.hp,0);assert.equal(final.extracted,1);assert.deepEqual(final.ores.map(o=>o.value),[1]);
 });
 test('Laser Miner extracts exactly one separate unit per pulse without ram damage',()=>{
@@ -68,7 +68,7 @@ test('Laser and Impact fixtures have distinct attack mechanics and finish determ
 test('far exploration, scanner, rich sample, rival contact and outpost remain reachable',()=>{
  let c=freshCompany();let w=createWorld(c);w.drones[0].x=FAR.x;w.drones[0].y=FAR.y;updateKnowledge(w);step(w,STEP);assert.equal(w.progress.farSurveyed,true);assert.equal(w.progress.outpostSurveyed,true);
  c=settle(c,w);assert.equal(c.progress.farSurveyed,true);assert.equal(c.progress.outpostSurveyed,true);
- const next=createWorld(c);next.progress.richSampled=true;next.time=11;step(next,STEP);assert.ok(next.enemies.length>0);next.enemies[0].x=next.drones[0].x+30;next.enemies[0].y=next.drones[0].y;updateKnowledge(next);assert.equal(next.progress.rivalSeen,true);
+ const next=createWorld({...c,fleetCapacity:2});next.progress.richSampled=true;next.time=14;step(next,STEP);assert.ok(next.enemies.length>0);next.enemies[0].x=next.drones[0].x+30;next.enemies[0].y=next.drones[0].y;updateKnowledge(next);assert.equal(next.progress.rivalSeen,true);
  const advanced:Company={...c,fleetCapacity:2,fleetComposition:{...c.fleetComposition,escort:1},unlockedTypes:['impactMiner','escort'],progress:{...c.progress,richSampled:true,rivalSeen:true,outpostSurveyed:false}};
  const surveyed=createWorld(advanced);surveyed.drones[0].x=FAR.x;surveyed.drones[0].y=FAR.y;updateKnowledge(surveyed);assert.equal(surveyed.progress.outpostSurveyed,true);assert.equal(run(surveyed).phase,'done');
 });

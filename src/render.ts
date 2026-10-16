@@ -4,6 +4,7 @@ import {POIS,CELL,COLS,ROWS} from './knowledge.ts';
 import {drawShip,drawMother,drawOutpost,drawTurret,drawRock,rockArtTier,drawPoi,rockPalette,type RockPalette} from './art.ts';
 import {BIOMES,biomeAt} from './biomes.ts';
 import {newTrailState,updateTrails,drawTrails,type TrailSource,type TrailState} from './trails.ts';
+import {MINERALS} from './minerals.ts';
 const gold='#f5b743';
 const rockPalettes=new WeakMap<object,RockPalette>();
 const trailStates=new WeakMap<World,TrailState>();
@@ -78,13 +79,14 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  for(const site of POIS){if(!w.discoveredPois.has(site.id))continue;
   const done=investigated(w,site.id),locked=w.activeTarget===site.id;
   drawPoi(c,site.id,site.x,site.y,done,locked);
+  if(!done&&w.activeInvestigations.has(site.id)){c.fillStyle='#24424a';c.fillRect(site.x-17,site.y+26,34,3);c.fillStyle='#91d8cc';c.fillRect(site.x-17,site.y+26,34*Math.min(1,(w.poiProgress[site.id]??0)/4),3);}
   if(visibleAt(w,site)){c.font='8px monospace';c.textAlign='center';c.fillStyle='#b6dfd6';c.fillText(done?'INVESTIGATED':locked?'TARGET LOCKED':'SIGNAL',site.x,site.y-28);}
  }
  for(const r of w.rocks){
   if(!exploredAt(w,r)||r.hp<=0)continue;
   const impact=w.effects.find(e=>e.type==='hit'&&e.x===r.x&&e.y===r.y),pulse=impact?impact.life/impact.max:0;
   let palette=rockPalettes.get(r);if(!palette){palette=rockPalette(biomeAt(r.x,r.y));rockPalettes.set(r,palette);}
-  drawRock(c,r,rockArtTier(r,w.progress.farSurveyed),pulse,palette);
+  drawRock(c,r,rockArtTier(r,w.identifiedRocks.has(r.id)),pulse,palette);
  }
  let trails=trailStates.get(w);if(!trails){trails=newTrailState();trailStates.set(w,trails);}
  updateTrails(trails,w.time,activeTrails(w));
@@ -94,7 +96,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
   const x=originX+dx*flight,y=originY+dy*flight;
   if(t<1){c.strokeStyle='#f5b74377';c.lineWidth=2;c.beginPath();c.moveTo(x-dx*(1-t)*.18,y-dy*(1-t)*.18);c.lineTo(x,y);c.stroke();}
   const direction=Math.atan2(dy,dx),spread=Math.sin(t*Math.PI)*(o.id%2?6:-6);
-  c.save();c.translate(x-Math.sin(direction)*spread,y+Math.cos(direction)*spread);c.rotate(.4+Math.min(age,.5)*5);c.shadowColor=gold;c.shadowBlur=t<1?10:0;c.fillStyle=gold;c.beginPath();c.moveTo(0,-4);c.lineTo(4,0);c.lineTo(1,4);c.lineTo(-3,2);c.lineTo(-4,-1);c.closePath();c.fill();c.restore();}
+  c.save();c.translate(x-Math.sin(direction)*spread,y+Math.cos(direction)*spread);c.rotate(.4+Math.min(age,.5)*5);c.shadowColor=MINERALS[o.mineral??'ferrite'].color;c.shadowBlur=t<1?5:0;c.fillStyle=MINERALS[o.mineral??'ferrite'].color;c.beginPath();c.moveTo(0,-4);c.lineTo(4,0);c.lineTo(1,4);c.lineTo(-3,2);c.lineTo(-4,-1);c.closePath();c.fill();c.restore();}
  const arrivals=w.effects.filter(e=>e.type==='transfer');
  const bounce=Math.max(0,...arrivals.map(e=>{const t=e.max-e.life-.26;return t>0?Math.sin(t/.09*Math.PI)*.065:0;}));
  if(w.base.x===FAR.x){drawMother(c,w.time,0,HOME.x,HOME.y);drawOutpost(c,FAR.x,FAR.y,true,w.time*.6,bounce);}

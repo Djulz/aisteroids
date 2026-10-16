@@ -126,7 +126,7 @@ test('v8 max-spent companies migrate intact, new nodes and fleet counts persist;
  c=changeFleet(c,'laserMiner',1)!;c=changeFleet(c,'escort',1)!;
  assert.equal(c.techPointsAvailable,0);
  const legacy={...c,version:8,fleetComposition:{impactMiner:c.fleetComposition.impactMiner,laserMiner:c.fleetComposition.laserMiner,escort:c.fleetComposition.escort,hauler:0,miningRig:0}};const {api,map}=store({'aisteroids-company-v8':JSON.stringify(legacy),'unrelated':'keep'});
- let migrated=loadCompany(api);assert.equal(migrated.version,12);assert.equal(migrated.techPointsAvailable,0);
+ let migrated=loadCompany(api);assert.equal(migrated.version,13);assert.equal(migrated.techPointsAvailable,0);
  assert.equal(migrated.credits,37);assert.equal(migrated.rounds,12);assert.equal(migrated.fleetCapacity,4);
  assert.equal(migrated.fleetComposition.escort,1);assert.equal(migrated.fleetComposition.laserMiner,1);
  assert.equal(migrated.rockHp[0],9);assert.equal(migrated.ores[0].rich,true);
@@ -148,7 +148,7 @@ test('three freight signals require Escort investigation and remain one-time and
   const w=createWorld(c);w.guards[0].x=site.x+25;w.guards[0].y=site.y;updateKnowledge(w);
   assert.ok(w.discoveredPois.has(site.id));assert.equal(w.pendingTech.some(e=>e.id===site.id),false);
   assert.equal(lockTarget(w,site.id).ok,true);
-  for(let i=0;i<300&&w.activeTarget;i++)step(w,STEP);
+  for(let i=0;i<900&&w.activeTarget;i++)step(w,STEP);
   assert.ok(w.pendingTech.some(e=>e.id===site.id),`${site.name} not investigated physically`);
   assert.equal(c.uniqueTechDiscoveries.includes(site.id),false,'abort leaves source unclaimed');
   c=settle(c,w);assert.equal(createWorld(c).activeTarget,null);

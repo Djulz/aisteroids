@@ -60,9 +60,9 @@ test('physical investigation unlocks a paid fleet-wide blueprint, never extra Te
 });
 test('v11 migration preserves world, fleet, Tech, Outpost and Endurance without grants',()=>{
  const initial=freshCompany();const v11={...initial,version:11,environmentUpgrades:undefined,enduranceLevel:3,credits:701,total:802,rounds:15,rockHp:{0:20},outpost:true,launchSite:'far',doctrine:'convoy'};
- const c=parseSave(JSON.stringify(v11));assert.equal(c.version,12);assert.deepEqual(c.environmentUpgrades,[]);assert.equal(c.enduranceLevel,3);
- for(const key of ['credits','total','rounds','rockHp','outpost','launchSite','doctrine','explored','worldSeed'] as const)assert.deepEqual(c[key],v11[key]);
- assert.deepEqual(parseSave(JSON.stringify(c)),c);
+ const c=parseSave(JSON.stringify(v11));assert.equal(c.version,13);assert.deepEqual(c.environmentUpgrades,[]);assert.equal(c.enduranceLevel,3);
+ for(const key of ['credits','total','rounds','outpost','launchSite','doctrine','explored','worldSeed'] as const)assert.deepEqual(c[key],v11[key]);
+ assert.equal(c.rockHp[0],20);assert.equal(Object.keys(c.rockHp).length,168);assert.deepEqual(parseSave(JSON.stringify(c)),c);
  const values=new Map([[`aisteroids-company-v11`,JSON.stringify(v11)],['unrelated','keep']]);
  const store={getItem:(k:string)=>values.get(k)??null,setItem:(k:string,v:string)=>{values.set(k,v);},removeItem:(k:string)=>{values.delete(k);}};
  assert.deepEqual(loadCompany(store as Storage),c);assert.equal(values.get('unrelated'),'keep');assert.ok(values.get(SAVE_KEY));

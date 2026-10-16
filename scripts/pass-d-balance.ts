@@ -15,7 +15,7 @@ function mission(c:Company,seed=c.worldSeed){
  }
  if(w.phase!=='done')throw Error(`Mission stalled: seed ${seed}, round ${c.rounds}, phase ${w.phase}, time ${w.time}`);
  if(w.oreClaims.size)throw Error(`Ghost claims: seed ${seed}, round ${c.rounds}: ${w.oreClaims.size}`);
- const mass=c.ores.length+w.extracted, accounted=w.delivered+w.ores.length+w.drones.reduce((n,d)=>n+d.cargo,0)+w.haulers.reduce((n,h)=>n+h.cargo,0);
+ const mass=c.ores.length+w.extracted, accounted=w.deliveredFragments+w.ores.length+w.drones.reduce((n,d)=>n+d.cargo,0)+w.haulers.reduce((n,h)=>n+h.cargo,0);
  if(mass!==accounted)throw Error(`Mass imbalance: seed ${seed}, round ${c.rounds}: ${mass} != ${accounted}`);
  const result:Result={delivered:w.delivered,extracted:w.extracted,impacts:w.collisions,shots:w.shots,collected:w.minerPickups+w.haulerPickups,attacks:w.attacks,hp:w.drones[0].hp,cooldownTime,idle:w.idleTime,haulerStalled:w.haulerStalledTime,minerReturn:w.minerReturnTime,recall:w.time-ROUND_TIME,end:w.time,lost:w.lost,floating:w.ores.length,claims:w.claimsAssigned,releases:w.claimsReleased,handoffs:w.transferred,deaths:[...w.drones,...w.haulers].filter(d=>d.state==='dead').length,haulerDeliveries:w.haulerDelivered,tech:w.pendingTech.length};
  return {w,result,ramTimes,shotTimes};

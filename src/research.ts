@@ -3,7 +3,7 @@ import {POIS,type PoiId} from './knowledge.ts';
 
 export const TECH_DISCOVERIES={
  far_belt_charted:'Far Belt Charted',
- first_rich_sample:'First Rich Sample',
+ first_rich_sample:'First Valuable Sample',
  first_rival_contact:'First Contact: Rival Scout',
  outpost_site_surveyed:'Outpost Site Surveyed',
  abandoned_research_station:'Abandoned Research Station',

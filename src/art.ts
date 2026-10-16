@@ -93,7 +93,10 @@ export function drawTurret(c:C,x:number,y:number,t=0){c.save();c.translate(x,y);
 
 // Only canonical distinctions select art in the live world. Future economic
 // tiers 3–5 are drawn in the gallery without assigning invented payouts.
-export function rockArtTier(r:Pick<Rock,'rich'>,richRevealed:boolean):RockArtTier{return r.rich&&richRevealed?2:1;}
+export function rockArtTier(r:Pick<Rock,'rich'> & Partial<Pick<Rock,'mineral'>>,revealed:boolean):RockArtTier{
+ if(!revealed)return 1;
+ return r.mineral?({ferrite:1,nickel:2,aurite:3,cryonite:4,voidite:5} as const)[r.mineral]:r.rich?2:1;
+}
 export type RockPalette={fill:string;edge:string;crater:string};
 export const ROCK_PALETTES:Record<BiomeId,RockPalette>={
  home_belt:{fill:slate,edge,crater},

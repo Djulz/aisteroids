@@ -37,7 +37,7 @@ test('v10 bitset converts exact old cell coordinates and carries earned assets i
  const data=new Map([['aisteroids-company-v10',JSON.stringify(save)],['unrelated','retained']]);
  const storage:SaveStore={getItem:k=>data.get(k)??null,setItem:(k,v)=>{data.set(k,v);},removeItem:k=>{data.delete(k);}};
  const migrated=loadCompany(storage),bits=decodeMap(migrated.explored)!;
- assert.equal(migrated.version,12);assert.equal(migrated.enduranceLevel,0);assert.equal(migrated.credits,411);assert.equal(migrated.rounds,25);
+ assert.equal(migrated.version,13);assert.equal(migrated.enduranceLevel,0);assert.equal(migrated.credits,411);assert.equal(migrated.rounds,25);
  assert.equal(migrated.outpost,true);assert.equal(migrated.launchSite,'far');assert.equal(migrated.rockHp[80],save.rockHp[80]);
  assert.equal(migrated.discoveredPois[0],POIS[0].id);assert.equal(data.get('unrelated'),'retained');assert.ok(data.has(SAVE_KEY));
  for(const [col,row] of points)assert.ok(hasCell(bits,(col+.5)*25,(row+.5)*25));

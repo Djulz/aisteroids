@@ -80,7 +80,7 @@ test('locked combat and shift values apply; v9 reload retains company and Tech l
  let laser=research(awardTech(c,['experimental_probe_salvaged']),'laserMining')!;
  laser=changeFleet({...laser,fleetCapacity:2},'laserMiner',1)!;
  const l=createWorld(laser).drones[1];assert.equal(l.maxHp,10);assert.equal(l.gear.laserCooldown,2);
- const map=new Map([[SAVE_KEY,JSON.stringify({...laser,credits:83,rounds:4,rockHp:{0:22},ores:[{x:300,y:500,value:1,rich:false}]})]]);
+ const map=new Map([[SAVE_KEY,JSON.stringify({...laser,version:9,directive:'auto',fleetComposition:{impactMiner:1,laserMiner:1,escort:0,hauler:0,miningRig:0},credits:83,rounds:4,rockHp:{0:22},ores:[{x:300,y:500,value:1,rich:false}]})]]);
  const store:SaveStore={getItem:key=>map.get(key)??null,setItem:(key,value)=>{map.set(key,value);},removeItem:key=>{map.delete(key);}};
  const first=loadCompany(store),again=loadCompany(store);assert.deepEqual(again,first);
  assert.equal(again.credits,83);assert.equal(again.rounds,4);assert.equal(again.techPointsEarned,1);assert.equal(again.rockHp[0],22);assert.equal(again.ores.length,1);
