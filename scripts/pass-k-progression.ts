@@ -20,6 +20,7 @@ export function campaign(seed:number,limit=100){
  let c={...freshCompany(),worldSeed:seed},notes:Milestones={},earned=0,losses=0;
  const mark=(key:string,shift:number)=>{notes[key]??=shift;};
  for(let shift=1;shift<=limit;shift++){
+  const started=performance.now();
   const w=createWorld(c,seed);const before=c;
   // A legitimate optional Survey Focus moves the Scout along charted edges.
   // It never targets deep Fog and does not grant map cells, sites or resources.
@@ -29,7 +30,8 @@ export function campaign(seed:number,limit=100){
     if(!exploredAt(w,point)&&focusSurvey(w,point))break;
    }
   }
-  for(let frame=0;frame<18000&&w.phase!=='done';frame++)step(w);
+  let frames=0;
+  for(;frames<18000&&w.phase!=='done';frames++)step(w);
   if(w.phase!=='done')throw Error(`Unbounded shift ${shift} (${seed})`);
   c=settle(c,w);earned+=w.delivered;losses+=w.drones.filter(d=>d.state==='dead').length;
   if(c.progress.rivalSeen)mark('contact',shift);
@@ -49,7 +51,7 @@ export function campaign(seed:number,limit=100){
   for(const id of environmentIds){if(c.credits<ENVIRONMENT_UPGRADES[id].cost)continue;const next=buyEnvironment(c,id);if(next){c=next;mark(`buy:${id}`,shift);}}
   c=equip(c);
   if(c.outpost)c={...c,launchSite:'far'};
-  if(shift%10===0)console.log(`Seed ${seed}, shift ${shift}: credits ${c.credits}, slots ${c.fleetCapacity}, endurance ${c.enduranceLevel}, Tech ${c.techPointsAvailable}, upgrades ${c.extractionUpgrades.join(',')}`);
+  if(limit>20||shift%10===0)console.log(`Seed ${seed}, shift ${shift}/${limit}: ${frames} frames, ${((performance.now()-started)/1000).toFixed(1)}s, credits ${c.credits}, slots ${c.fleetCapacity}, endurance ${c.enduranceLevel}, Tech ${c.techPointsAvailable}, upgrades ${c.extractionUpgrades.join(',')}`);
   if(c.extractionUpgrades.includes('resonanceMining')&&w.ores.some(o=>o.mineral==='voidite'))mark('voidite extracted',shift);
   if(c.credits>Number.MAX_SAFE_INTEGER/2||earned>Number.MAX_SAFE_INTEGER/2)throw Error('Unsafe credit total');
   if(shift===limit||notes['delivered:voidite'])return {seed,shifts:shift,notes,credits:c.credits,earned,losses,slots:c.fleetCapacity,endurance:c.enduranceLevel,upgrades:c.extractionUpgrades,regions:[...new Set(w.rocks.map(r=>biomeAt(r.x,r.y)))],remaining:Object.fromEntries(Object.keys(MINERALS).map(id=>[id,w.rocks.filter(r=>r.mineral===id).reduce((n,r)=>n+r.hp,0)]))};
@@ -61,7 +63,10 @@ export function campaign(seed:number,limit=100){
 const inventory=createWorld(freshCompany()).rocks;
 console.log('Deposits:',JSON.stringify(Object.fromEntries(Object.keys(MINERALS).map(id=>[id,{deposits:inventory.filter(r=>r.mineral===id).length,fragments:inventory.filter(r=>r.mineral===id).reduce((n,r)=>n+r.hp,0),credits:inventory.filter(r=>r.mineral===id).reduce((n,r)=>n+r.hp*MINERALS[id as MineralId].credits,0)}]))));
 const seeds=process.argv[2]?[Number(process.argv[2])]:[7,19,41];
-const limit=Number(process.argv[3]??100);
+// Keep the routine smoke run short. The full fixed-step campaign is available
+// explicitly with `npm run progression -- 7 100` and can take several minutes.
+const limit=Number(process.argv[3]??20);
+if(seeds.some(seed=>!Number.isSafeInteger(seed))||!Number.isSafeInteger(limit)||limit<1||limit>100)throw Error('Expected a numeric seed and 1–100 shifts');
 for(const seed of seeds){const result=campaign(seed,limit);console.log(JSON.stringify(result));
  if(seed===7&&limit>=100&&!result.notes['delivered:voidite'])throw Error('Default seed did not deliver Voidite within the bounded campaign');
 }
