@@ -34,15 +34,19 @@ test('Workshop shows relevant purchases; Hangar hides locked types and keeps com
  assert.doesNotMatch(w,/Reinforced Hull|Mining Laser|Expanded Cargo|Ion Drive|Bodyguard Drone|data-buy="scanner"/);
  assert.equal((h.match(/id="tab-/g)??[]).length,3);
  assert.match(h,/class="tab-sub"><small>1\/1<\/small>/);
+ assert.match(w,/id="tab-workshop"[^>]*><span class="tab-name">WORKSHOP<\/span><span class="tab-sub">◆ 0<\/span>/);
+ const r=renderLobby(c,{...view,tab:'research'});
+ for(const panel of [w,h,r])assert.match(panel,/class="wallet"[\s\S]*NEXT · Reach the Far Belt[\s\S]*id="tab-workshop"/);
  const freeSlot=renderLobby({...c,fleetCapacity:2},view);
  assert.match(freeSlot,/class="tab-sub"><small>1\/2<\/small><span class="slot-badge"/);
  const entitled=research(awardTech(rich({...c,fleetCapacity:3}),['first_rival_contact']),'escortProgram')!;
  const later=renderLobby(changeFleet(entitled,'escort',1)!,view);
  assert.match(later,/2 \/ 3 SLOTS/);assert.match(later,/data-type="escort" data-delta="1"/);
  assert.match(later,/Escort/);
- const unlocked=renderLobby(entitled,{...view,tab:'workshop'});assert.match(unlocked,/HQ Turret|Outer Outpost/);
+ const milestone={...entitled,progress:{...entitled.progress,farSurveyed:true,richSampled:true}};
+ const unlocked=renderLobby(milestone,{...view,tab:'workshop'});assert.match(unlocked,/HQ Turret|Outer Outpost/);
  assert.match(unlocked,/NEXT MILESTONE[\s\S]*Outer Outpost/);
- assert.equal((unlocked.match(/Build the Outer Outpost/g)??[]).length,0);
+ assert.equal((unlocked.match(/Build the Outer Outpost/g)??[]).length,1);
 });
 test('turret and outpost keep their physical unlock gates',()=>{
  const c={...freshCompany(),credits:500};assert.equal(buy(c,'turret'),null);assert.equal(buy(c,'outpost'),null);
