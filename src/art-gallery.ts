@@ -1,4 +1,4 @@
-import {drawShip,drawMother,drawOutpost,drawRock,drawPoi,rockPalette,shipArt,rockArtTiers,poiArt,type ShipArt} from './art.ts';
+import {drawShip,drawMother,drawOutpost,drawRock,drawPoi,drawMineral,rockPalette,shipArt,rockArtTiers,poiArt,type ShipArt} from './art.ts';
 import {POIS} from './knowledge.ts';
 import {BIOMES,type BiomeId} from './biomes.ts';
 import {drawTrails,newTrailState,updateTrails} from './trails.ts';
@@ -25,7 +25,7 @@ export function mountArtGallery(host:HTMLElement){
   canvas.width=72*dpr;canvas.height=75*dpr;
   const c=canvas.getContext('2d')!;c.setTransform(dpr,0,0,dpr,36*dpr,37*dpr);
   drawRock(c,{id:31,x:0,y:0,r:25,hp:50,max:50,shape:[.89,.83,.98,.9,.85,.97,.8,.94,.9,.98,.78]},tier,0,rockPalette(id));
-  c.fillStyle=MINERALS[mineralIds[tier-1]].color;c.fillRect(28,25,5,5);
+  drawMineral(c,mineralIds[tier-1],28,25,5);
  }
  const samples=Array.from(host.querySelectorAll<HTMLCanvasElement>('.moving-sample')).map((canvas,i)=>{
   const dpr=Math.min(devicePixelRatio||1,2);canvas.width=180*dpr;canvas.height=86*dpr;

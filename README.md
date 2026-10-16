@@ -1,6 +1,6 @@
-# AIsteroid Mining · Alpha 0.21.0
+# AIsteroid Mining · Alpha 0.22.0
 
-A mobile-first autonomous mining game. Choose upgrades and fleet composition, then Deploy into a 30-second active shift, upgradeable to 45, 60 and 90 seconds, followed by physical recall and delivery. The asteroid field fills the mission screen: drag to pan, pinch to zoom, tap a discovered signal to optionally prioritize a Scout or assign an Escort, and use the contextual Follow Fleet control to return to your drones. The HUD shows time left and credits delivered; the 1×/2× button changes simulation speed. Friendly sensors reveal a persistent chart across a 2600 × 2400 world. Rock depletion, charted cells, discovered signals and loose ore persist after completed shifts.
+A mobile-first autonomous mining game. Choose upgrades and fleet composition, then Deploy into a 30-second active shift, upgradeable to 45, 60 and 90 seconds, followed by physical recall and delivery. The asteroid field fills the mission screen: drag to pan, pinch to zoom, tap anywhere to set persistent Mining or Scout focus, and use the contextual Follow Fleet control to return to your drones. Discovered signals can still be inspected and assigned to Escorts. The HUD shows time left and Credits delivered; the 1×/2× button changes simulation speed. Friendly sensors reveal a persistent chart across a 2600 × 2400 world. Rock depletion, charted cells, discovered signals, loose ore and focus pins persist after completed shifts.
 
 ## Run
 
@@ -27,6 +27,8 @@ Pass J adds a few small square engine puffs behind moving ships and quiet biome-
 
 Pass K adds company-wide High-Power Optics (250 Credits, Laser Mining and the first valuable sample) for Aurite and Resonance Mining (2,500 Credits, Optics and investigated Experimental Probe) for Voidite. Normal Laser Miners can also extract Cryonite; Impact Miners remain limited to Ferrite and Nickel. Rivals begin raiding after purchase of the second fleet slot. Escort still unlocks only after a real sensor encounter, which awards the existing one Tech Point. Hangar shows unused slots; the first Deploy after each purchase asks once if a slot remains empty.
 
+Pass L scores known work by expected delivered Credits per second across extraction, pickup and return; unrevealed deposits receive ordinary value until identified. Five mineral silhouettes carry through rock inclusions, loose fragments and transfers. A tap on any map point opens separate Mining and Scout focus actions, including in unknown territory. Pins persist between shifts and can be removed independently. After up to four foreground seconds of visible recall, the same fixed-step simulation finishes in short browser slices and displays the final report. Mission Control shows a copyable seed and a confirmed New Game action for a random or explicit uint32 seed, including zero. See [Pass L notes](docs/pass-l-focus-recall.md).
+
 ## Fleet and logistics
 
 Impact Miners have 15 HP and lose 1 per valid ram; they stop deliberately ramming at 1 HP. Laser Miners have 10 HP. Enemy Scout hits take 4 HP from either Miner. Baseline cooldown is 1.0 seconds for rams and 2.0 seconds for laser shots. Each fragment uses one cargo space. Ferrite, Nickel, Aurite, Cryonite and Voidite deliver 1, 3, 10, 30 and 100 Credits respectively. An Impact Miner releases up to two fragments per ram, a Laser Miner releases one per pulse; both always carry three. The first physical delivery of Nickel or higher awards the original once-only sample discovery; legacy rich salvage keeps its eligibility. Destroyed cargo drops individual persistent salvage.
@@ -39,7 +41,7 @@ Pass G parks the doctrine selector without changing saved doctrine or engine beh
 
 ## Discoveries and Research
 
-Nine unique events award exactly one Tech Point each and settle once on completion, including completed losses. New findings appear in the final report. Four milestones are Far Belt Charted, First Rich Sample (on delivery), First Rival Contact and Outpost Site Surveyed. The five physical investigation sites are the Derelict Research Station, Experimental Probe, **Abandoned Cargo Relay**, **Derelict Freight Shuttle** and **Automated Sorting Archive**. Discovery alone earns no Tech. Scouts discover and investigate unfinished sites automatically without Escort research. Investigation takes four simulated seconds, pauses on interruption and persists across completed shifts. Optional Scout priority and manual Escort Lock Target share one exclusive progress ledger; targets never carry over to the next mission. Mining and Hauler logistics continue in parallel.
+Nine unique events award exactly one Tech Point each and settle once on completion, including completed losses. New findings appear in the final report. Four milestones are Far Belt Charted, First Rich Sample (on delivery), First Rival Contact and Outpost Site Surveyed. The five physical investigation sites are the Derelict Research Station, Experimental Probe, **Abandoned Cargo Relay**, **Derelict Freight Shuttle** and **Automated Sorting Archive**. Discovery alone earns no Tech. Scouts discover and investigate unfinished sites automatically without Escort research. Investigation takes four simulated seconds, pauses on interruption and persists across completed shifts. Manual Escort Lock Target and autonomous Scout investigation share one exclusive progress ledger; targets never carry over to the next mission. Mining and Hauler logistics continue in parallel.
 
 | Research | Tech Points | Effect |
 | --- | ---: | --- |
@@ -55,7 +57,7 @@ The nine one-time Tech sources fund the nine total node costs; Credits and Tech 
 
 ## Saves
 
-Pass K stores typed ore, extraction upgrades, partial investigation and capacity reminder state in v13. Valid v12 and historical v7–v11 companies migrate without a reset; v11's 104 × 96 chart is copied unchanged. Credits, rounds, fleet, spent/earned Tech, investigated sites, doctrine, infrastructure, endurance, depleted rocks and loose ore persist. Legacy rock reserves (including omitted untouched rocks) are snapshotted at their old counts; old fragments stay Ferrite worth one Credit. Prior investigations count as blueprint unlocks, while new extraction upgrades start empty. Legacy v10's 32 × 38 bitset is converted cell by cell. Live Scout focus, optional target priority and Escort targets are never saved; unrelated browser storage is untouched.
+Pass L stores Mining and Scout focus pins in v14. Valid v13 and historical v7–v12 companies migrate without a reset; older companies begin with no pins. The v11 104 × 96 chart is copied unchanged. Credits, rounds, fleet, spent/earned Tech, investigated sites, doctrine, infrastructure, endurance, depleted rocks, loose ore and typed minerals persist. Legacy rock reserves and old Ferrite fragments retain their migration behavior. Live Escort targeting remains temporary. New Game only replaces the company after a valid seed and confirmed, successful save; unrelated browser storage is untouched.
 
 ## Validation and balance
 

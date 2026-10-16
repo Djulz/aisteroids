@@ -1,10 +1,11 @@
 import {type Camera,newCamera} from './camera.ts';
 import { HOME, FAR, W, H, ORE_PICKUP_DELAY, visibleAt, exploredAt, investigated, type World } from './sim.ts';
 import {POIS,CELL,COLS,ROWS} from './knowledge.ts';
-import {drawShip,drawMother,drawOutpost,drawTurret,drawRock,rockArtTier,drawPoi,rockPalette,type RockPalette} from './art.ts';
+import {drawShip,drawMother,drawOutpost,drawTurret,drawRock,rockArtTier,drawPoi,rockPalette,drawMineral,type RockPalette} from './art.ts';
 import {BIOMES,biomeAt} from './biomes.ts';
 import {newTrailState,updateTrails,drawTrails,type TrailSource,type TrailState} from './trails.ts';
 import {MINERALS} from './minerals.ts';
+import {focusRoles,markerOffset,type FocusRole} from './focus.ts';
 const gold='#f5b743';
 const rockPalettes=new WeakMap<object,RockPalette>();
 const trailStates=new WeakMap<World,TrailState>();
@@ -75,7 +76,6 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  // Explored/visible bitsets drive the field. Unknown cells
  // never get object drawing; known terrain remains a subdued map memory.
  const mask=fogImage(w);if(bw&&bh)c.drawImage(mask,left,top,bw,bh,left,top,bw,bh);
- if(w.surveyFocus){c.strokeStyle='#8abdc499';c.setLineDash([5,8]);c.lineWidth=1;c.beginPath();c.arc(w.surveyFocus.x,w.surveyFocus.y,28,0,Math.PI*2);c.stroke();c.setLineDash([]);}
  for(const site of POIS){if(!w.discoveredPois.has(site.id))continue;
   const done=investigated(w,site.id),locked=w.activeTarget===site.id;
   drawPoi(c,site.id,site.x,site.y,done,locked);
@@ -94,9 +94,9 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  for(const o of w.ores){if(!exploredAt(w,o))continue;const age=o.age??1,t=Math.min(1,age/ORE_PICKUP_DELAY),flight=1-(1-t)*(1-t);
   const originX=o.originX??o.x,originY=o.originY??o.y,dx=o.x-originX,dy=o.y-originY;
   const x=originX+dx*flight,y=originY+dy*flight;
-  if(t<1){c.strokeStyle='#f5b74377';c.lineWidth=2;c.beginPath();c.moveTo(x-dx*(1-t)*.18,y-dy*(1-t)*.18);c.lineTo(x,y);c.stroke();}
+  if(t<1){c.strokeStyle=MINERALS[o.mineral].color;c.globalAlpha=.55;c.lineWidth=1.5;c.beginPath();c.moveTo(x-dx*(1-t)*.18,y-dy*(1-t)*.18);c.lineTo(x,y);c.stroke();c.globalAlpha=1;}
   const direction=Math.atan2(dy,dx),spread=Math.sin(t*Math.PI)*(o.id%2?6:-6);
-  c.save();c.translate(x-Math.sin(direction)*spread,y+Math.cos(direction)*spread);c.rotate(.4+Math.min(age,.5)*5);c.shadowColor=MINERALS[o.mineral??'ferrite'].color;c.shadowBlur=t<1?5:0;c.fillStyle=MINERALS[o.mineral??'ferrite'].color;c.beginPath();c.moveTo(0,-4);c.lineTo(4,0);c.lineTo(1,4);c.lineTo(-3,2);c.lineTo(-4,-1);c.closePath();c.fill();c.restore();}
+  c.save();c.translate(x-Math.sin(direction)*spread,y+Math.cos(direction)*spread);c.rotate(.4+Math.min(age,.5)*5);drawMineral(c,o.mineral,0,0,5);c.restore();}
  const arrivals=w.effects.filter(e=>e.type==='transfer');
  const bounce=Math.max(0,...arrivals.map(e=>{const t=e.max-e.life-.26;return t>0?Math.sin(t/.09*Math.PI)*.065:0;}));
  if(w.base.x===FAR.x){drawMother(c,w.time,0,HOME.x,HOME.y);drawOutpost(c,FAR.x,FAR.y,true,w.time*.6,bounce);}
@@ -125,23 +125,48 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  for(const e of w.effects){if(!visibleAt(w,e)&&e.type!=='transfer'&&e.type!=='handoff')continue;const a=e.life/e.max;c.globalAlpha=a;
    if(e.type==='transfer'||e.type==='handoff'){
     const t=1-a,travel=Math.min(1,t/.78),ease=travel*travel*(3-2*travel),x=e.x+(e.tx!-e.x)*ease,y=e.y+(e.ty!-e.y)*ease-Math.sin(travel*Math.PI)*14;
-    c.globalAlpha=travel<1?1:a*3;c.strokeStyle=e.type==='handoff'?'#d4b878':'#8ee3cc';c.lineWidth=2;c.beginPath();c.moveTo(x-(e.tx!-e.x)*.08,y-(e.ty!-e.y)*.08);c.lineTo(x,y);c.stroke();
-    c.save();c.translate(x,y);c.rotate(t*5);c.fillStyle=gold;c.shadowColor=gold;c.shadowBlur=12;c.fillRect(-3,-3,6,6);c.restore();
+    c.globalAlpha=travel<1?1:a*3;
+    const items=e.items??[{mineral:'ferrite' as const}];
+    const samples=items.length<=3?items:[items[0],items[Math.floor(items.length/2)],items.at(-1)!];
+    samples.forEach((item,i)=>{const shift=(i-(samples.length-1)/2)*7;c.save();c.translate(x+shift,y+shift*.35);c.rotate(t*3);drawMineral(c,item.mineral,0,0,4);c.restore();});
     if(travel===1){c.strokeStyle='#a4e0cc';c.beginPath();c.arc(e.tx!,e.ty!,4+(t-.78)*70,0,7);c.stroke();}
    }
    else if(e.type==='enemyShot'||e.type==='guardShot'||e.type==='turretShot'){c.strokeStyle=e.type==='enemyShot'?'#f5848d':e.type==='turretShot'?'#f5b743':'#8af0dc';c.lineWidth=3*a+1;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.fillStyle=c.strokeStyle;c.beginPath();c.arc(e.tx!,e.ty!,3+(1-a)*8,0,7);c.fill();}
    else if(e.type==='laser'){c.strokeStyle='#67d9ce';c.lineWidth=4;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.strokeStyle='#eaffec';c.lineWidth=1.2;c.stroke();}
    else if(e.type==='ore'&&e.max-e.life<.25&&e.tx!==undefined){
     const t=1-Math.exp(-(e.max-e.life)*16),x=e.tx+(e.x-e.tx)*t,y=e.ty!+(e.y-e.ty!)*t;
-    c.globalAlpha=1;c.fillStyle=gold;c.shadowColor=gold;c.shadowBlur=8;c.save();c.translate(x,y);c.rotate(t*4);c.fillRect(-3,-3,6,6);c.restore();c.shadowBlur=0;
+    c.globalAlpha=1;c.save();c.translate(x,y);c.rotate(t*4);drawMineral(c,e.items?.[0]?.mineral??'ferrite',0,0,4);c.restore();
    }
    else if(e.type==='deposit'||e.type==='ore'){c.font=`bold ${e.type==='deposit'?16:10}px monospace`;c.textAlign='center';c.fillStyle=e.type==='deposit'?'#a4e0cc':gold;c.fillText(`+${e.amount}`,e.x,e.y-(1-a)*23);c.textAlign='left';}
    else if(e.type==='hit'){
     c.strokeStyle='#ffe3a1';c.lineWidth=1.4*a;c.beginPath();c.arc(e.x,e.y,3+(1-a)*17,0,7);c.stroke();
-    for(let j=0;j<3;j++){const angle=j*2.399+(e.x%9),radius=5+(1-a)*(11+j*2);c.fillStyle=j%2?'#d8a05b':'#a9bab9';c.fillRect(e.x+Math.cos(angle)*radius,e.y+Math.sin(angle)*radius,2.5,2.5);}
+    for(let j=0;j<3;j++){const angle=j*2.399+(e.x%9),radius=5+(1-a)*(11+j*2);drawMineral(c,e.items?.[0]?.mineral??'ferrite',e.x+Math.cos(angle)*radius,e.y+Math.sin(angle)*radius,2);}
    }
    else {c.strokeStyle=e.type==='dead'||e.type==='enemyDead'?'#ee845e':gold;c.lineWidth=1.5;for(let i=0;i<7;i++){const angle=i*.898;const r=(1-a)*25+5;c.beginPath();c.moveTo(e.x+Math.cos(angle)*r,e.y+Math.sin(angle)*r);c.lineTo(e.x+Math.cos(angle)*(r+5),e.y+Math.sin(angle)*(r+5));c.stroke();}}
    c.globalAlpha=1;
  }
+ // Player-authored pins sit above fog without revealing any hidden entity.
+ const overlap=!!w.focuses.mining&&!!w.focuses.scout&&Math.hypot(w.focuses.mining.x-w.focuses.scout.x,w.focuses.mining.y-w.focuses.scout.y)*camera.zoom<32;
+ for(const role of focusRoles){const p=w.focuses[role];if(!p)continue;
+  const x=p.x+markerOffset(role,overlap)/camera.zoom,y=p.y;
+  const active=w.phase==='mining'&&focusWorking(w,role,p);
+  c.save();c.translate(x,y);c.scale(1/camera.zoom,1/camera.zoom);
+  const color=role==='mining'?'#f5b743':'#8ee3d3';
+  c.fillStyle='#0a1a25ee';c.strokeStyle=color;c.lineWidth=1.5;
+  c.beginPath();c.arc(0,0,13,0,7);c.fill();c.stroke();
+  if(active){c.save();c.rotate(w.time*.8);c.beginPath();c.arc(0,0,17,-.55,.8);c.stroke();c.restore();}
+  else {c.globalAlpha=.55;c.beginPath();c.arc(0,0,17,0,7);c.stroke();c.globalAlpha=1;}
+  c.strokeStyle=color;c.lineWidth=2;c.lineCap='round';
+  if(role==='mining'){
+   c.beginPath();c.moveTo(-5,5);c.lineTo(5,-5);c.moveTo(-7,-5);c.lineTo(-3,-7);c.lineTo(7,3);c.stroke();
+  }else{
+   c.beginPath();c.arc(0,0,4,0,7);c.moveTo(0,-8);c.lineTo(0,-5);c.moveTo(0,5);c.lineTo(0,8);c.stroke();
+  }
+  c.restore();
+ }
  c.restore();
+}
+export function focusWorking(w:World,role:FocusRole,p:{x:number;y:number}){
+ if(role==='mining')return w.drones.some(d=>d.state==='mine'&&(w.rocks.some(r=>r.id===d.targetRock&&r.hp>0&&w.identifiedRocks.has(r.id)&&Math.hypot(r.x-p.x,r.y-p.y)<330)||d.oreQueue.some(id=>w.ores.some(o=>o.id===id&&Math.hypot(o.x-p.x,o.y-p.y)<330))));
+ return w.scouts.some(s=>s.state==='exploring'&&Math.hypot(s.targetX-p.x,s.targetY-p.y)<Math.hypot(s.x-p.x,s.y-p.y)-12);
 }

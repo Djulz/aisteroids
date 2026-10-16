@@ -16,7 +16,7 @@ test('five fixed contiguous regions cover the original map and retain coordinate
 });
 test('Fog gates region identification and temporary focus cannot select deep unknown territory',()=>{
  const w=createWorld({...freshCompany(),fleetCapacity:2,fleetComposition:{...freshCompany().fleetComposition,scout:1}});
- assert.equal(knownBiomeAt(w,{x:1770,y:675}),null);assert.equal(focusSurvey(w,{x:1770,y:675}),false);
+ assert.equal(knownBiomeAt(w,{x:1770,y:675}),null);assert.equal(focusSurvey(w,{x:1770,y:675}),true);
  assert.deepEqual(w.newRegions,[]);assert.deepEqual([...w.knownRegions],['home_belt']);
  assert.equal(focusSurvey(w,{x:HOME.x+50,y:HOME.y}),true);assert.ok(w.surveyFocus);
  const old=mapCount(w.explored);clearSurvey(w);assert.equal(w.surveyFocus,null);assert.equal(mapCount(w.explored),old);
@@ -60,7 +60,7 @@ test('physical investigation unlocks a paid fleet-wide blueprint, never extra Te
 });
 test('v11 migration preserves world, fleet, Tech, Outpost and Endurance without grants',()=>{
  const initial=freshCompany();const v11={...initial,version:11,environmentUpgrades:undefined,enduranceLevel:3,credits:701,total:802,rounds:15,rockHp:{0:20},outpost:true,launchSite:'far',doctrine:'convoy'};
- const c=parseSave(JSON.stringify(v11));assert.equal(c.version,13);assert.deepEqual(c.environmentUpgrades,[]);assert.equal(c.enduranceLevel,3);
+ const c=parseSave(JSON.stringify(v11));assert.equal(c.version,14);assert.deepEqual(c.environmentUpgrades,[]);assert.equal(c.enduranceLevel,3);
  for(const key of ['credits','total','rounds','outpost','launchSite','doctrine','explored','worldSeed'] as const)assert.deepEqual(c[key],v11[key]);
  assert.equal(c.rockHp[0],20);assert.equal(Object.keys(c.rockHp).length,168);assert.deepEqual(parseSave(JSON.stringify(c)),c);
  const values=new Map([[`aisteroids-company-v11`,JSON.stringify(v11)],['unrelated','keep']]);

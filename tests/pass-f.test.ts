@@ -37,7 +37,7 @@ test('v10 bitset converts exact old cell coordinates and carries earned assets i
  const data=new Map([['aisteroids-company-v10',JSON.stringify(save)],['unrelated','retained']]);
  const storage:SaveStore={getItem:k=>data.get(k)??null,setItem:(k,v)=>{data.set(k,v);},removeItem:k=>{data.delete(k);}};
  const migrated=loadCompany(storage),bits=decodeMap(migrated.explored)!;
- assert.equal(migrated.version,13);assert.equal(migrated.enduranceLevel,0);assert.equal(migrated.credits,411);assert.equal(migrated.rounds,25);
+ assert.equal(migrated.version,14);assert.equal(migrated.enduranceLevel,0);assert.equal(migrated.credits,411);assert.equal(migrated.rounds,25);
  assert.equal(migrated.outpost,true);assert.equal(migrated.launchSite,'far');assert.equal(migrated.rockHp[80],save.rockHp[80]);
  assert.equal(migrated.discoveredPois[0],POIS[0].id);assert.equal(data.get('unrelated'),'retained');assert.ok(data.has(SAVE_KEY));
  for(const [col,row] of points)assert.ok(hasCell(bits,(col+.5)*25,(row+.5)*25));
@@ -65,7 +65,7 @@ test('Scout maps persistent distant territory and returns physically at every du
 test('charted rock and ore stay full field artwork while unknown objects stay hidden',()=>{
  const w=createWorld(freshCompany());w.rocks=w.rocks.slice(0,2);
  const hidden=w.rocks[1];w.explored=blankMap();setCell(w.explored,w.rocks[0].x,w.rocks[0].y);
- w.ores=[{id:500,x:w.rocks[0].x+3,y:w.rocks[0].y+3,value:1,age:1},{id:501,x:hidden.x,y:hidden.y,value:1,age:1}];
+ w.ores=[{id:500,x:w.rocks[0].x+3,y:w.rocks[0].y+3,value:1,rich:false,mineral:'ferrite',age:1},{id:501,x:hidden.x,y:hidden.y,value:1,rich:false,mineral:'ferrite',age:1}];
  const events:Array<{op:string;x?:number;y?:number;style?:string}>=[];
  const context=new Proxy({fillStyle:'',strokeStyle:''} as Record<string,unknown>,{
   get(target,key){if(key in target)return target[key as string];return (...args:number[])=>{if(key==='translate'||key==='fillRect')events.push({op:String(key),x:args[0],y:args[1],style:String(target.fillStyle)});};},
@@ -77,5 +77,5 @@ test('charted rock and ore stay full field artwork while unknown objects stay hi
  try{render(canvas,w,-1,newCamera());}finally{Object.assign(globalThis,{document:original});}
  assert.ok(events.some(e=>e.op==='translate'&&Math.abs((e.x??0)-w.rocks[0].x)<3&&Math.abs((e.y??0)-w.rocks[0].y)<3));
  assert.ok(!events.some(e=>e.op==='translate'&&Math.abs((e.x??0)-hidden.x)<3&&Math.abs((e.y??0)-hidden.y)<3));
- assert.ok(events.some(e=>e.op==='fillRect'&&e.style==='#f5b743'));
+ assert.ok(events.some(e=>e.op==='translate'&&Math.abs((e.x??0)-w.ores[0].x)<.01&&Math.abs((e.y??0)-w.ores[0].y)<.01),'charted loose ore uses its mineral artwork');
 });

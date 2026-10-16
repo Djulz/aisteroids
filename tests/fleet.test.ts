@@ -8,7 +8,7 @@ const view:LobbyView={tab:'hangar',doctrineOpen:false,planOpen:false,error:'',st
 const rich=(c:Company)=>({...c,credits:500,progress:{...c.progress,rivalSeen:true,outpostSurveyed:true}});
 
 test('one slot, one Impact Miner; slots cost minerals but do not spawn or purchase individuals',()=>{
- const c=freshCompany();assert.equal(c.version,13);assert.equal(c.fleetCapacity,1);assert.equal(c.fleetComposition.impactMiner,1);
+ const c=freshCompany();assert.equal(c.version,14);assert.equal(c.fleetCapacity,1);assert.equal(c.fleetComposition.impactMiner,1);
  assert.equal(changeFleet(c,'escort',1),null);assert.equal(changeFleet(c,'impactMiner',1),null);assert.equal(changeFleet(c,'impactMiner',-1),null);
  const paid=buy({...c,credits:cost(c,'fleetSlot')},'fleetSlot')!;assert.equal(paid.fleetCapacity,2);assert.equal(paid.fleetComposition.impactMiner,1);assert.equal(paid.credits,0);
  const expanded=changeFleet(paid,'impactMiner',1)!;assert.equal(usedSlots(expanded.fleetComposition),2);assert.equal(createWorld(expanded).drones.length,2);

@@ -1,6 +1,7 @@
 import type {Rock} from './sim.ts';
 import type {PoiId} from './knowledge.ts';
 import type {BiomeId} from './biomes.ts';
+import {MINERALS,type MineralId} from './minerals.ts';
 
 // Local ship coordinates point forward/up. The simulation's angle is an
 // atan2 heading, so the common wrapper rotates by angle + PI/2.
@@ -107,6 +108,19 @@ export const ROCK_PALETTES:Record<BiomeId,RockPalette>={
 };
 export function rockPalette(id:BiomeId):RockPalette{return ROCK_PALETTES[id];}
 export const mineralColor:Record<RockArtTier,string>={1:'#a8adb2',2:'#b4b29a',3:'#e9b34a',4:'#a2c9e3',5:'#b39bd4'};
+export const mineralMotif:Record<MineralId,'shard'|'notched'|'facet'|'needle'|'core'>={ferrite:'shard',nickel:'notched',aurite:'facet',cryonite:'needle',voidite:'core'};
+export function drawMineral(c:C,id:MineralId,x:number,y:number,size=5){
+ c.save();c.translate(x,y);c.scale(size/5,size/5);
+ const color=MINERALS[id].color;
+ switch(id){
+  case 'ferrite':poly(c,[[-4,-2],[-1,-4],[4,-2],[3,2],[-2,4],[-5,1]],color,'#d5d9d8',.6);break;
+  case 'nickel':poly(c,[[-5,-3],[4,-3],[5,0],[2,0],[2,3],[-5,3]],color,'#eee1ae',.6);rect(c,-2,-2,1,4,'#666b62');break;
+  case 'aurite':poly(c,[[-5,-1],[-2,-5],[3,-4],[5,1],[1,5],[-4,3]],color,'#ffe0a0',.6);poly(c,[[-2,-5],[1,-1],[1,5],[-4,3]],'#f5ca6c');break;
+  case 'cryonite':poly(c,[[0,-7],[3,-1],[1,7],[-3,2]],color,'#e6f0f3',.6);poly(c,[[0,-7],[0,4],[-3,2]],'#6e9fbe');break;
+  case 'voidite':poly(c,[[-5,-3],[-1,-6],[4,-3],[6,2],[1,5],[-4,4]],color,'#d9c5e9',.6);poly(c,[[-2,-2],[2,-3],[3,1],[0,3],[-3,1]],'#463b61');break;
+ }
+ c.restore();
+}
 type RockDetails={craters:{x:number;y:number;r:number}[];inclusions:{x:number;y:number;r:number}[]};
 const detailCache=new WeakMap<object,Partial<Record<RockArtTier,RockDetails>>>();
 export function rockDetails(r:Pick<Rock,'id'|'r'>,tier:RockArtTier){
@@ -122,7 +136,8 @@ export function drawRock(c:C,r:Pick<Rock,'id'|'x'|'y'|'r'|'hp'|'max'|'shape'>,ti
  poly(c,points,pulse>.75?'#879096':palette.fill,pulse>.4?'#c1b9aa':palette.edge,1.1);
  const details=rockDetails(r,tier);
  for(const mark of details.craters){c.beginPath();c.arc(mark.x,mark.y,mark.r,0,7);c.fillStyle=palette.crater;c.fill();}
- for(const mark of details.inclusions){c.beginPath();c.arc(mark.x,mark.y,mark.r,0,7);c.fillStyle=mineralColor[tier];c.fill();}
+ const id=({1:'ferrite',2:'nickel',3:'aurite',4:'cryonite',5:'voidite'} as const)[tier];
+ for(const mark of details.inclusions)drawMineral(c,id,mark.x,mark.y,tier===1?1.5:tier===4?3.4:3.1);
  const damage=1-r.hp/r.max;
  if(damage>.12){c.strokeStyle='#182833';c.lineWidth=1.2+damage*2;c.beginPath();c.moveTo(-r.r*.7,0);c.lineTo(-3,3);c.lineTo(3,-5);c.lineTo(r.r*.5,-r.r*.55);c.stroke();}
  if(damage>.45){c.beginPath();c.moveTo(-3,3);c.lineTo(-r.r*.12,r.r*.46);c.lineTo(r.r*.18,r.r*.66);c.stroke();}

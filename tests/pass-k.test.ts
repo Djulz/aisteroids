@@ -49,7 +49,7 @@ test('fourth Voidite does not fit Miner; expanded Hauler carries fourteen for 14
 test('legacy v12 snapshots every untouched rock without replenishment and keeps one-credit salvage',()=>{
  const baseline=createWorld(freshCompany()).rocks;
  const old={...freshCompany(),version:12,rockHp:{0:0,12:4},ores:[{x:320,y:500,value:1,rich:true}],credits:217,total:341,rounds:9};
- const migrated=parseSave(JSON.stringify(old));assert.equal(migrated.version,13);
+ const migrated=parseSave(JSON.stringify(old));assert.equal(migrated.version,14);
  assert.equal(migrated.credits,217);assert.equal(migrated.total,341);
  assert.equal(migrated.rockHp[0],0);assert.equal(migrated.rockHp[12],4);
  assert.equal(migrated.rockHp[1],baseline[1].legacyMax);

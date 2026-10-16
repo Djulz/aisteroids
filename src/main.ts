@@ -6,7 +6,7 @@ import '@fontsource/barlow-condensed/500.css';
 import '@fontsource/barlow-condensed/600.css';
 import '@fontsource/barlow-condensed/700.css';
 import './style.css';
-import {buy,buyEnvironment,createWorld,freshCompany,settle,step,STEP,lockTarget,clearTarget,canTarget,investigated,prioritizePoi,focusSurvey,clearSurvey,knownBiomeAt,type Company,type Purchase,type World} from './sim.ts';
+import {buy,buyEnvironment,createWorld,freshCompany,settle,step,STEP,lockTarget,clearTarget,canTarget,investigated,setFocus,type Company,type Purchase,type World} from './sim.ts';
 import {render} from './render.ts';
 import {loadCompany,SAVE_KEY} from './storage.ts';
 import {renderLobby,type LobbyTab} from './lobby.ts';
@@ -16,20 +16,24 @@ import {TECH_DISCOVERIES,research,type TechnologyId} from './research.ts';
 import {mountArtGallery} from './art-gallery.ts';
 import {BIOMES,type EnvironmentUpgrade} from './biomes.ts';
 import {MINERALS,canExtract} from './minerals.ts';
+import {withFocus,hitFocus,validFocusPoint,type FocusRole} from './focus.ts';
+import {parseSeed,randomSeed} from './seed.ts';
+import {finishRecall} from './recall.ts';
 
 const app=document.querySelector<HTMLDivElement>('#app')!;
 let company:Company=freshCompany(),storageOK=true;
 try{company=loadCompany(localStorage);}catch{storageOK=false;}
-let world:World=createWorld(company),screen:'workshop'|'mission'='workshop',speed=1,accumulator=0,last=0,debriefShown=false;
-let activeTab:LobbyTab='workshop',researchOpen=false,selectedPoi:PoiId|null=null,selectedRock:number|null=null,selectedArea:{x:number;y:number}|null=null,poiSheetKey='',rockSheetKey='',areaSheetKey='',followVisible=false,returning=false;
+let world:World=createWorld(company),screen:'workshop'|'mission'='workshop',speed=1,accumulator=0,last=0,debriefShown=false,recallVisible=0,resolving=false,missionToken=0;
+let activeTab:LobbyTab='workshop',researchOpen=false,selectedPoi:PoiId|null=null,selectedRock:number|null=null,focusPopup:{world:{x:number;y:number};screen:{x:number;y:number}}|null=null,poiSheetKey='',rockSheetKey='',followVisible=false,returning=false;
 let regionNoticeCount=0,regionNoticeUntil=0;
 try{activeTab=localStorage.getItem('aisteroids-lobby-tab')==='hangar'?'hangar':'workshop';}catch{}
 let canvas:HTMLCanvasElement|null=null,camera=newCamera(),observer:ResizeObserver|null=null;
 const fmt=(n:number)=>n.toLocaleString('en-US');
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(company));}catch{storageOK=false;}}
+function saveCompany(next:Company){try{localStorage.setItem(SAVE_KEY,JSON.stringify(next));storageOK=true;return true;}catch{storageOK=false;return false;}}
+function save(){saveCompany(company);}
 function showWorkshop(){
  screen='workshop';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">AI<span>↗</span></div><h1><em>AI</em>steroid Mining</h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">AIsteroid Mining · Alpha 0.21.0</footer></main>`;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">AI<span>↗</span></div><h1><em>AI</em>steroid Mining</h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">AIsteroid Mining · Alpha 0.22.0</footer></main>`;
  for(const tab of ['workshop','hangar'] as const)document.querySelector(`#tab-${tab}`)?.addEventListener('click',()=>{
   activeTab=tab;researchOpen=false;try{localStorage.setItem('aisteroids-lobby-tab',tab);}catch{}showWorkshop();
  });
@@ -63,23 +67,69 @@ function showWorkshop(){
   });
   dialog.querySelector<HTMLButtonElement>('#open-hangar')?.focus();
  });
- document.querySelector('#reset')?.addEventListener('click',()=>{if(confirm('Reset the entire company?')){company=freshCompany();researchOpen=false;save();world=createWorld(company);showWorkshop();}});
+ document.querySelector('#new-game')?.addEventListener('click',openNewGame);
+ document.querySelector('#copy-seed')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(String(company.worldSeed));}catch{const value=document.querySelector<HTMLElement>('#current-seed');if(value){const selection=window.getSelection(),range=document.createRange();range.selectNodeContents(value);selection?.removeAllRanges();selection?.addRange(range);}}});
+}
+function openNewGame(){
+ if(screen!=='workshop'||document.querySelector('#new-game-dialog'))return;
+ let candidate=randomSeed(company.worldSeed,()=>crypto.getRandomValues(new Uint32Array(1))[0]);
+ const backdrop=document.createElement('div');backdrop.id='new-game-dialog';backdrop.className='capacity-backdrop';
+ backdrop.innerHTML=`<section role="dialog" aria-modal="true" aria-labelledby="new-game-title" class="capacity-dialog"><h2 id="new-game-title">New Game</h2><p>Starting a new game replaces your current company and progress.</p><label for="world-seed">World seed</label><div class="seed-input"><input id="world-seed" inputmode="numeric" autocomplete="off" value="${candidate}" aria-describedby="seed-error"><button id="reroll-seed" type="button" aria-label="Randomize seed">↻</button></div><p id="seed-error" class="form-error" role="alert" hidden>Enter a whole number from 0 to 4294967295.</p><button id="start-new" class="primary">START NEW COMPANY</button><button id="cancel-new">CANCEL</button></section>`;
+ app.append(backdrop);
+ const field=backdrop.querySelector<HTMLInputElement>('#world-seed')!,error=backdrop.querySelector<HTMLElement>('#seed-error')!;
+ const close=()=>{backdrop.remove();document.querySelector<HTMLButtonElement>('#new-game')?.focus();};
+ backdrop.querySelector<HTMLButtonElement>('#reroll-seed')!.onclick=()=>{candidate=randomSeed(parseSeed(field.value)??candidate,()=>crypto.getRandomValues(new Uint32Array(1))[0]);field.value=String(candidate);error.hidden=true;};
+ backdrop.querySelector<HTMLButtonElement>('#cancel-new')!.onclick=close;
+ backdrop.querySelector<HTMLButtonElement>('#start-new')!.onclick=()=>{
+  const seed=parseSeed(field.value);if(seed===null){error.hidden=false;field.focus();return;}
+  const next=freshCompany(seed);
+  if(!saveCompany(next)){error.hidden=false;error.textContent='Saving failed. Your current company is unchanged.';return;}
+  missionToken++;company=next;world=createWorld(next);researchOpen=false;focusPopup=null;debriefShown=false;close();showWorkshop();
+ };
+ backdrop.addEventListener('click',e=>{if(e.target===backdrop)close();});
+ backdrop.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close();}});
+ field.focus();field.select();
+}
+function changeFocus(role:FocusRole,p:{x:number;y:number}|null){
+ const next={...company,focuses:withFocus(company.focuses,role,p)};
+ if(!saveCompany(next))return;
+ company=next;setFocus(world,role,p);dismissFocus();updateHUD();
+}
+function dismissFocus(){focusPopup=null;const popup=document.querySelector<HTMLElement>('#focus-popup');if(popup)popup.hidden=true;}
+function openFocus(screenPoint:{x:number;y:number},point:{x:number;y:number}){
+ focusPopup={world:{...point},screen:{...screenPoint}};
+ selectedPoi=null;selectedRock=null;
+ const site=POIS.find(p=>world.discoveredPois.has(p.id)&&Math.hypot(p.x-point.x,p.y-point.y)<Math.max(24,28/camera.zoom));
+ const rock=site?undefined:world.rocks.find(r=>r.hp>0&&world.identifiedRocks.has(r.id)&&Math.hypot(r.x-point.x,r.y-point.y)<r.r+Math.max(5,10/camera.zoom));
+ const popup=document.querySelector<HTMLElement>('#focus-popup')!;
+ popup.style.left=`${Math.max(8,Math.min(camera.width-226,screenPoint.x-105))}px`;
+ popup.style.top=`${Math.max(78,Math.min(camera.height-205,screenPoint.y+15))}px`;
+ popup.innerHTML=`<div class="focus-actions"><button data-focus="mining" aria-label="Set Mining focus here"><span class="focus-glyph mining" aria-hidden="true"></span>MINING</button><button data-focus="scout" aria-label="Set Scout focus here"><span class="focus-glyph scout" aria-hidden="true"></span>SCOUT</button></div>${site||rock?`<button id="inspect-focus">DETAILS · ${site?site.name:'MINERAL DEPOSIT'}</button>`:''}`;
+ popup.hidden=false;
+ popup.querySelectorAll<HTMLButtonElement>('[data-focus]').forEach(button=>button.onclick=()=>{if(focusPopup)changeFocus(button.dataset.focus as FocusRole,focusPopup.world);});
+ popup.querySelector<HTMLButtonElement>('#inspect-focus')?.addEventListener('click',()=>{selectedPoi=site?.id??null;selectedRock=rock?.id??null;dismissFocus();updateHUD();});
+ updateHUD();
 }
 function launch(){
- world=createWorld(company,company.worldSeed);screen='mission';speed=1;accumulator=0;selectedPoi=null;selectedRock=null;selectedArea=null;poiSheetKey='';rockSheetKey='';areaSheetKey='';regionNoticeCount=0;regionNoticeUntil=0;debriefShown=false;followVisible=false;returning=false;
+ world=createWorld(company,company.worldSeed);missionToken++;screen='mission';speed=1;accumulator=0;recallVisible=0;resolving=false;selectedPoi=null;selectedRock=null;focusPopup=null;poiSheetKey='';rockSheetKey='';regionNoticeCount=0;regionNoticeUntil=0;debriefShown=false;followVisible=false;returning=false;
  camera=newCamera();camera.x=world.base.x;camera.y=world.base.y;
- app.innerHTML=`<main class="mission"><canvas id="field" aria-label="Asteroid field. Drag to pan, pinch to zoom, tap a discovered signal, rock or charted area to inspect."></canvas><div class="mission-hud"><div><span>TIME LEFT</span><b id="timer">00:30</b></div><div class="ore-count"><span>DELIVERED CREDITS</span><b>◆ <span id="delivered">0</span></b></div></div><div id="region-notice" class="region-notice" hidden></div><div class="poi-sheet" id="poi-sheet" hidden></div><div class="poi-sheet" id="rock-sheet" hidden></div><div class="poi-sheet" id="area-sheet" hidden></div><button id="focus-chip" class="focus-chip" hidden>SCOUT FOCUS · CLEAR</button><button id="follow" class="follow-control" hidden>◎ FOLLOW FLEET</button><button id="speed" class="speed-control" aria-label="Speed 1 times. Toggle to 2 times">1×</button></main>`;
+ app.innerHTML=`<main class="mission"><canvas id="field" aria-label="Asteroid field. Drag to pan, pinch to zoom, tap anywhere to set Mining or Scout focus."></canvas><div class="mission-hud"><div><span>TIME LEFT</span><b id="timer">00:30</b></div><div class="ore-count"><span>DELIVERED CREDITS</span><b>◆ <span id="delivered">0</span></b></div></div><div id="region-notice" class="region-notice" hidden></div><div class="poi-sheet" id="poi-sheet" hidden></div><div class="poi-sheet" id="rock-sheet" hidden></div><div class="focus-popup" id="focus-popup" hidden></div><button id="follow" class="follow-control" hidden>◎ FOLLOW FLEET</button><button id="speed" class="speed-control" aria-label="Speed 1 times. Toggle to 2 times">1×</button></main>`;
  const field=document.querySelector<HTMLCanvasElement>('#field')!;canvas=field;resize();
  observer=new ResizeObserver(resize);observer.observe(field);
  const gestures=new MapGestures(camera),coords=(e:PointerEvent)=>{const r=field.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*camera.width,y:(e.clientY-r.top)/r.height*camera.height};};
  field.onpointerdown=e=>{gestures.down(e.pointerId,coords(e));field.setPointerCapture(e.pointerId);};
  field.onpointermove=e=>{gestures.move(e.pointerId,coords(e));};
- field.onpointerup=e=>{const point=gestures.up(e.pointerId,coords(e));if(point){const q=screenToWorld(camera,point.x,point.y);const site=POIS.find(p=>world.discoveredPois.has(p.id)&&Math.hypot(p.x-q.x,p.y-q.y)<Math.max(24,28/camera.zoom));const rock=site?undefined:world.rocks.find(r=>r.hp>0&&world.identifiedRocks.has(r.id)&&Math.hypot(r.x-q.x,r.y-q.y)<r.r+Math.max(5,10/camera.zoom));selectedPoi=site?.id??null;selectedRock=rock?.id??null;selectedArea=site||rock?null:world.scouts.some(s=>s.state!=='dead'&&s.state!=='docked')&&(knownBiomeAt(world,q)||[[-25,0],[25,0],[0,-25],[0,25]].some(([x,y])=>knownBiomeAt(world,{x:q.x+x,y:q.y+y})))?q:null;updateHUD();}};
+ field.onpointerup=e=>{const point=gestures.up(e.pointerId,coords(e));if(!point)return;
+  if(focusPopup){dismissFocus();return;}
+  const role=hitFocus(world.focuses,camera,point);
+  if(role){changeFocus(role,null);return;}
+  const q=screenToWorld(camera,point.x,point.y);if(!validFocusPoint(q))return;
+  openFocus(point,q);
+ };
  field.onpointercancel=e=>gestures.cancel(e.pointerId);
  field.onlostpointercapture=e=>gestures.cancel(e.pointerId);
  field.addEventListener('wheel',e=>{e.preventDefault();const r=field.getBoundingClientRect();zoomAt(camera,Math.exp(-e.deltaY*.001),e.clientX-r.left,e.clientY-r.top);},{passive:false});
- document.querySelector('#follow')!.addEventListener('click',()=>{camera.follow=true;returning=true;selectedPoi=null;selectedRock=null;selectedArea=null;updateHUD();});
- document.querySelector('#focus-chip')!.addEventListener('click',()=>{clearSurvey(world);selectedArea=null;updateHUD();});
+ document.querySelector('#follow')!.addEventListener('click',()=>{camera.follow=true;returning=true;selectedPoi=null;selectedRock=null;focusPopup=null;dismissFocus();updateHUD();});
  document.querySelector('#speed')!.addEventListener('click',()=>{speed=speed===1?2:1;const b=document.querySelector<HTMLButtonElement>('#speed')!;b.textContent=`${speed}×`;b.setAttribute('aria-label',`Speed ${speed} times. Toggle to ${speed===1?2:1} times`);});
  updateHUD();
 }
@@ -94,20 +144,13 @@ function updateHUD(){if(screen!=='mission')return;
  const notice=document.querySelector<HTMLElement>('#region-notice')!;
  if(world.newRegions.length>regionNoticeCount){regionNoticeCount=world.newRegions.length;regionNoticeUntil=world.time+2.7;notice.textContent=`REGION DISCOVERED · ${BIOMES[world.newRegions.at(-1)!].name.toUpperCase()}`;}
  notice.hidden=world.time>=regionNoticeUntil||world.phase!=='mining';
- const button=document.querySelector<HTMLButtonElement>('#follow')!;followVisible=showFollow(camera,world,followVisible);button.hidden=!followVisible||!!selectedPoi||selectedRock!==null||!!selectedArea;
- document.querySelector<HTMLButtonElement>('#focus-chip')!.hidden=!world.surveyFocus||world.phase!=='mining';
- const area=document.querySelector<HTMLElement>('#area-sheet')!,id=selectedArea&&knownBiomeAt(world,selectedArea),areaKey=selectedArea?`${Math.round(selectedArea.x)}:${Math.round(selectedArea.y)}:${id}:${world.phase}`:'';
- area.hidden=!selectedArea||!!selectedPoi||selectedRock!==null||world.phase!=='mining';
- if(!area.hidden&&selectedArea&&areaKey!==areaSheetKey){areaSheetKey=areaKey;area.innerHTML=`<div><b>${id?BIOMES[id].name:'Uncharted edge'}</b><button id="close-area" aria-label="Close area details">×</button></div><small>${id?BIOMES[id].risk:'SURVEY AREA'}</small><button id="survey-action">FOCUS SCOUTING</button>`;
-  area.querySelector('#close-area')?.addEventListener('click',()=>{selectedArea=null;updateHUD();});
-  area.querySelector('#survey-action')?.addEventListener('click',()=>{if(selectedArea)focusSurvey(world,selectedArea);selectedArea=null;updateHUD();});
- }else if(area.hidden)areaSheetKey='';
+ const button=document.querySelector<HTMLButtonElement>('#follow')!;followVisible=showFollow(camera,world,followVisible);button.hidden=!followVisible||!!selectedPoi||selectedRock!==null||!!focusPopup;
+
  const sheet=document.querySelector<HTMLElement>('#poi-sheet')!,poi=POIS.find(p=>p.id===selectedPoi);sheet.hidden=!poi;
- if(poi){const done=investigated(world,poi.id),reason=canTarget(world,poi.id),key=`${poi.id}:${done}:${world.activeTarget}:${world.scoutPriority}:${world.scouts.some(s=>s.state==='exploring')}:${reason}`;
-  if(key!==poiSheetKey){poiSheetKey=key;sheet.innerHTML=`<div><b>${poi.name}</b><button id="close-poi" aria-label="Close signal details">×</button></div><small>${done?'INVESTIGATED':world.activeTarget===poi.id?'ESCORT EN ROUTE':'SIGNAL DISCOVERED'}</small>${!done?`${world.scouts.some(s=>s.state==='exploring')?`<button id="scout-priority">${world.scoutPriority===poi.id?'CLEAR SCOUT PRIORITY':'PRIORITIZE SCOUT'}</button>`:''}${world.guards.some(g=>g.hp>0)?`<button id="target-action" ${world.activeTarget===poi.id?'':reason?'disabled':''}>${world.activeTarget===poi.id?'CLEAR TARGET':'LOCK TARGET'}</button>`:''}`:''}`;
+ if(poi){const done=investigated(world,poi.id),reason=canTarget(world,poi.id),key=`${poi.id}:${done}:${world.activeTarget}:${reason}`;
+  if(key!==poiSheetKey){poiSheetKey=key;sheet.innerHTML=`<div><b>${poi.name}</b><button id="close-poi" aria-label="Close signal details">×</button></div><small>${done?'INVESTIGATED':world.activeTarget===poi.id?'ESCORT EN ROUTE':'SIGNAL DISCOVERED'}</small>${!done&&world.guards.some(g=>g.hp>0)?`<button id="target-action" ${world.activeTarget===poi.id?'':reason?'disabled':''}>${world.activeTarget===poi.id?'CLEAR TARGET':'LOCK TARGET'}</button>`:''}`;
    sheet.querySelector('#close-poi')?.addEventListener('click',()=>{selectedPoi=null;updateHUD();});
    sheet.querySelector('#target-action')?.addEventListener('click',()=>{if(world.activeTarget===poi.id)clearTarget(world);else lockTarget(world,poi.id);updateHUD();});
-   sheet.querySelector('#scout-priority')?.addEventListener('click',()=>{prioritizePoi(world,poi.id);poiSheetKey='';updateHUD();});
   }
  }else poiSheetKey='';
  const rockSheet=document.querySelector<HTMLElement>('#rock-sheet')!,rock=world.rocks.find(r=>r.id===selectedRock&&r.hp>0);
@@ -133,12 +176,34 @@ function showDebrief(settled:Company){
  result.querySelector('#continue')!.addEventListener('click',()=>showWorkshop());
 }
 let hudTime=0;
-function frame(time:number){const dt=last?Math.min((time-last)/1000,.1):0;last=time;
+function completeMission(){
+ if(debriefShown||world.phase!=='done')return;
+ debriefShown=true;const next=settle(company,world);
+ saveCompany(next);showDebrief(next);company=next;
+}
+function startFastRecall(){
+ if(resolving||debriefShown)return;
+ resolving=true;accumulator=0;const current=world,token=missionToken;
+ finishRecall(current,()=>token!==missionToken||screen!=='mission'||world!==current?'cancel':document.hidden?'pause':'run')
+  .then(()=>{if(token!==missionToken||world!==current)return;resolving=false;completeMission();})
+  .catch(error=>{if(token!==missionToken||world!==current)return;resolving=false;
+   const mission=app.querySelector('.mission');if(!mission||mission.querySelector('#recall-error'))return;
+   const notice=document.createElement('div');notice.id='recall-error';notice.className='recall-error';notice.innerHTML='<p>Finalizing the return took too long.</p><button>RETRY FINALIZATION</button>';
+   notice.querySelector('button')!.addEventListener('click',()=>{notice.remove();startFastRecall();});mission.append(notice);
+   console.error('Recall resolution',error);
+  });
+}
+function frame(time:number){const raw=last?Math.max(0,(time-last)/1000):0,dt=Math.min(raw,.1);last=time;
  if(screen==='mission'&&!document.hidden){
-  accumulator+=dt*(world.phase==='aftermath'?1:speed);
-  while(accumulator>=STEP){if(world.phase==='done')break;step(world);accumulator-=STEP;}
-  if(world.phase==='done'&&!debriefShown){debriefShown=true;const next=settle(company,world);showDebrief(next);company=next;save();}
-  if(canvas){followCamera(camera,world,dt,returning);const target=fleetCenter(world);if(returning&&Math.hypot(camera.x-target.x,camera.y-target.y)<8)returning=false;render(canvas,world,-1,camera);hudTime+=dt;if(hudTime>.1){updateHUD();hudTime=0;}}
+  if(!resolving&&!debriefShown){
+   accumulator+=dt*(world.phase==='aftermath'?1:speed);
+   while(accumulator>=STEP){if(world.phase==='done')break;step(world);accumulator-=STEP;}
+   if(world.phase==='recall')recallVisible+=Math.min(raw,.5);
+   else recallVisible=0;
+   if(world.phase==='done')completeMission();
+   else if(world.phase==='recall'&&recallVisible>=4)startFastRecall();
+  }
+  if(canvas&&!resolving&&!debriefShown){followCamera(camera,world,dt,returning);const target=fleetCenter(world);if(returning&&Math.hypot(camera.x-target.x,camera.y-target.y)<8)returning=false;render(canvas,world,-1,camera);hudTime+=dt;if(hudTime>.1){updateHUD();hudTime=0;}}
  }
  requestAnimationFrame(frame);
 }
