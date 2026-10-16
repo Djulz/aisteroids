@@ -198,7 +198,7 @@ function frame(time:number){const raw=last?Math.max(0,(time-last)/1000):0,dt=Mat
   if(!resolving&&!debriefShown){
    accumulator+=dt*(world.phase==='aftermath'?1:speed);
    while(accumulator>=STEP){if(world.phase==='done')break;step(world);accumulator-=STEP;}
-   if(world.phase==='recall')recallVisible+=Math.min(raw,.5);
+   if(world.phase==='recall')recallVisible+=raw;
    else recallVisible=0;
    if(world.phase==='done')completeMission();
    else if(world.phase==='recall'&&recallVisible>=4)startFastRecall();

@@ -11,7 +11,8 @@ export function resolveRecall(w:World,maxSteps=RECALL_STEP_LIMIT):number{
  return steps;
 }
 // Yield between small CPU slices so a long physical return does not lock the
-// browser. requestAnimationFrame pauses naturally while the tab is hidden.
+// browser. Timer slices still progress on visible tabs with a throttled canvas
+// frame rate; hidden tabs wait for visibility before advancing simulation.
 export function finishRecall(w:World,state:()=> 'run'|'pause'|'cancel'):Promise<{steps:number;cpuMs:number}>{
  return new Promise((resolve,reject)=>{
   let steps=0,cpuMs=0;
@@ -24,9 +25,9 @@ export function finishRecall(w:World,state:()=> 'run'|'pause'|'cancel'):Promise<
     cpuMs+=performance.now()-start;
     if(w.phase==='done'){resolve({steps,cpuMs});return;}
     if(steps>=RECALL_STEP_LIMIT){reject(Error('Recall exceeded fixed-step limit'));return;}
-    requestAnimationFrame(batch);
+    setTimeout(batch,0);
    }catch(error){reject(error);}
   };
-  requestAnimationFrame(batch);
+  setTimeout(batch,0);
  });
 }
