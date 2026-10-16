@@ -26,18 +26,23 @@ test('Laser fixture is real but ordinary players cannot equip locked technology'
  assert.equal(fleetError(fixture),undefined);assert.equal(createWorld(fixture).drones[0].kind,'laserMiner');
  assert.match(fleetError({...base,fleetComposition:fixture.fleetComposition})!,/locked/);
 });
-test('Workshop shows relevant purchases; Hangar hides locked types and keeps two tabs',()=>{
+test('Workshop shows relevant purchases; Hangar hides locked types and keeps compact three-tab navigation',()=>{
  const c=freshCompany();const h=renderLobby(c,view),w=renderLobby(c,{...view,tab:'workshop'});
  assert.match(h,/1 \/ 1 SLOTS/);assert.match(h,/Impact Miner/);assert.doesNotMatch(h,/Laser Miner|Mobile Mining Rig|LOCKED/);
  assert.doesNotMatch(h,/TINKER|MODULE A|DISPLAY NAME|data-site=|data-directive=/);
  assert.match(w,/Fleet Slot/);assert.match(w,/Shift Endurance/);assert.doesNotMatch(w,/HQ Turret|Outer Outpost/);
  assert.doesNotMatch(w,/Reinforced Hull|Mining Laser|Expanded Cargo|Ion Drive|Bodyguard Drone|data-buy="scanner"/);
- assert.equal((h.match(/id="tab-/g)??[]).length,2);
+ assert.equal((h.match(/id="tab-/g)??[]).length,3);
+ assert.match(h,/class="tab-sub"><small>1\/1<\/small>/);
+ const freeSlot=renderLobby({...c,fleetCapacity:2},view);
+ assert.match(freeSlot,/class="tab-sub"><small>1\/2<\/small><span class="slot-badge"/);
  const entitled=research(awardTech(rich({...c,fleetCapacity:3}),['first_rival_contact']),'escortProgram')!;
  const later=renderLobby(changeFleet(entitled,'escort',1)!,view);
  assert.match(later,/2 \/ 3 SLOTS/);assert.match(later,/data-type="escort" data-delta="1"/);
  assert.match(later,/Escort/);
  const unlocked=renderLobby(entitled,{...view,tab:'workshop'});assert.match(unlocked,/HQ Turret|Outer Outpost/);
+ assert.match(unlocked,/NEXT MILESTONE[\s\S]*Outer Outpost/);
+ assert.equal((unlocked.match(/Build the Outer Outpost/g)??[]).length,0);
 });
 test('turret and outpost keep their physical unlock gates',()=>{
  const c={...freshCompany(),credits:500};assert.equal(buy(c,'turret'),null);assert.equal(buy(c,'outpost'),null);

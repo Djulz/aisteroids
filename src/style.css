@@ -45,3 +45,34 @@
 .settings-seed button{width:auto;margin-left:8px;padding:0 10px;font-size:12px}
 @media(max-height:620px){.title-content{padding-top:max(20px,env(safe-area-inset-top));padding-bottom:28px}.title-content h1{margin-top:8px;font-size:clamp(38px,9vh,58px)}.title-actions{margin-top:35px;margin-bottom:0;gap:8px}.menu-button{min-height:48px;font-size:24px}}
 @media(max-height:380px) and (orientation:landscape){.title-screen{overflow-y:auto}.title-content{min-height:380px}}
+
+/* Mission Control: compact resources, three stable tabs and scannable purchases. */
+.wallet strong{display:flex;align-items:baseline;gap:5px;margin:0 0 11px;font-size:29px;line-height:1.1}
+.wallet i{font-size:22px}.wallet strong span{font:11px Barlow,sans-serif;color:var(--muted);margin-left:3px}
+.wallet p{margin:0 0 14px;padding-top:8px}
+.lobby-tabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:17px}
+.lobby-tabs button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-width:0;min-height:59px;gap:3px;padding:7px 8px;font-size:clamp(14px,4vw,18px);line-height:1}
+.tab-name{display:block;white-space:nowrap}.tab-sub{display:flex;align-items:center;gap:5px;white-space:nowrap;min-height:20px;font:11px Barlow,sans-serif;color:#a9c4c6}
+.tab-sub small{display:inline;font:inherit;color:inherit}.tab-sub .slot-badge{flex:none;margin:0;min-width:19px;height:19px;font-size:11px}
+.upgrade{position:relative;min-height:62px}.upgrade-icon{width:26px;font-size:21px}
+.upgrade-copy b{font-size:17px}.upgrade-copy small{font-size:11px}
+.upgrade button{flex:none;min-width:92px;min-height:44px;white-space:nowrap;font-size:13px}
+.upgrade-featured{padding-top:28px;border-color:#bb8d42;background:#1c302e}
+.upgrade-milestone{position:absolute;top:8px;left:12px;color:var(--gold);font:10px monospace;letter-spacing:.8px}
+.tab-content .upgrade-group{font-size:15px;color:#aec5c5;margin:19px 0 8px}
+.research-balance{font:700 26px 'Barlow Condensed',sans-serif;color:var(--teal);margin:3px 0 17px}
+.research-balance span{font:11px Barlow,sans-serif;letter-spacing:.6px;color:#b0c8c8;margin-left:5px}
+.research-panel h2{font:600 15px 'Barlow Condensed',sans-serif;color:#b3c9ca;margin:0 0 9px;letter-spacing:.7px}
+.research-node{display:block;padding:0;min-height:0;margin-bottom:7px}
+.research-node>summary{display:flex;align-items:center;gap:10px;min-height:66px;padding:10px 12px;cursor:pointer;list-style:none}
+.research-node>summary::-webkit-details-marker{display:none}
+.research-node>summary:focus-visible,.completed-research>summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.research-copy{display:block;min-width:0;flex:1}.research-copy b{font-size:18px}
+.research-copy small{font-size:11px;line-height:1.3}.research-cost{flex:none;color:var(--teal);font:12px monospace;white-space:nowrap}
+.research-detail{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:1px 12px 12px;border-top:1px solid #284550}
+.research-detail>small{color:#a9bec3;font-size:11px;line-height:1.4;flex-basis:100%;margin-top:9px}
+.research-detail button{margin-left:auto;min-height:44px;padding:0 14px}
+.research-detail .research-reason{margin:0;color:#e7be85}
+.completed-research{margin-top:18px;border-top:1px solid var(--line)}
+.completed-research>summary{color:#a7c0c1;font:600 15px 'Barlow Condensed',sans-serif;padding:14px 0;cursor:pointer;min-height:44px}
+@media(max-width:360px){.lobby-tabs button{padding-inline:6px}.upgrade{gap:6px}.upgrade-icon{width:21px}.upgrade button{min-width:83px;font-size:12px}.tab-name{font-size:15px}}

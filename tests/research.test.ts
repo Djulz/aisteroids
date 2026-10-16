@@ -37,7 +37,9 @@ test('research costs, prerequisites, Scout entitlement and one-time discoveries 
  let c=freshCompany();assert.match(researchReason(c,'escortProgram')!,/Encounter/);assert.equal(research(c,'laserMining'),null);assert.equal(changeFleet(c,'scout',1),null);
  c=awardTech(c,['far_belt_charted','far_belt_charted']);assert.equal(c.techPointsEarned,1);c=research(c,'laserMining')!;assert.ok(c.unlockedTypes.includes('laserMiner'));assert.equal(research(c,'rapidCooling'),null);
  c={...c,fleetCapacity:2};c=changeFleet(c,'laserMiner',1)!;assert.equal(createWorld(c).drones[1].kind,'laserMiner');assert.deepEqual(parseSave(JSON.stringify(c)),c);
- const html=renderLobby(c,{tab:'hangar',doctrineOpen:false,planOpen:false,researchOpen:true,error:'',storageOK:true});assert.match(html,/Laser Mining/);assert.match(html,/RESEARCHED/);
+ const html=renderLobby(c,{tab:'research',error:'',storageOK:true});assert.match(html,/Laser Mining/);assert.match(html,/COMPLETED \(1\)/);assert.match(html,/AVAILABLE RESEARCH/);
+ assert.ok(html.indexOf('AVAILABLE RESEARCH')<html.indexOf('COMPLETED (1)'));
+ assert.match(html,/<details class="completed-research"><summary>COMPLETED \(1\)<\/summary>/);
  assert.equal(discoveryIds.length,9);assert.equal(Object.keys(TECH_DISCOVERIES).length,9);
 });
 test('sensor detection alone never awards Tech; Escort dwell awards once after settlement',()=>{

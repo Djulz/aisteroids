@@ -38,5 +38,5 @@ test('lobby hides future options, preserves save fields and reveals research and
  assert.doesNotMatch(html,/FLEET DOCTRINE|data-doctrine|data-site=/);
  assert.equal(parseSave(JSON.stringify(c)).doctrine,'convoy');assert.equal(parseSave(JSON.stringify(c)).launchSite,'far');
  assert.equal(cost(c,'outpost'),450);assert.equal(buy(c,'endurance')?.enduranceLevel,1);
- const panel=renderLobby(c,{tab:'hangar',researchOpen:true,error:'',storageOK:true});assert.match(panel,/Technology research|Escort Program/);assert.match(panel,/id="close-research"/);
+ const panel=renderLobby(c,{tab:'research',error:'',storageOK:true});assert.match(panel,/Technology research|Escort Program/);assert.match(panel,/id="tab-research" aria-current="page"/);assert.match(panel,/COMPLETED \(1\)/);
 });

@@ -1,4 +1,4 @@
-# Rock Bottom Robotics · Alpha 0.23.0
+# Rock Bottom Robotics · Alpha 0.23.1
 
 A mobile-first autonomous mining game. The asteroid-field main menu lets you Continue an existing company, start a new one with an explicit world seed, or adjust reduced motion. In Mission Control, choose upgrades and fleet composition, then Deploy into a 30-second active shift, upgradeable to 45, 60 and 90 seconds, followed by physical recall and delivery. The asteroid field fills the mission screen: drag to pan, pinch to zoom, tap anywhere to set persistent Mining or Scout focus, and use the contextual Follow Fleet control to return to your drones. Discovered signals can still be inspected and assigned to Escorts. The HUD shows time left and Credits delivered; the 1×/2× button changes simulation speed. Friendly sensors reveal a persistent chart across a 2600 × 2400 world. Rock depletion, charted cells, discovered signals, loose ore and focus pins persist after completed shifts.
 
