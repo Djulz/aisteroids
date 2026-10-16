@@ -8,7 +8,7 @@ import '@fontsource/barlow-condensed/700.css';
 import './style.css';
 import {buy,buyEnvironment,createWorld,freshCompany,settle,step,STEP,lockTarget,clearTarget,canTarget,investigated,setFocus,type Company,type Purchase,type World} from './sim.ts';
 import {render} from './render.ts';
-import {loadCompany,SAVE_KEY} from './storage.ts';
+import {readCompany,SAVE_KEY} from './storage.ts';
 import {renderLobby,type LobbyTab} from './lobby.ts';
 import {changeFleet,fleetError,usedSlots,type FleetType} from './fleet.ts';
 import {POIS,type PoiId} from './knowledge.ts';
@@ -17,23 +17,43 @@ import {mountArtGallery} from './art-gallery.ts';
 import {BIOMES,type EnvironmentUpgrade} from './biomes.ts';
 import {MINERALS,canExtract} from './minerals.ts';
 import {withFocus,hitFocus,validFocusPoint,type FocusRole} from './focus.ts';
-import {parseSeed,randomSeed} from './seed.ts';
+import {parseSeed,nextSeed} from './seed.ts';
 import {finishRecall} from './recall.ts';
+import {mountMenuScene} from './menu.ts';
+import {readMotion,reducedMotion,saveMotion,type MotionChoice} from './preferences.ts';
 
 const app=document.querySelector<HTMLDivElement>('#app')!;
-let company:Company=freshCompany(),storageOK=true;
-try{company=loadCompany(localStorage);}catch{storageOK=false;}
-let world:World=createWorld(company),screen:'workshop'|'mission'='workshop',speed=1,accumulator=0,last=0,debriefShown=false,recallVisible=0,resolving=false,missionToken=0;
+let company:Company,world:World,hasCompany=false,storageOK=true,bootIssue:'corrupt'|'storage'|null=null;
+try{const saved=readCompany(localStorage);hasCompany=!!saved.company;if(saved.company)company=saved.company;storageOK=saved.storageOK;bootIssue=saved.issue;}
+catch{storageOK=false;bootIssue='storage';}
+let screen:'menu'|'workshop'|'mission'='menu',speed=1,accumulator=0,last=0,debriefShown=false,recallVisible=0,resolving=false,missionToken=0;
 let activeTab:LobbyTab='workshop',researchOpen=false,selectedPoi:PoiId|null=null,selectedRock:number|null=null,focusPopup:{world:{x:number;y:number};screen:{x:number;y:number}}|null=null,poiSheetKey='',rockSheetKey='',followVisible=false,returning=false;
 let regionNoticeCount=0,regionNoticeUntil=0;
 try{activeTab=localStorage.getItem('aisteroids-lobby-tab')==='hangar'?'hangar':'workshop';}catch{}
 let canvas:HTMLCanvasElement|null=null,camera=newCamera(),observer:ResizeObserver|null=null;
+let menuCleanup:(()=>void)|null=null,motionChoice:MotionChoice='system';
+try{motionChoice=readMotion(localStorage);}catch{}
+const media=matchMedia('(prefers-reduced-motion: reduce)');
+const isReduced=()=>reducedMotion(motionChoice,media.matches);
+media.addEventListener('change',()=>{if(screen==='menu'&&motionChoice==='system'){
+ menuCleanup?.();menuCleanup=mountMenuScene(app.querySelector<HTMLCanvasElement>('#menu-scene')!,isReduced());
+ const checkbox=app.querySelector<HTMLInputElement>('#reduce-motion');if(checkbox)checkbox.checked=isReduced();
+}});
 const fmt=(n:number)=>n.toLocaleString('en-US');
 function saveCompany(next:Company){try{localStorage.setItem(SAVE_KEY,JSON.stringify(next));storageOK=true;return true;}catch{storageOK=false;return false;}}
 function save(){saveCompany(company);}
+function showMenu(){
+ menuCleanup?.();menuCleanup=null;screen='menu';observer?.disconnect();observer=null;canvas=null;
+ app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.23.0</small></main>`;
+ menuCleanup=mountMenuScene(app.querySelector<HTMLCanvasElement>('#menu-scene')!,isReduced());
+ app.querySelector('#menu-continue')?.addEventListener('click',()=>{if(hasCompany)showWorkshop();});
+ app.querySelector('#menu-new')?.addEventListener('click',openNewGame);
+ app.querySelector('#menu-settings')?.addEventListener('click',openSettings);
+}
 function showWorkshop(){
- screen='workshop';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">AI<span>↗</span></div><h1><em>AI</em>steroid Mining</h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">AIsteroid Mining · Alpha 0.22.0</footer></main>`;
+ if(!hasCompany)return;
+ menuCleanup?.();menuCleanup=null;screen='workshop';observer?.disconnect();observer=null;canvas=null;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">Rock Bottom Robotics · Alpha 0.23.0</footer></main>`;
  for(const tab of ['workshop','hangar'] as const)document.querySelector(`#tab-${tab}`)?.addEventListener('click',()=>{
   activeTab=tab;researchOpen=false;try{localStorage.setItem('aisteroids-lobby-tab',tab);}catch{}showWorkshop();
  });
@@ -68,27 +88,66 @@ function showWorkshop(){
   dialog.querySelector<HTMLButtonElement>('#open-hangar')?.focus();
  });
  document.querySelector('#new-game')?.addEventListener('click',openNewGame);
- document.querySelector('#copy-seed')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(String(company.worldSeed));}catch{const value=document.querySelector<HTMLElement>('#current-seed');if(value){const selection=window.getSelection(),range=document.createRange();range.selectNodeContents(value);selection?.removeAllRanges();selection?.addRange(range);}}});
+ document.querySelector('#main-menu')?.addEventListener('click',showMenu);
+ document.querySelector('#copy-seed')?.addEventListener('click',()=>copySeed(app));
 }
 function openNewGame(){
- if(screen!=='workshop'||document.querySelector('#new-game-dialog'))return;
- let candidate=randomSeed(company.worldSeed,()=>crypto.getRandomValues(new Uint32Array(1))[0]);
+ if((screen!=='workshop'&&screen!=='menu')||document.querySelector('#new-game-dialog'))return;
+ const opener=document.activeElement instanceof HTMLElement?document.activeElement:null;
+ const origin=screen,active=hasCompany?company.worldSeed:null;
+ let candidate=nextSeed(active??7,active,()=>crypto.getRandomValues(new Uint32Array(1))[0]);
  const backdrop=document.createElement('div');backdrop.id='new-game-dialog';backdrop.className='capacity-backdrop';
- backdrop.innerHTML=`<section role="dialog" aria-modal="true" aria-labelledby="new-game-title" class="capacity-dialog"><h2 id="new-game-title">New Game</h2><p>Starting a new game replaces your current company and progress.</p><label for="world-seed">World seed</label><div class="seed-input"><input id="world-seed" inputmode="numeric" autocomplete="off" value="${candidate}" aria-describedby="seed-error"><button id="reroll-seed" type="button" aria-label="Randomize seed">↻</button></div><p id="seed-error" class="form-error" role="alert" hidden>Enter a whole number from 0 to 4294967295.</p><button id="start-new" class="primary">START NEW COMPANY</button><button id="cancel-new">CANCEL</button></section>`;
+ backdrop.innerHTML=`<section role="dialog" aria-modal="true" aria-labelledby="new-game-title" class="capacity-dialog"><h2 id="new-game-title">New Game</h2>${hasCompany?'<p>Starting a new game replaces your current company and progress.</p>':bootIssue==='corrupt'?'<p>The saved company cannot be read. Starting a new game replaces that data.</p>':''}<label for="world-seed">World seed</label><div class="seed-input"><input id="world-seed" inputmode="numeric" autocomplete="off" value="${candidate}" aria-describedby="seed-error"><button id="reroll-seed" type="button" aria-label="Randomize seed">↻</button></div><p id="seed-error" class="form-error" role="alert" hidden>Enter a whole number from 0 to 4294967295.</p><button id="start-new" class="primary">START NEW COMPANY</button><button id="cancel-new">CANCEL</button></section>`;
  app.append(backdrop);
  const field=backdrop.querySelector<HTMLInputElement>('#world-seed')!,error=backdrop.querySelector<HTMLElement>('#seed-error')!;
- const close=()=>{backdrop.remove();document.querySelector<HTMLButtonElement>('#new-game')?.focus();};
- backdrop.querySelector<HTMLButtonElement>('#reroll-seed')!.onclick=()=>{candidate=randomSeed(parseSeed(field.value)??candidate,()=>crypto.getRandomValues(new Uint32Array(1))[0]);field.value=String(candidate);error.hidden=true;};
+ const close=()=>{backdrop.remove();if(opener?.isConnected)opener.focus();};
+ backdrop.querySelector<HTMLButtonElement>('#reroll-seed')!.onclick=()=>{candidate=nextSeed(candidate,active,()=>crypto.getRandomValues(new Uint32Array(1))[0]);field.value=String(candidate);error.hidden=true;};
  backdrop.querySelector<HTMLButtonElement>('#cancel-new')!.onclick=close;
+ let submitting=false;
  backdrop.querySelector<HTMLButtonElement>('#start-new')!.onclick=()=>{
+  if(submitting||screen!==origin||!backdrop.isConnected)return;
   const seed=parseSeed(field.value);if(seed===null){error.hidden=false;field.focus();return;}
+  submitting=true;
   const next=freshCompany(seed);
-  if(!saveCompany(next)){error.hidden=false;error.textContent='Saving failed. Your current company is unchanged.';return;}
-  missionToken++;company=next;world=createWorld(next);researchOpen=false;focusPopup=null;debriefShown=false;close();showWorkshop();
+  if(!saveCompany(next)){submitting=false;error.hidden=false;error.textContent='Saving failed. Your current company is unchanged.';return;}
+  missionToken++;company=next;hasCompany=true;bootIssue=null;researchOpen=false;focusPopup=null;debriefShown=false;backdrop.remove();showWorkshop();
  };
  backdrop.addEventListener('click',e=>{if(e.target===backdrop)close();});
- backdrop.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close();}});
+ trapDialog(backdrop,close);
  field.focus();field.select();
+}
+function trapDialog(backdrop:HTMLElement,close:()=>void){
+ backdrop.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();close();return;}
+  if(e.key!=='Tab')return;
+  const items=Array.from(backdrop.querySelectorAll<HTMLElement>('input,button:not(:disabled)'));
+  if(!items.length)return;
+  if(e.shiftKey&&document.activeElement===items[0]){e.preventDefault();items.at(-1)!.focus();}
+  else if(!e.shiftKey&&document.activeElement===items.at(-1)){e.preventDefault();items[0].focus();}
+ });
+}
+function openSettings(){
+ if(screen!=='menu'||document.querySelector('#settings-dialog'))return;
+ const opener=document.activeElement instanceof HTMLElement?document.activeElement:null;
+ const backdrop=document.createElement('div');backdrop.id='settings-dialog';backdrop.className='capacity-backdrop';
+ backdrop.innerHTML=`<section role="dialog" aria-modal="true" aria-labelledby="settings-title" class="capacity-dialog"><h2 id="settings-title">Settings</h2><label class="motion-control"><input type="checkbox" id="reduce-motion" ${isReduced()?'checked':''}> Reduce motion</label><p class="settings-note">${motionChoice==='system'?'Using your device preference.':'Using your chosen preference.'}</p><p id="settings-error" class="form-error" role="status" hidden>Preference could not be saved; it works for this session.</p>${hasCompany?`<div class="settings-seed">World seed: <span id="current-seed">${company.worldSeed}</span> <button id="settings-copy-seed" aria-label="Copy current world seed">COPY</button></div>`:''}<button id="close-settings">BACK</button></section>`;
+ app.append(backdrop);
+ const close=()=>{backdrop.remove();if(opener?.isConnected)opener.focus();};
+ const checkbox=backdrop.querySelector<HTMLInputElement>('#reduce-motion')!;
+ checkbox.onchange=()=>{
+  motionChoice=checkbox.checked?'reduce':'full';
+  backdrop.querySelector<HTMLElement>('.settings-note')!.textContent='Using your chosen preference.';
+  backdrop.querySelector<HTMLElement>('#settings-error')!.hidden=saveMotion(localStorage,motionChoice);
+  menuCleanup?.();menuCleanup=mountMenuScene(app.querySelector<HTMLCanvasElement>('#menu-scene')!,isReduced());
+ };
+ backdrop.querySelector('#settings-copy-seed')?.addEventListener('click',()=>copySeed(backdrop));
+ backdrop.querySelector('#close-settings')!.addEventListener('click',close);
+ backdrop.addEventListener('click',e=>{if(e.target===backdrop)close();});
+ trapDialog(backdrop,close);checkbox.focus();
+}
+async function copySeed(scope:ParentNode){
+ try{await navigator.clipboard.writeText(String(company.worldSeed));}
+ catch{const value=scope.querySelector<HTMLElement>('#current-seed');if(value){const selection=window.getSelection(),range=document.createRange();range.selectNodeContents(value);selection?.removeAllRanges();selection?.addRange(range);}}
 }
 function changeFocus(role:FocusRole,p:{x:number;y:number}|null){
  const next={...company,focuses:withFocus(company.focuses,role,p)};
@@ -111,7 +170,7 @@ function openFocus(screenPoint:{x:number;y:number},point:{x:number;y:number}){
  updateHUD();
 }
 function launch(){
- world=createWorld(company,company.worldSeed);missionToken++;screen='mission';speed=1;accumulator=0;recallVisible=0;resolving=false;selectedPoi=null;selectedRock=null;focusPopup=null;poiSheetKey='';rockSheetKey='';regionNoticeCount=0;regionNoticeUntil=0;debriefShown=false;followVisible=false;returning=false;
+ world=createWorld(company,company.worldSeed);missionToken++;screen='mission';speed=1;accumulator=0;last=0;recallVisible=0;resolving=false;selectedPoi=null;selectedRock=null;focusPopup=null;poiSheetKey='';rockSheetKey='';regionNoticeCount=0;regionNoticeUntil=0;debriefShown=false;followVisible=false;returning=false;
  camera=newCamera();camera.x=world.base.x;camera.y=world.base.y;
  app.innerHTML=`<main class="mission"><canvas id="field" aria-label="Asteroid field. Drag to pan, pinch to zoom, tap anywhere to set Mining or Scout focus."></canvas><div class="mission-hud"><div><span>TIME LEFT</span><b id="timer">00:30</b></div><div class="ore-count"><span>DELIVERED CREDITS</span><b>◆ <span id="delivered">0</span></b></div></div><div id="region-notice" class="region-notice" hidden></div><div class="poi-sheet" id="poi-sheet" hidden></div><div class="poi-sheet" id="rock-sheet" hidden></div><div class="focus-popup" id="focus-popup" hidden></div><button id="follow" class="follow-control" hidden>◎ FOLLOW FLEET</button><button id="speed" class="speed-control" aria-label="Speed 1 times. Toggle to 2 times">1×</button></main>`;
  const field=document.querySelector<HTMLCanvasElement>('#field')!;canvas=field;resize();
@@ -132,6 +191,7 @@ function launch(){
  document.querySelector('#follow')!.addEventListener('click',()=>{camera.follow=true;returning=true;selectedPoi=null;selectedRock=null;focusPopup=null;dismissFocus();updateHUD();});
  document.querySelector('#speed')!.addEventListener('click',()=>{speed=speed===1?2:1;const b=document.querySelector<HTMLButtonElement>('#speed')!;b.textContent=`${speed}×`;b.setAttribute('aria-label',`Speed ${speed} times. Toggle to ${speed===1?2:1} times`);});
  updateHUD();
+ requestAnimationFrame(frame);
 }
 function resize(){if(!canvas||screen!=='mission')return;const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return;resizeCamera(camera,r.width,r.height);const dpr=Math.min(devicePixelRatio||1,2);const width=Math.round(r.width*dpr),height=Math.round(r.height*dpr);if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}}
 window.addEventListener('resize',resize);
@@ -205,7 +265,7 @@ function frame(time:number){const raw=last?Math.max(0,(time-last)/1000):0,dt=Mat
   }
   if(canvas&&!resolving&&!debriefShown){followCamera(camera,world,dt,returning);const target=fleetCenter(world);if(returning&&Math.hypot(camera.x-target.x,camera.y-target.y)<8)returning=false;render(canvas,world,-1,camera);hudTime+=dt;if(hudTime>.1){updateHUD();hudTime=0;}}
  }
- requestAnimationFrame(frame);
+ if(screen==='mission'&&!debriefShown)requestAnimationFrame(frame);
 }
 if(new URLSearchParams(location.search).has('assetGallery'))mountArtGallery(app);
-else {showWorkshop();requestAnimationFrame(frame);}
+else showMenu();

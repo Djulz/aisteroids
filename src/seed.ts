@@ -9,3 +9,12 @@ export function randomSeed(previous:number,draw:()=>number):number{
  for(let i=0;i<4;i++){const value=draw();if(Number.isSafeInteger(value)&&value>=0&&value<=MAX_SEED&&value!==previous)return value;}
  return previous===MAX_SEED?0:previous+1;
 }
+export function nextSeed(previous:number,active:number|null,draw:()=>number):number{
+ for(let i=0;i<6;i++){
+  const value=draw();
+  if(Number.isSafeInteger(value)&&value>=0&&value<=MAX_SEED&&value!==previous&&value!==active)return value;
+ }
+ let value=randomSeed(previous,()=>previous);
+ if(value===active)value=value===MAX_SEED?0:value+1;
+ return value;
+}

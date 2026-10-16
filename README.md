@@ -1,6 +1,6 @@
-# AIsteroid Mining · Alpha 0.22.0
+# Rock Bottom Robotics · Alpha 0.23.0
 
-A mobile-first autonomous mining game. Choose upgrades and fleet composition, then Deploy into a 30-second active shift, upgradeable to 45, 60 and 90 seconds, followed by physical recall and delivery. The asteroid field fills the mission screen: drag to pan, pinch to zoom, tap anywhere to set persistent Mining or Scout focus, and use the contextual Follow Fleet control to return to your drones. Discovered signals can still be inspected and assigned to Escorts. The HUD shows time left and Credits delivered; the 1×/2× button changes simulation speed. Friendly sensors reveal a persistent chart across a 2600 × 2400 world. Rock depletion, charted cells, discovered signals, loose ore and focus pins persist after completed shifts.
+A mobile-first autonomous mining game. The asteroid-field main menu lets you Continue an existing company, start a new one with an explicit world seed, or adjust reduced motion. In Mission Control, choose upgrades and fleet composition, then Deploy into a 30-second active shift, upgradeable to 45, 60 and 90 seconds, followed by physical recall and delivery. The asteroid field fills the mission screen: drag to pan, pinch to zoom, tap anywhere to set persistent Mining or Scout focus, and use the contextual Follow Fleet control to return to your drones. Discovered signals can still be inspected and assigned to Escorts. The HUD shows time left and Credits delivered; the 1×/2× button changes simulation speed. Friendly sensors reveal a persistent chart across a 2600 × 2400 world. Rock depletion, charted cells, discovered signals, loose ore and focus pins persist after completed shifts.
 
 ## Run
 
@@ -57,7 +57,7 @@ The nine one-time Tech sources fund the nine total node costs; Credits and Tech 
 
 ## Saves
 
-Pass L stores Mining and Scout focus pins in v14. Valid v13 and historical v7–v12 companies migrate without a reset; older companies begin with no pins. The v11 104 × 96 chart is copied unchanged. Credits, rounds, fleet, spent/earned Tech, investigated sites, doctrine, infrastructure, endurance, depleted rocks, loose ore and typed minerals persist. Legacy rock reserves and old Ferrite fragments retain their migration behavior. Live Escort targeting remains temporary. New Game only replaces the company after a valid seed and confirmed, successful save; unrelated browser storage is untouched.
+Pass L stores Mining and Scout focus pins in v14. Valid v13 and historical v7–v12 companies migrate without a reset; older companies begin with no pins. The v11 104 × 96 chart is copied unchanged. Credits, rounds, fleet, spent/earned Tech, investigated sites, doctrine, infrastructure, endurance, depleted rocks, loose ore and typed minerals persist. Legacy rock reserves and old Ferrite fragments retain their migration behavior. Live Escort targeting remains temporary. Pass M checks for a valid save without creating one at boot. Continue enters the same company; New Game only replaces it after a valid seed and confirmed, successful save. Reduced-motion preference and unrelated browser storage survive New Game. See [Pass M notes](docs/pass-m-main-menu.md).
 
 ## Validation and balance
 

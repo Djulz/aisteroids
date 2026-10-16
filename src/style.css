@@ -19,3 +19,29 @@
 
 .company-tools{display:flex;align-items:center;gap:8px;margin-top:12px;color:#9bb6b6;font:11px monospace}.company-tools span{user-select:text}.company-tools button{min-height:44px;padding:0 9px;background:none;border:1px solid #365969;color:#b9d4d0;font:600 13px 'Barlow Condensed',sans-serif}.company-tools #new-game{margin-left:auto}.seed-input{display:flex;gap:8px;margin:7px 0 10px}.seed-input input{min-width:0;flex:1;min-height:44px;padding:8px;border:1px solid #628087;background:#071b26;color:#f4e7c9;font:16px monospace}.seed-input button{width:48px!important;flex:none;margin:0!important;font-size:24px!important}.capacity-dialog label{font:12px monospace;color:#b8cfcc}.capacity-dialog #seed-error{margin:4px 0 10px;color:#ffc087;font-size:12px}
 .focus-popup{position:absolute;z-index:5;width:218px;padding:6px;background:#102932f5;border:1px solid #6eada7;box-shadow:0 8px 25px #0009}.focus-actions{display:flex;gap:5px}.focus-popup button{min-height:48px;border:1px solid #4b797e;background:#173640;color:#e7efde;font:600 13px 'Barlow Condensed',sans-serif}.focus-actions button{flex:1;display:grid;place-items:center}.focus-glyph{width:17px;height:17px;display:block;position:relative;color:#f5b743}.focus-glyph.mining:before,.focus-glyph.mining:after{content:'';position:absolute;top:7px;left:1px;width:15px;border-top:2px solid currentColor;transform:rotate(45deg)}.focus-glyph.mining:after{transform:rotate(-45deg)}.focus-glyph.scout{border:2px solid #8ee3d3;border-radius:50%}.focus-glyph.scout:after{content:'';position:absolute;inset:4px;border:1px solid #8ee3d3;border-radius:50%}.focus-popup #inspect-focus{width:100%;margin-top:5px;color:#adcfca;font-size:11px}.recall-error{position:absolute;z-index:5;left:12px;right:12px;bottom:86px;max-width:350px;padding:12px;background:#102932;border:1px solid #d49d65}.recall-error p{margin:0 0 8px}.recall-error button{min-height:44px;background:#f5b743;color:#07121b;border:0;padding:0 12px}
+
+/* Pass M: presentation-only asteroid field and reachable, semantic menu. */
+.title-screen{position:relative;isolation:isolate;min-height:100dvh;overflow:hidden;background:#071722}
+#menu-scene{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.title-content{position:relative;z-index:1;min-height:100dvh;width:min(100%,560px);margin:auto;display:flex;flex-direction:column;align-items:center;padding:max(68px,env(safe-area-inset-top)) 20px max(60px,env(safe-area-inset-bottom))}
+.title-content h1{font:700 clamp(49px,13vw,77px)/.91 'Barlow Condensed',sans-serif;letter-spacing:.012em;text-align:center;color:#f4ebd8;text-shadow:0 3px 16px #041018;margin:clamp(35px,8vh,105px) 0 0;max-width:520px}
+.title-content h1 span{display:block;color:var(--gold);font-size:.78em;letter-spacing:.14em;margin-top:8px;padding-left:.14em}
+.title-actions{width:min(100%,360px);margin:auto 0 clamp(20px,5vh,70px);display:grid;gap:14px}
+.menu-button{width:100%;min-height:66px;padding:10px 18px;border:2px solid var(--gold);background:#0d2530ef;color:#f2ecdd;clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px),0 12px);font:700 clamp(27px,7vw,33px)/1 'Barlow Condensed',sans-serif;letter-spacing:.07em;box-shadow:inset 0 0 0 1px #071722}
+.menu-button.solid{background:var(--gold);color:#0a1a24;box-shadow:inset 0 0 0 2px #f8c76a}
+.menu-button.quiet{border-color:#5e8290;background:#0a2531e8}
+.menu-button:hover{filter:brightness(1.1)}
+.menu-button:focus-visible{outline:3px solid #e7f6ee;outline-offset:4px}
+.menu-warning{margin:1px 0 0;padding:9px 11px;background:#0d2630ed;border:1px solid #ba8b58;color:#ffe0ae;font-size:12px;line-height:1.4}
+.title-version{position:absolute;z-index:1;right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));color:#698591;font:9px monospace;letter-spacing:.08em}
+.company-tools{flex-wrap:wrap}.company-tools #new-game{margin-left:auto}
+.company-tools #main-menu{color:#8baeb7}
+.capacity-backdrop{align-items:safe center}
+.capacity-dialog{max-height:calc(100dvh - 40px);overflow-y:auto}
+.motion-control{display:flex;align-items:center;gap:12px;min-height:54px;color:#efe9da!important;font:600 18px 'Barlow Condensed',sans-serif!important}
+.motion-control input{width:22px;height:22px;accent-color:#f5b743}
+.capacity-dialog .settings-note{font-size:12px;color:#a5bbc0;margin:0 0 16px}
+.settings-seed{border-top:1px solid var(--line);padding:12px 0;margin:6px 0;font:12px monospace;color:#a5bbc0;user-select:text}
+.settings-seed button{width:auto;margin-left:8px;padding:0 10px;font-size:12px}
+@media(max-height:620px){.title-content{padding-top:max(20px,env(safe-area-inset-top));padding-bottom:28px}.title-content h1{margin-top:8px;font-size:clamp(38px,9vh,58px)}.title-actions{margin-top:35px;margin-bottom:0;gap:8px}.menu-button{min-height:48px;font-size:24px}}
+@media(max-height:380px) and (orientation:landscape){.title-screen{overflow-y:auto}.title-content{min-height:380px}}
