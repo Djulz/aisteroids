@@ -1,6 +1,6 @@
 {
   "name": "aisteroid-mining",
-  "version": "0.24.0",
+  "version": "0.24.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,7 +13,8 @@
     "frontier": "node --experimental-strip-types scripts/pass-f-frontier.ts",
     "biomes": "node --experimental-strip-types scripts/pass-i-biomes.ts",
     "progression": "node --experimental-strip-types scripts/pass-k-progression.ts",
-    "performance": "node --experimental-strip-types scripts/performance.ts"
+    "performance": "node --experimental-strip-types scripts/performance.ts",
+    "dispatch": "node --experimental-strip-types scripts/late-game-dispatch.ts"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
