@@ -1,11 +1,11 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {newCamera,screenToWorld,zoomAt,showFollow,followCamera,resizeCamera} from '../src/camera.ts';
-import {MapGestures} from '../src/gestures.ts';
-import {createWorld,freshCompany,buy,cost} from '../src/sim.ts';
-import {renderLobby} from '../src/lobby.ts';
-import {awardTech,research} from '../src/research.ts';
-import {parseSave} from '../src/storage.ts';
+import {newCamera,screenToWorld,zoomAt,showFollow,followCamera,resizeCamera} from '../../src/camera.ts';
+import {MapGestures} from '../../src/gestures.ts';
+import {createWorld,freshCompany,buy,cost} from '../../src/sim.ts';
+import {renderLobby} from '../../src/lobby.ts';
+import {awardTech,research} from '../../src/research.ts';
+import {parseSave} from '../../src/storage.ts';
 
 const close=(a:number,b:number)=>assert.ok(Math.abs(a-b)<.001,`${a} != ${b}`);
 test('pinch keeps the world point under its moving midpoint and handles finger lifting',()=>{

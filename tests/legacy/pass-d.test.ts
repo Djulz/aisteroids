@@ -1,9 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {updateKnowledge,createWorld,freshCompany,step,STEP,ORE_PICKUP_DELAY,ROUND_TIME,settle,type World} from '../src/sim.ts';
-import {changeFleet} from '../src/fleet.ts';
-import {awardTech,research} from '../src/research.ts';
-import {loadCompany,SAVE_KEY,type SaveStore} from '../src/storage.ts';
+import {updateKnowledge,createWorld,freshCompany,step,STEP,ORE_PICKUP_DELAY,ROUND_TIME,settle,type World} from '../../src/sim.ts';
+import {changeFleet} from '../../src/fleet.ts';
+import {awardTech,research} from '../../src/research.ts';
+import {loadCompany,SAVE_KEY,type SaveStore} from '../../src/storage.ts';
 
 function fleet(miners:number,hauler=false){
  let c={...freshCompany(),fleetCapacity:miners+(hauler?1:0)};

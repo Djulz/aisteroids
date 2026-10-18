@@ -1,9 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {ROCK_PALETTES,rockPalette,rockDetails,mineralColor,rockArtTier} from '../src/art.ts';
-import {BIOMES,biomeAt} from '../src/biomes.ts';
-import {newTrailState,updateTrails,TRAIL_CAP,TRAIL_LIFE,type TrailSource} from '../src/trails.ts';
-import {createWorld,freshCompany,step} from '../src/sim.ts';
+import {ROCK_PALETTES,rockPalette,rockDetails,mineralColor,rockArtTier} from '../../src/art.ts';
+import {BIOMES,biomeAt} from '../../src/biomes.ts';
+import {newTrailState,updateTrails,TRAIL_CAP,TRAIL_LIFE,type TrailSource} from '../../src/trails.ts';
+import {createWorld,freshCompany,step} from '../../src/sim.ts';
 
 const locations={home_belt:[200,550],scrap_fields:[1000,700],contested:[1770,675],ion_storm:[1200,1900],dead_zone:[2440,1950]} as const;
 test('all real region positions choose distinct, dark stone palettes with neutral Home Belt intact',()=>{

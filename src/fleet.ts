@@ -13,7 +13,7 @@ export function fleetError(c:FleetOwner):string|undefined{
  if((Object.keys(f) as FleetType[]).some(k=>!['impactMiner','laserMiner','escort','hauler','scout','miningRig'].includes(k)))return 'Unknown drone type.';
  for(const type of ['impactMiner','laserMiner','escort','hauler','scout','miningRig'] as const){
   if(!Number.isInteger(f[type])||f[type]<0)return 'Invalid drone count.';
-  if(f[type]&&!typeAvailable(c,type))return `${type==='laserMiner'?'Laser Miner':type==='escort'?'Escort':type==='hauler'?'Hauler':type} is locked.`;
+  if(f[type]&&!typeAvailable(c,type))return `${type==='laserMiner'?'Laser Miner':type==='escort'?'Fighter':type==='hauler'?'Hauler':type} is locked.`;
  }
  if(!f.impactMiner&&!f.laserMiner)return 'At least one Miner is required to deploy.';
  if(usedSlots(f)>c.fleetCapacity)return 'Fleet exceeds purchased drone slots.';

@@ -1,13 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {emptyFocuses,hitFocus,withFocus} from '../src/focus.ts';
-import {freshCompany,createWorld,setFocus,settle,step,STEP} from '../src/sim.ts';
-import {parseSave,SAVE_KEY,loadCompany,type SaveStore} from '../src/storage.ts';
-import {parseSeed,randomSeed,MAX_SEED} from '../src/seed.ts';
-import {resolveRecall} from '../src/recall.ts';
-import {workRate} from '../src/work.ts';
-import {mineralMotif} from '../src/art.ts';
-import {mineralIds} from '../src/minerals.ts';
+import {emptyFocuses,hitFocus,withFocus} from '../../src/focus.ts';
+import {freshCompany,createWorld,setFocus,settle,step,STEP} from '../../src/sim.ts';
+import {parseSave,SAVE_KEY,loadCompany,type SaveStore} from '../../src/storage.ts';
+import {parseSeed,randomSeed,MAX_SEED} from '../../src/seed.ts';
+import {resolveRecall} from '../../src/recall.ts';
+import {workRate} from '../../src/work.ts';
+import {mineralMotif} from '../../src/art.ts';
+import {mineralIds} from '../../src/minerals.ts';
 
 test('expected delivered value combines grade, capacity, time and risk without a rarity cap',()=>{
  const base={credits:1,pieces:2,travel:100,returnDistance:150,actionSeconds:5,risk:0};

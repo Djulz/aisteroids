@@ -1,9 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buy,cost,freshCompany,createWorld,type Company} from '../src/sim.ts';
-import {changeFleet,fleetError,usedSlots} from '../src/fleet.ts';
-import {renderLobby,type LobbyView} from '../src/lobby.ts';
-import {awardTech,research} from '../src/research.ts';
+import {buy,cost,freshCompany,createWorld,type Company} from '../../src/sim.ts';
+import {changeFleet,fleetError,usedSlots} from '../../src/fleet.ts';
+import {renderLobby,type LobbyView} from '../../src/lobby.ts';
+import {awardTech,research} from '../../src/research.ts';
 const view:LobbyView={tab:'hangar',doctrineOpen:false,planOpen:false,error:'',storageOK:true};
 const rich=(c:Company)=>({...c,credits:500,progress:{...c.progress,rivalSeen:true,outpostSurveyed:true}});
 

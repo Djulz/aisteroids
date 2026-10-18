@@ -1,8 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {updateKnowledge,createWorld,freshCompany,step,settle,STEP,ORE_PICKUP_DELAY,FAR,dockingSpots,type Company,type World} from '../src/sim.ts';
-import {parseSave,loadCompany,SAVE_KEY,type SaveStore} from '../src/storage.ts';
-import {changeFleet} from '../src/fleet.ts';
+import {updateKnowledge,createWorld,freshCompany,step,settle,STEP,ORE_PICKUP_DELAY,FAR,dockingSpots,type Company,type World} from '../../src/sim.ts';
+import {parseSave,loadCompany,SAVE_KEY,type SaveStore} from '../../src/storage.ts';
+import {changeFleet} from '../../src/fleet.ts';
 
 function run(w:World,limit=12000){for(let i=0;i<limit&&w.phase!=='done';i++)step(w,STEP);return w;}
 function impact(w:World,hp?:number){

@@ -1,10 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buy,cost,createWorld,freshCompany,missionDuration,settle,step,STEP,W,H,FAR,ENDURANCE_DURATIONS,type World} from '../src/sim.ts';
-import {blankMap,CELLS,COLS,decodeMap,encodeMap,hasCell,mapCount,POIS,setCell} from '../src/knowledge.ts';
-import {loadCompany,parseSave,SAVE_KEY,type SaveStore} from '../src/storage.ts';
-import {render} from '../src/render.ts';
-import {newCamera} from '../src/camera.ts';
+import {buy,cost,createWorld,freshCompany,missionDuration,settle,step,STEP,W,H,FAR,ENDURANCE_DURATIONS,type World} from '../../src/sim.ts';
+import {blankMap,CELLS,COLS,decodeMap,encodeMap,hasCell,mapCount,POIS,setCell} from '../../src/knowledge.ts';
+import {loadCompany,parseSave,SAVE_KEY,type SaveStore} from '../../src/storage.ts';
+import {render} from '../../src/render.ts';
+import {newCamera} from '../../src/camera.ts';
 
 function run(w:World){for(let i=0;i<18000&&w.phase!=='done';i++)step(w,STEP);assert.equal(w.phase,'done');return w;}
 const scouting=()=>{const c=freshCompany();return {...c,fleetCapacity:2,fleetComposition:{...c.fleetComposition,scout:1}};};

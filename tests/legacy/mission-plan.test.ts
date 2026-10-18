@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorld,freshCompany} from '../src/sim.ts';
-import {renderLobby,type LobbyView} from '../src/lobby.ts';
+import {createWorld,freshCompany} from '../../src/sim.ts';
+import {renderLobby,type LobbyView} from '../../src/lobby.ts';
 const view:LobbyView={tab:'hangar',error:'',storageOK:true};
 
 test('Deploy omits orders, doctrine and universal launch-site selector',()=>{

@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorld,freshCompany,planMinerWork,step,STEP,type Company,type World} from '../src/sim.ts';
-import {clearSegment} from '../src/navigation.ts';
+import {createWorld,freshCompany,planMinerWork,step,STEP,type Company,type World} from '../../src/sim.ts';
+import {clearSegment} from '../../src/navigation.ts';
 
 function fleet(slots=1):Company{
  return {...freshCompany(7),fleetCapacity:slots,enduranceLevel:3,

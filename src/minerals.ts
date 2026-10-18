@@ -22,8 +22,8 @@ const distribution:Record<BiomeId,readonly MineralId[]>={
 // hash, independent of simulation RNG and depletion. No valuable deposit is
 // placed in a station's harbor merely because its biome extends there.
 export function mineralForRock(id:number,x:number,y:number,seed:number):MineralId{
- const region=biomeAt(x,y),choices=distribution[region];
- if(region==='home_belt'||safeHarbor({x,y},true))return 'ferrite';
+ const region=biomeAt(x,y,seed),choices=distribution[region];
+ if(region==='home_belt'||safeHarbor({x,y},true,seed))return 'ferrite';
  let hash=(Math.imul(id+1,0x9e3779b1)^(seed>>>0))>>>0;
  hash^=hash>>>16;hash=Math.imul(hash,0x7feb352d)>>>0;hash^=hash>>>15;
  return choices[(hash>>>0)%choices.length];

@@ -6,9 +6,9 @@ import {ENVIRONMENT_UPGRADES,environmentIds} from './biomes.ts';
 export type LobbyTab='workshop'|'hangar'|'research';
 export type LobbyView={tab:LobbyTab;researchOpen?:boolean;error:string;storageOK:boolean};
 const fmt=(n:number)=>n.toLocaleString('en-US');
-const labels:Record<FleetType,string>={impactMiner:'Impact Miner',laserMiner:'Laser Miner',escort:'Escort',hauler:'Hauler',scout:'Scout',miningRig:'Mobile Mining Rig'};
+const labels:Record<FleetType,string>={impactMiner:'Impact Miner',laserMiner:'Laser Miner',escort:'Fighter',hauler:'Hauler',scout:'Scout',miningRig:'Mobile Mining Rig'};
 const icons:Record<FleetType,string>={impactMiner:'⬡',laserMiner:'↗',escort:'✥',hauler:'▣',scout:'◇',miningRig:'▤'};
-const shortEffects:Record<TechnologyId,string>={laserMining:'Unlock ranged Laser Miners',impactRecovery:'Ram again sooner · 1.0 → 0.65 s',rapidCooling:'Laser fires faster · 2.0 → 1.6 s',escortProgram:'Unlock Escorts',threatTracking:'Escorts protect miners more effectively',haulerOperation:'Unlock Haulers',expandedHauler:'Hauler capacity · 10 → 14'};
+const shortEffects:Record<TechnologyId,string>={laserMining:'Unlock ranged Laser Miners',impactRecovery:'Ram again sooner · 1.0 → 0.65 s',rapidCooling:'Laser fires faster · 2.0 → 1.6 s',escortProgram:'Unlock Fighters',threatTracking:'Fighters protect miners more effectively',haulerOperation:'Unlock Haulers',expandedHauler:'Hauler capacity · 10 → 14'};
 function workshop(c:Company){
  const items:Purchase[]=['fleetSlot','endurance','highPowerOptics','resonanceMining','turret','outpost'];
  const available=items.filter(item=>unlocked(c,item)&&!(item==='fleetSlot'?c.fleetCapacity>=MAX_FLEET_CAPACITY:item==='endurance'?c.enduranceLevel>=3:item==='highPowerOptics'||item==='resonanceMining'?c.extractionUpgrades.includes(item):c[item]));
@@ -45,7 +45,7 @@ function researchPanel(c:Company){
 }
 export function renderLobby(c:Company,view:LobbyView){
  const slots=usedSlots(c.fleetComposition),error=fleetError(c);
- const objective=!c.progress.farSurveyed?'Reach the Far Belt':!c.progress.richSampled?'Deliver a valuable mineral sample':!c.progress.rivalSeen?'Find a rival scout':!c.progress.outpostSurveyed?'Survey the Outer Reach':!c.outpost?'Build the Outer Outpost':'Explore the frontier';
+ const objective=!c.progress.farSurveyed?'Reach the Scrap Fields':!c.progress.richSampled?'Deliver a valuable mineral sample':!c.progress.rivalSeen?'Make contact in Scrap Fields':!c.progress.outpostSurveyed?'Survey the Outer Reach':!c.outpost?'Build the Outer Outpost':'Explore the frontier';
  const researchTab=view.tab==='research'||view.researchOpen===true;
  return `<div class="lobby"><div class="wallet"><strong><i>◆</i> ${fmt(c.credits)} <span>Credits</span></strong><p>NEXT · ${objective}</p></div>
  <nav class="lobby-tabs" aria-label="Mission Control"><button id="tab-workshop" aria-current="${view.tab==='workshop'&&!researchTab?'page':'false'}"><span class="tab-name">WORKSHOP</span><span class="tab-sub">◆ ${fmt(c.credits)}</span></button><button id="tab-hangar" aria-current="${view.tab==='hangar'&&!researchTab?'page':'false'}"><span class="tab-name">HANGAR</span><span class="tab-sub"><small>${slots}/${c.fleetCapacity}</small>${c.fleetCapacity>slots?`<span class="slot-badge" aria-label="${c.fleetCapacity-slots} unused slots">${c.fleetCapacity-slots}</span>`:''}</span></button><button id="tab-research" aria-current="${researchTab?'page':'false'}"><span class="tab-name">RESEARCH</span><span class="tab-sub">◈ ${c.techPointsAvailable}</span></button></nav>

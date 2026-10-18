@@ -1,3 +1,3 @@
-export const W=2600,H=2400;
-export const HOME={x:200,y:550},FAR={x:1900,y:1620};
+export const W=6000,H=5200;
+export const HOME={x:1250,y:2700},FAR={x:3360,y:2760};
 export const CELL=25,COLS=Math.ceil(W/CELL),ROWS=Math.ceil(H/CELL),CELLS=COLS*ROWS,MAP_BYTES=Math.ceil(CELLS/8);

@@ -1,6 +1,6 @@
 import {type Camera,newCamera} from './camera.ts';
-import { HOME, FAR, W, H, ORE_PICKUP_DELAY, visibleAt, exploredAt, investigated, type World } from './sim.ts';
-import {POIS,CELL,COLS,ROWS} from './knowledge.ts';
+import { HOME, W, H, ORE_PICKUP_DELAY, visibleAt, exploredAt, investigated, type World } from './sim.ts';
+import {CELL,COLS,ROWS} from './knowledge.ts';
 import {drawShip,drawMother,drawOutpost,drawTurret,drawRock,rockArtTier,drawPoi,rockPalette,drawMineral,type RockPalette} from './art.ts';
 import {BIOMES,biomeAt} from './biomes.ts';
 import {newTrailState,updateTrails,drawTrails,type TrailSource,type TrailState} from './trails.ts';
@@ -18,29 +18,29 @@ function activeTrails(w:World):TrailSource[]{
  for(const e of w.enemies)if(e.hp>0&&visibleAt(w,e))sources.push({id:`enemy:${e.id}`,kind:'enemyScout',x:e.x,y:e.y,angle:Math.hypot(e.vx,e.vy)>.01?Math.atan2(e.vy,e.vx):-Math.PI/2});
  return sources;
 }
-let biomeCanvas:HTMLCanvasElement|undefined;
-function biomeImage(){
- if(biomeCanvas)return biomeCanvas;
- const image=document.createElement('canvas');image.width=130;image.height=120;
+let biomeCanvas:HTMLCanvasElement|undefined,biomeSeed=-1;
+function biomeImage(seed:number){
+ if(biomeCanvas&&biomeSeed===seed)return biomeCanvas;
+ const image=document.createElement('canvas');image.width=200;image.height=174;
  const ctx=image.getContext('2d')!;
  for(let y=0;y<image.height;y++)for(let x=0;x<image.width;x++){
   const px=(x+.5)*W/image.width,py=(y+.5)*H/image.height,color=[0,0,0];
   // A one-time spatial filter gives organic ~100-unit transitions without
   // a per-frame pixel pass or biome-sized square seams at Fog cells.
   for(const ox of [-50,0,50])for(const oy of [-50,0,50]){
-   const sample=BIOMES[biomeAt(px+ox,py+oy)].color;
+   const sample=BIOMES[biomeAt(px+ox,py+oy,seed)].color;
    for(let channel=0;channel<3;channel++)color[channel]+=sample[channel]/9;
   }
   ctx.fillStyle=`rgb(${color.map(Math.round).join(',')})`;ctx.fillRect(x,y,1,1);
  }
- biomeCanvas=image;return image;
+ biomeCanvas=image;biomeSeed=seed;return image;
 }
 const fogCache=new WeakMap<World,{revision:number;bits:Uint8Array;canvas:HTMLCanvasElement}>();
 function fogImage(w:World){
  let cached=fogCache.get(w);
  if(cached?.revision===w.mapRevision)return cached.canvas;
- if(!cached){const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
-  const c=canvas.getContext('2d')!;c.fillStyle='#050d16';c.fillRect(0,0,W,H);
+ if(!cached){const canvas=document.createElement('canvas');canvas.width=COLS;canvas.height=ROWS;
+  const c=canvas.getContext('2d')!;c.fillStyle='#050d16';c.fillRect(0,0,COLS,ROWS);
   cached={revision:-1,bits:new Uint8Array(w.explored.length),canvas};fogCache.set(w,cached);
  }
  const c=cached.canvas.getContext('2d')!;
@@ -48,7 +48,7 @@ function fogImage(w:World){
   const added=w.explored[i]&~cached.bits[i];if(!added)continue;
   for(let bit=0;bit<8;bit++)if(added&(1<<bit)){
    const cell=i*8+bit,col=cell%COLS,row=Math.floor(cell/COLS);
-   if(row<ROWS)c.clearRect(col*CELL,row*CELL,CELL,CELL);
+   if(row<ROWS)c.clearRect(col,row,1,1);
   }
   cached.bits[i]=w.explored[i];
  }
@@ -60,10 +60,10 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  const left=Math.max(0,Math.floor(camera.x-VIEW_W/(2*camera.zoom)-30)),top=Math.max(0,Math.floor(camera.y-VIEW_H/(2*camera.zoom)-30));
  const right=Math.min(W,Math.ceil(camera.x+VIEW_W/(2*camera.zoom)+30)),bottom=Math.min(H,Math.ceil(camera.y+VIEW_H/(2*camera.zoom)+30));
  const bw=Math.max(0,right-left),bh=Math.max(0,bottom-top);
- if(bw&&bh){const image=biomeImage();c.imageSmoothingEnabled=true;c.drawImage(image,left*image.width/W,top*image.height/H,bw*image.width/W,bh*image.height/H,left,top,bw,bh);}
+ if(bw&&bh){const image=biomeImage(w.definition.seed);c.imageSmoothingEnabled=true;c.drawImage(image,left*image.width/W,top*image.height/H,bw*image.width/W,bh*image.height/H,left,top,bw,bh);}
  // Inert, sparse region texture sits below Fog and every game object.
  for(let i=0;i<165;i++){
-  const x=(i*947+131)%W,y=(i*631+47)%H,id=biomeAt(x,y);
+  const x=(i*947+131)%W,y=(i*631+47)%H,id=biomeAt(x,y,w.definition.seed);
   if(id==='scrap_fields'){c.strokeStyle='#978f6640';c.beginPath();c.moveTo(x-3,y+1);c.lineTo(x+3,y-1);c.stroke();}
   else if(id==='contested'){c.fillStyle='#9e626735';c.fillRect(x,y,2,2);}
   else if(id==='ion_storm'){c.strokeStyle='#707aab38';c.beginPath();c.moveTo(x-6,y+3);c.lineTo(x+5,y-2);c.stroke();}
@@ -72,20 +72,20 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  c.strokeStyle='#26404d35';c.lineWidth=.6; c.beginPath(); for(let x=0;x<W;x+=25){c.moveTo(x,0);c.lineTo(x,H);}for(let y=0;y<H;y+=25){c.moveTo(0,y);c.lineTo(W,y);}c.stroke();
  for(let i=0;i<144;i++){c.fillStyle=i%4===0?'#71929a66':'#71929a2b';c.fillRect((i*137+19)%W,(i*83+41)%H,i%4===0?1.4:1,1);}
  c.strokeStyle='#68828c3b';for(let i=0;i<9;i++){const x=35+i%3*165,y=34+Math.floor(i/3)*230;c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}
- c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME FIELD',30,32);c.fillText('FAR BELT',850,32);c.fillText('OUTER REACH',1700,1450);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
+ c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME BELT',HOME.x-100,HOME.y-400);c.fillText('SCRAP FIELDS',HOME.x+900,HOME.y-700);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
  // Explored/visible bitsets drive the field. Unknown cells
  // never get object drawing; known terrain remains a subdued map memory.
- const mask=fogImage(w);if(bw&&bh)c.drawImage(mask,left,top,bw,bh,left,top,bw,bh);
- for(const site of POIS){if(!w.discoveredPois.has(site.id))continue;
+ const mask=fogImage(w);if(bw&&bh){c.imageSmoothingEnabled=false;c.drawImage(mask,left/CELL,top/CELL,bw/CELL,bh/CELL,left,top,bw,bh);}
+ for(const site of w.definition.pois){if(!w.discoveredPois.has(site.id))continue;
   const done=investigated(w,site.id),locked=w.activeTarget===site.id;
   drawPoi(c,site.id,site.x,site.y,done,locked);
   if(!done&&w.activeInvestigations.has(site.id)){c.fillStyle='#24424a';c.fillRect(site.x-17,site.y+26,34,3);c.fillStyle='#91d8cc';c.fillRect(site.x-17,site.y+26,34*Math.min(1,(w.poiProgress[site.id]??0)/4),3);}
   if(visibleAt(w,site)){c.font='8px monospace';c.textAlign='center';c.fillStyle='#b6dfd6';c.fillText(done?'INVESTIGATED':locked?'TARGET LOCKED':'SIGNAL',site.x,site.y-28);}
  }
  for(const r of w.rocks){
-  if(!exploredAt(w,r)||r.hp<=0)continue;
+  if(!exploredAt(w,r)||r.hp<=0||r.x+r.r<left||r.x-r.r>right||r.y+r.r<top||r.y-r.r>bottom)continue;
   const impact=w.effects.find(e=>e.type==='hit'&&e.x===r.x&&e.y===r.y),pulse=impact?impact.life/impact.max:0;
-  let palette=rockPalettes.get(r);if(!palette){palette=rockPalette(biomeAt(r.x,r.y));rockPalettes.set(r,palette);}
+  let palette=rockPalettes.get(r);if(!palette){palette=rockPalette(biomeAt(r.x,r.y,w.definition.seed));rockPalettes.set(r,palette);}
   drawRock(c,r,rockArtTier(r,w.identifiedRocks.has(r.id)),pulse,palette);
  }
  let trails=trailStates.get(w);if(!trails){trails=newTrailState();trailStates.set(w,trails);}
@@ -99,8 +99,8 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
   c.save();c.translate(x-Math.sin(direction)*spread,y+Math.cos(direction)*spread);c.rotate(.4+Math.min(age,.5)*5);drawMineral(c,o.mineral,0,0,5);c.restore();}
  const arrivals=w.effects.filter(e=>e.type==='transfer');
  const bounce=Math.max(0,...arrivals.map(e=>{const t=e.max-e.life-.26;return t>0?Math.sin(t/.09*Math.PI)*.065:0;}));
- if(w.base.x===FAR.x){drawMother(c,w.time,0,HOME.x,HOME.y);drawOutpost(c,FAR.x,FAR.y,true,w.time*.6,bounce);}
- else {drawMother(c,w.time,bounce,HOME.x,HOME.y);if(w.company.outpost)drawOutpost(c,FAR.x,FAR.y,false,w.time*.6);}
+ if(w.base.x===w.definition.outpost.x){drawMother(c,w.time,0,HOME.x,HOME.y);drawOutpost(c,w.definition.outpost.x,w.definition.outpost.y,true,w.time*.6,bounce);}
+ else {drawMother(c,w.time,bounce,HOME.x,HOME.y);if(w.company.outpost)drawOutpost(c,w.definition.outpost.x,w.definition.outpost.y,false,w.time*.6);}
  if(w.company.turret){const target=w.enemies.filter(e=>e.hp>0&&visibleAt(w,e)).sort((a,b)=>Math.hypot(a.x-HOME.x,a.y-HOME.y)-Math.hypot(b.x-HOME.x,b.y-HOME.y))[0];drawTurret(c,HOME.x,HOME.y-15,target?Math.atan2(target.y-HOME.y,target.x-HOME.x)+Math.PI/2:w.time*.35);}
  for(const d of w.drones){
    if(d.state==='dead'){ c.strokeStyle='#7d5350';c.lineWidth=2;c.beginPath();c.moveTo(d.x-5,d.y-5);c.lineTo(d.x+5,d.y+5);c.moveTo(d.x-5,d.y+5);c.lineTo(d.x+5,d.y-5);c.stroke();continue;}

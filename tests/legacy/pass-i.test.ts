@@ -1,10 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {BIOMES,biomeAt,environmentAt,ENVIRONMENT_UPGRADES,environmentIds,movementFactor,radiationRate,sensorFactor} from '../src/biomes.ts';
-import {buyEnvironment,clearSurvey,clearTarget,createWorld,focusSurvey,freshCompany,knownBiomeAt,lockTarget,settle,step,updateKnowledge,STEP,HOME,FAR,type Company} from '../src/sim.ts';
-import {POIS,blankMap,hasCell,mapCount} from '../src/knowledge.ts';
-import {parseSave,loadCompany,SAVE_KEY} from '../src/storage.ts';
-import {renderLobby} from '../src/lobby.ts';
+import {BIOMES,biomeAt,environmentAt,ENVIRONMENT_UPGRADES,environmentIds,movementFactor,radiationRate,sensorFactor} from '../../src/biomes.ts';
+import {buyEnvironment,clearSurvey,clearTarget,createWorld,focusSurvey,freshCompany,knownBiomeAt,lockTarget,settle,step,updateKnowledge,STEP,HOME,FAR,type Company} from '../../src/sim.ts';
+import {POIS,blankMap,hasCell,mapCount} from '../../src/knowledge.ts';
+import {parseSave,loadCompany,SAVE_KEY} from '../../src/storage.ts';
+import {renderLobby} from '../../src/lobby.ts';
 
 const regionPoint:Record<keyof typeof BIOMES,[number,number]>={home_belt:[200,550],scrap_fields:[1000,700],contested:[1770,675],ion_storm:[1200,1900],dead_zone:[2440,1950]};
 test('five fixed contiguous regions cover the original map and retain coordinates',()=>{

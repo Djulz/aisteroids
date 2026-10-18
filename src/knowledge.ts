@@ -1,13 +1,15 @@
-import {LOGISTICS_SITES} from './logistics-sites.ts';
 import type {DiscoveryId} from './research.ts';
 import {W as MAP_W,H as MAP_H,CELL,COLS,ROWS,CELLS,MAP_BYTES,HOME,FAR} from './geometry.ts';
+import {generateUniverse,type WorldPoiId} from './universe.ts';
 export {MAP_W,MAP_H,CELL,COLS,ROWS,CELLS,MAP_BYTES};
 
 export const POIS=[
- {id:'abandoned_research_station',name:'Derelict Research Station',x:830,y:300},
- {id:'experimental_probe_salvaged',name:'Experimental Probe',x:1190,y:1120},
- ...LOGISTICS_SITES.map(s=>({...s,name:s.name})),
-] as const satisfies readonly {id:DiscoveryId;name:string;x:number;y:number}[];
+ {id:'abandoned_research_station',name:'Derelict Research Station'},
+ {id:'experimental_probe_salvaged',name:'Experimental Probe'},
+ {id:'abandoned_cargo_relay',name:'Abandoned Cargo Relay'},
+ {id:'derelict_freight_shuttle',name:'Derelict Freight Shuttle'},
+ {id:'automated_sorting_archive',name:'Automated Sorting Archive'},
+] as const satisfies readonly {id:DiscoveryId&WorldPoiId;name:string}[];
 export type PoiId=(typeof POIS)[number]['id'];
 export type Sensor={x:number;y:number;radius:number};
 export const blankMap=()=>new Uint8Array(MAP_BYTES);
@@ -32,7 +34,7 @@ export function migrateV10Map(value:string){
  return next;
 }
 export function mapCount(bits:Uint8Array){let n=0;for(const b of bits){let k=b;while(k){k&=k-1;n++;}}return n;}
-export function seedKnown(bits:Uint8Array,progress:{farSurveyed:boolean;outpostSurveyed:boolean},outpost:boolean,known:readonly string[]=[]){
- const v=blankMap();reveal(v,[{...HOME,radius:115},...(outpost?[{...FAR,radius:115}]:[]),...(progress.farSurveyed?[{x:430,y:500,radius:55}]:[]),...(progress.outpostSurveyed?[{...FAR,radius:55}]:[]),...POIS.filter(p=>known.includes(p.id)).map(p=>({...p,radius:45}))]);mergeMap(bits,v);return encodeMap(bits);
+export function seedKnown(bits:Uint8Array,progress:{farSurveyed:boolean;outpostSurveyed:boolean},outpost:boolean,known:readonly string[]=[],seed=7){
+ const definition=generateUniverse(seed),v=blankMap();reveal(v,[{...HOME,radius:115},...(outpost?[{...definition.outpost,radius:115}]:[]),...(progress.farSurveyed?[{x:HOME.x+500,y:HOME.y,radius:55}]:[]),...(progress.outpostSurveyed?[{...definition.outpost,radius:55}]:[]),...definition.pois.filter(p=>known.includes(p.id)).map(p=>({...p,radius:45}))]);mergeMap(bits,v);return encodeMap(bits);
 }
-export function seededMap(progress:{farSurveyed:boolean;outpostSurveyed:boolean},outpost:boolean,known:readonly string[]=[]){return seedKnown(blankMap(),progress,outpost,known);}
+export function seededMap(progress:{farSurveyed:boolean;outpostSurveyed:boolean},outpost:boolean,known:readonly string[]=[],seed=7){return seedKnown(blankMap(),progress,outpost,known,seed);}

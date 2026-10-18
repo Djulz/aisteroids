@@ -1,12 +1,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorld,freshCompany,handoff,step,settle,updateKnowledge,lockTarget,STEP,ORE_PICKUP_DELAY,dockingSpots,type Company,type World} from '../src/sim.ts';
-import {awardTech,research,researchReason,discoveryIds,TECH} from '../src/research.ts';
-import {changeFleet,fleetError,usedSlots} from '../src/fleet.ts';
-import {parseSave,loadCompany,SAVE_KEY,type SaveStore} from '../src/storage.ts';
-import {renderLobby} from '../src/lobby.ts';
-import {LOGISTICS_SITES} from '../src/logistics-sites.ts';
-import {clearSegment} from '../src/navigation.ts';
+import {createWorld,freshCompany,handoff,step,settle,updateKnowledge,lockTarget,STEP,ORE_PICKUP_DELAY,dockingSpots,type Company,type World} from '../../src/sim.ts';
+import {awardTech,research,researchReason,discoveryIds,TECH} from '../../src/research.ts';
+import {changeFleet,fleetError,usedSlots} from '../../src/fleet.ts';
+import {parseSave,loadCompany,SAVE_KEY,type SaveStore} from '../../src/storage.ts';
+import {renderLobby} from '../../src/lobby.ts';
+import {LOGISTICS_SITES} from '../../src/logistics-sites.ts';
+import {clearSegment} from '../../src/navigation.ts';
 
 function run(w:World){for(let i=0;i<12000&&w.phase!=='done';i++)step(w,STEP);assert.equal(w.phase,'done');return w;}
 function logistics(upgraded=false):Company{

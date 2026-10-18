@@ -1,11 +1,11 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {freshCompany,createWorld,step,settle,lockTarget,clearTarget,updateKnowledge,STEP,visibleAt,type Company,type World} from '../src/sim.ts';
-import {POIS,decodeMap,mapCount} from '../src/knowledge.ts';
-import {awardTech,discoveryIds,research,researchReason,TECH_DISCOVERIES} from '../src/research.ts';
-import {changeFleet} from '../src/fleet.ts';
-import {loadCompany,parseSave,SAVE_KEY,type SaveStore} from '../src/storage.ts';
-import {renderLobby} from '../src/lobby.ts';
+import {freshCompany,createWorld,step,settle,lockTarget,clearTarget,updateKnowledge,STEP,visibleAt,type Company,type World} from '../../src/sim.ts';
+import {POIS,decodeMap,mapCount} from '../../src/knowledge.ts';
+import {awardTech,discoveryIds,research,researchReason,TECH_DISCOVERIES} from '../../src/research.ts';
+import {changeFleet} from '../../src/fleet.ts';
+import {loadCompany,parseSave,SAVE_KEY,type SaveStore} from '../../src/storage.ts';
+import {renderLobby} from '../../src/lobby.ts';
 
 const store=(initial:Record<string,string>={})=>{const map=new Map(Object.entries(initial));const storage:SaveStore={getItem:k=>map.get(k)??null,setItem:(k,v)=>{map.set(k,v);},removeItem:k=>{map.delete(k);}};return {map,storage};};
 const run=(w:World)=>{for(let i=0;i<12000&&w.phase!=='done';i++)step(w);assert.equal(w.phase,'done');return w;};

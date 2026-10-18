@@ -2,7 +2,7 @@ import type {Company} from './sim.ts';
 import {POIS,type PoiId} from './knowledge.ts';
 
 export const TECH_DISCOVERIES={
- far_belt_charted:'Far Belt Charted',
+ far_belt_charted:'Scrap Fields Charted',
  first_rich_sample:'First Valuable Sample',
  first_rival_contact:'First Contact: Rival Scout',
  outpost_site_surveyed:'Outpost Site Surveyed',
@@ -18,8 +18,8 @@ export const TECH={
  laserMining:{name:'Laser Mining',branch:'Extraction',cost:1,description:'Unlock Laser Miners: ranged one-fragment extraction, cargo 3.',requires:[]},
  impactRecovery:{name:'Impact Recovery',branch:'Extraction',cost:1,description:'Ram cooldown 1.0 → 0.65s; quicker physical recovery.',requires:[]},
  rapidCooling:{name:'Rapid Cooling',branch:'Extraction',cost:2,description:'Laser interval 2.0 → 1.6s; one fragment per shot.',requires:['laserMining']},
- escortProgram:{name:'Escort Program',branch:'Security',cost:1,description:'Assign Escorts to purchased fleet slots after rival contact.',requires:[]},
- threatTracking:{name:'Threat Tracking',branch:'Security',cost:1,description:'Escorts prioritize hostiles closest to miners.',requires:['escortProgram']},
+ escortProgram:{name:'Fighter Program',branch:'Security',cost:1,description:'Assign Fighters to purchased fleet slots after rival contact.',requires:[]},
+ threatTracking:{name:'Threat Tracking',branch:'Security',cost:1,description:'Fighters prioritize hostiles closest to miners.',requires:['escortProgram']},
  haulerOperation:{name:'Hauler Operation',branch:'Logistics',cost:1,description:'Unlock Haulers: collect loose ore, accept Miner cargo and deliver up to 10.',requires:[]},
  expandedHauler:{name:'Expanded Hauler',branch:'Logistics',cost:2,description:'Every Hauler carries 14 fragments instead of 10. Miners still carry 3.',requires:['haulerOperation']},
 } as const;

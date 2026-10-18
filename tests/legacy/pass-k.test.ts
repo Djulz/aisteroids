@@ -1,11 +1,11 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buy,canTarget,createWorld,freshCompany,handoff,prioritizePoi,settle,step,STEP,type Company} from '../src/sim.ts';
-import {MINERALS,mineralIds,canExtract,cargoValue} from '../src/minerals.ts';
-import {POIS} from '../src/knowledge.ts';
-import {parseSave} from '../src/storage.ts';
-import {renderLobby} from '../src/lobby.ts';
-import {biomeAt} from '../src/biomes.ts';
+import {buy,canTarget,createWorld,freshCompany,handoff,prioritizePoi,settle,step,STEP,type Company} from '../../src/sim.ts';
+import {MINERALS,mineralIds,canExtract,cargoValue} from '../../src/minerals.ts';
+import {POIS} from '../../src/knowledge.ts';
+import {parseSave} from '../../src/storage.ts';
+import {renderLobby} from '../../src/lobby.ts';
+import {biomeAt} from '../../src/biomes.ts';
 
 const run=(w:ReturnType<typeof createWorld>)=>{for(let i=0;i<15000&&w.phase!=='done';i++)step(w);assert.equal(w.phase,'done');return w;};
 test('five physical minerals retain distinct integer credit prices and extraction gates',()=>{

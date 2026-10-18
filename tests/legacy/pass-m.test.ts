@@ -1,9 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readCompany,SAVE_KEY,type SaveStore} from '../src/storage.ts';
-import {freshCompany} from '../src/sim.ts';
-import {nextSeed,parseSeed} from '../src/seed.ts';
-import {MOTION_KEY,readMotion,reducedMotion,saveMotion} from '../src/preferences.ts';
+import {readCompany,SAVE_KEY,type SaveStore} from '../../src/storage.ts';
+import {freshCompany} from '../../src/sim.ts';
+import {nextSeed,parseSeed} from '../../src/seed.ts';
+import {MOTION_KEY,readMotion,reducedMotion,saveMotion} from '../../src/preferences.ts';
 
 test('title boot reads a current company without writing or recreating it',()=>{
  const original={...freshCompany(0),credits:57,rounds:4};

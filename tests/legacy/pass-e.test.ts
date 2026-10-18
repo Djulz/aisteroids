@@ -1,8 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buy,createWorld,freshCompany,lockTarget,clearTarget,step,settle,updateKnowledge,visibleAt,exploredAt,ROUND_TIME,STEP,type World} from '../src/sim.ts';
-import {changeFleet,usedSlots,fleetError} from '../src/fleet.ts';
-import {POIS,mapCount,setCell} from '../src/knowledge.ts';
+import {buy,createWorld,freshCompany,lockTarget,clearTarget,step,settle,updateKnowledge,visibleAt,exploredAt,ROUND_TIME,STEP,type World} from '../../src/sim.ts';
+import {changeFleet,usedSlots,fleetError} from '../../src/fleet.ts';
+import {POIS,mapCount,setCell} from '../../src/knowledge.ts';
 const run=(w:World)=>{for(let i=0;i<9000&&w.phase!=='done';i++)step(w);assert.equal(w.phase,'done');return w;};
 const fleet=(scouts:number,min=1)=>{const c=freshCompany();return {...c,fleetCapacity:min+scouts,fleetComposition:{...c.fleetComposition,impactMiner:min,scout:scouts}};};
 
