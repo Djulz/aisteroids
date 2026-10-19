@@ -9,6 +9,9 @@ export const TECH_DISCOVERIES={
  far_belt_charted:'Scrap Fields charted',
  first_rich_sample:'First valuable sample',
  first_nickel_delivery:'First Nickel delivery',
+ first_aurite_delivery:'First Aurite delivery',
+ first_cryonite_delivery:'First Cryonite delivery',
+ first_voidite_delivery:'First Voidite delivery',
  first_rival_contact:'First rival contact',
  outpost_site_surveyed:'Outpost site surveyed',
  abandoned_research_station:'Derelict Research Station',
@@ -23,6 +26,7 @@ export const discoveryIds=Object.keys(TECH_DISCOVERIES) as DiscoveryId[];
 export const TECH_REWARDS:Record<DiscoveryId,number>={
  first_shift_delivered:1,first_fleet_expansion:1,home_belt_surveyed:1,
  far_belt_charted:1,first_rich_sample:1,first_nickel_delivery:1,
+ first_aurite_delivery:1,first_cryonite_delivery:1,first_voidite_delivery:1,
  first_rival_contact:1,outpost_site_surveyed:1,
  abandoned_research_station:1,experimental_probe_salvaged:1,
  abandoned_cargo_relay:1,derelict_freight_shuttle:1,
@@ -96,12 +100,13 @@ export function talentOptions(c:Company,category:Category):TalentId[]{
  return talentIds.filter(id=>{const n=TALENTS[id];return n.category===category&&n.level===level&&(!n.requires||chosen.includes(n.requires as TalentId));});
 }
 export function categoryRequirement(c:Company,category:Category):string|undefined{
+ if(!c.basicUpgrades.includes('workPlanner'))return 'Complete the Miner workshop introduction first.';
  if(category==='fighter'&&!c.progress.rivalSeen)return 'Observe a rival with friendly sensors.';
  if(category==='hauler'&&!c.uniqueTechDiscoveries.includes('abandoned_cargo_relay')&&!c.unlockedTypes.includes('hauler'))return 'Investigate the Abandoned Cargo Relay.';
  if(category==='rig'&&!c.uniqueTechDiscoveries.includes('derelict_excavation_platform'))return 'Investigate the Derelict Excavation Platform.';
  const level=path(c,category).length+1;
  if(level===2&&!c.uniqueTechDiscoveries.includes('first_nickel_delivery'))return 'Deliver Nickel to HQ or Outpost first.';
- if(level===3&&!c.uniqueTechDiscoveries.includes('derelict_excavation_platform'))return 'Investigate the Excavation Platform first.';
+ if(level===3&&(!c.uniqueTechDiscoveries.includes('experimental_probe_salvaged')||!c.uniqueTechDiscoveries.includes('first_aurite_delivery')))return 'Investigate the Probe and deliver Aurite first.';
 }
 export function researchReason(c:Company,id:TalentId):string|undefined{
  if(!Object.hasOwn(TALENTS,id))return 'Unknown talent.';
@@ -114,11 +119,6 @@ export function research(c:Company,id:TalentId):Company|null{
  if(researchReason(c,id))return null;
  return {...c,talents:[...c.talents,id],techPointsAvailable:c.techPointsAvailable-TALENTS[id].level};
 }
-export function respec(c:Company,category:Category):Company|null{
- if(!categories.includes(category)||!path(c,category).length)return null;
- const refund=path(c,category).reduce((n,id)=>n+TALENTS[id].level,0);
- return {...c,talents:c.talents.filter(id=>TALENTS[id].category!==category),techPointsAvailable:c.techPointsAvailable+refund};
-}
 export function validTalents(c:Company){
  if(!Array.isArray(c.talents)||new Set(c.talents).size!==c.talents.length||c.talents.some(id=>!Object.hasOwn(TALENTS,id)))return false;
  for(const category of categories){const chosen=path(c,category);
@@ -127,7 +127,7 @@ export function validTalents(c:Company){
    chosen.length&&category==='hauler'&&!c.unlockedTypes.includes('hauler')||
    chosen.length&&category==='rig'&&!c.uniqueTechDiscoveries.includes('derelict_excavation_platform')||
    chosen.length>=2&&!c.uniqueTechDiscoveries.includes('first_nickel_delivery')||
-   chosen.length>=3&&!c.uniqueTechDiscoveries.includes('derelict_excavation_platform'))return false;
+   chosen.length>=3&&!c.uniqueTechDiscoveries.includes('derelict_excavation_platform')&&(!c.uniqueTechDiscoveries.includes('experimental_probe_salvaged')||!c.uniqueTechDiscoveries.includes('first_aurite_delivery')))return false;
   if(chosen.some((id,i)=>i===1&&!talentIds.filter(t=>TALENTS[t].category===category&&TALENTS[t].level===2).includes(id)))return false;
  }
  return true;

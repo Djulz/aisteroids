@@ -11,9 +11,9 @@ export const BIOMES={
 export type BiomeId=keyof typeof BIOMES;
 export type EnvironmentUpgrade='advancedSensors'|'navigationStabilizers'|'radiationShielding';
 export const ENVIRONMENT_UPGRADES={
- advancedSensors:{name:'Wide-Area Scanner',cost:125,site:'abandoned_cargo_relay',detail:'Double Scout scan radius: 165 → 330'},
- navigationStabilizers:{name:'Navigation Stabilizers',cost:240,site:'experimental_probe_salvaged',detail:'Reduce Ion Storm interference'},
- radiationShielding:{name:'Radiation Shielding',cost:350,site:'derelict_freight_shuttle',detail:'Reduce Dead Zone exposure'},
+ advancedSensors:{name:'Wide-Area Scanner',cost:80,site:'abandoned_cargo_relay',detail:'Double Scout scan radius: 165 → 330'},
+ navigationStabilizers:{name:'Navigation Stabilizers',cost:600,site:'experimental_probe_salvaged',detail:'Reduce Ion Storm interference'},
+ radiationShielding:{name:'Radiation Shielding',cost:1600,site:'automated_sorting_archive',detail:'Reduce Dead Zone exposure'},
 } as const;
 export const environmentIds=Object.keys(ENVIRONMENT_UPGRADES) as EnvironmentUpgrade[];
 export const scoutScanRadius=(upgrades:readonly EnvironmentUpgrade[])=>upgrades.includes('advancedSensors')?330:165;

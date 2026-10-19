@@ -4,7 +4,7 @@ import {generateUniverse,regionAt,GENERATOR_VERSION} from '../src/universe.ts';
 import {W,H,HOME} from '../src/geometry.ts';
 import {biomeAt,environmentAt} from '../src/biomes.ts';
 import {MINERALS,mineralForRock} from '../src/minerals.ts';
-import {freshCompany,createWorld,step,settle,buy,lockTarget,dockingSpots,STEP} from '../src/sim.ts';
+import {freshCompany,createWorld,step,settle,buy,lockTarget,dockingSpots,STEP,type Company} from '../src/sim.ts';
 import {readCompany,parseSave,SAVE_KEY,type SaveStore} from '../src/storage.ts';
 import {decodeMap,hasCell} from '../src/knowledge.ts';
 import {changeFleet} from '../src/fleet.ts';
@@ -41,7 +41,7 @@ test('five coherent layers and finite mineral values share one seed',()=>{
 
 test('one-time epoch reset writes first, preserves preferences, and prefers a valid new save',()=>{
  const oldKey='aisteroids-company-v14';const {data,io}=store({[oldKey]:JSON.stringify({...freshCompany(7),version:14,credits:999}), 'aisteroids-motion':'reduce'});
- const first=readCompany(io,42);assert.equal(first.issue,'reset');assert.equal(first.company?.version,16);assert.equal(first.company?.worldSeed,42);assert.equal(first.company?.credits,0);
+ const first=readCompany(io,42);assert.equal(first.issue,'reset');assert.equal(first.company?.version,17);assert.equal(first.company?.worldSeed,42);assert.equal(first.company?.credits,0);
  assert.equal(data.has(oldKey),false);assert.equal(data.get('aisteroids-motion'),'reduce');assert.deepEqual(readCompany(io,99).company,first.company);
  data.set(oldKey,'stale');assert.equal(readCompany(io,99).issue,null);assert.equal(readCompany(io,99).company?.worldSeed,42);
  assert.equal(parseSave(JSON.stringify({...first.company,version:14,credits:999})).credits,0);
@@ -61,7 +61,7 @@ test('new save round trips with persistent finite depletion, fog and launch site
 
 test('a real second slot charts Scrap Fields and earns one contact unlock, without starter raids',()=>{
  let c=freshCompany(7),start=createWorld(c);finish(start);assert.equal(start.attacks,0);assert.equal(start.progress.rivalSeen,false);
- c={...c,credits:28};c=buy(c,'fleetSlot')!;c=changeFleet(c,'scout',1)!;
+ c={...c,credits:24,basicUpgrades:['cargoAwareness','navigationAssist','workPlanner'],shopOffers:['fleetSlot']};c=buy(c,'fleetSlot')!;c=changeFleet(c,'scout',1)!;
  c={...c,focuses:{...c.focuses,scout:{x:800,y:3420}}};
  const mission=createWorld(c);finish(mission);assert.equal(mission.progress.farSurveyed,true);assert.equal(mission.progress.rivalSeen,true);
  assert.ok(mission.attacks>0);assert.equal(mission.drones.filter(d=>d.state==='dead').length,0);
@@ -84,7 +84,7 @@ test('POI disclosure and investigation remain physical and persisted',()=>{
 });
 
 test('Hauler still unloads at the generated Outpost and only delivery credits cargo',()=>{
- let c={...freshCompany(17),credits:28,progress:{...freshCompany(17).progress,outpostSurveyed:true}};
+ let c:Company={...freshCompany(17),credits:24,basicUpgrades:['cargoAwareness','navigationAssist','workPlanner'],shopOffers:['fleetSlot'],progress:{...freshCompany(17).progress,outpostSurveyed:true}};
  c=buy(c,'fleetSlot')!;c=awardTech(c,['abandoned_cargo_relay']);
  c=changeFleet(c,'hauler',1)!;c={...c,outpost:true,launchSite:'far'};
  const w=createWorld(c),h=w.haulers[0];assert.deepEqual(w.base,w.definition.outpost);

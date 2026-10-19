@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {freshCompany,createWorld,step,settle,buy,updateKnowledge,validJump,STEP,type Company} from '../src/sim.ts';
-import {awardTech,research,respec,talentOptions,categoryRequirement,TALENTS,categories,oldTechSpent} from '../src/research.ts';
+import {awardTech,research,talentOptions,categoryRequirement,TALENTS,categories,oldTechSpent} from '../src/research.ts';
 import {readCompany,SAVE_KEY,parseSave} from '../src/storage.ts';
 import {changeFleet,usedSlots,fleetError} from '../src/fleet.ts';
 import {generateUniverse,regionAt} from '../src/universe.ts';
@@ -10,7 +10,7 @@ import {canExtract} from '../src/minerals.ts';
 import {renderLobby} from '../src/lobby.ts';
 const run=(w:ReturnType<typeof createWorld>,n:number)=>{for(let i=0;i<n&&w.phase!=='done';i++)step(w,STEP);};
 const finish=(w:ReturnType<typeof createWorld>)=>{run(w,12600);assert.equal(w.phase,'done');};
-const funded=(seed=7)=>awardTech({...freshCompany(seed),progress:{...freshCompany(seed).progress,rivalSeen:true}},['first_shift_delivered','first_fleet_expansion','home_belt_surveyed','first_nickel_delivery','derelict_excavation_platform','first_rival_contact','abandoned_cargo_relay']);
+const funded=(seed=7)=>awardTech({...freshCompany(seed),rounds:1,basicUpgrades:['cargoAwareness','navigationAssist','workPlanner'],progress:{...freshCompany(seed).progress,rivalSeen:true}},['first_shift_delivered','first_fleet_expansion','home_belt_surveyed','first_nickel_delivery','derelict_excavation_platform','first_rival_contact','abandoned_cargo_relay','experimental_probe_salvaged','first_aurite_delivery']);
 
 test('lobby keeps one Miner assignment, role gates, and weighted Rig controls',()=>{
  const view={tab:'hangar' as const,error:'',storageOK:true};
@@ -18,18 +18,18 @@ test('lobby keeps one Miner assignment, role gates, and weighted Rig controls',(
  assert.match(fresh,/data-type="impactMiner"/);assert.doesNotMatch(fresh,/data-type="laserMiner"|data-type="hauler"|data-type="escort"|data-type="miningRig"/);
  const ready=renderLobby({...funded(),fleetCapacity:3},view);
  assert.match(ready,/data-type="hauler"/);assert.match(ready,/data-type="escort"/);
- assert.match(ready,/Mining Rig · 2 slots/);
+ assert.doesNotMatch(ready,/Mining Rig · 2 slots/);
  const research=renderLobby(funded(),{...view,tab:'research'});
  assert.match(research,/data-upgrade="miner"/);assert.match(research,/TECH AVAILABLE/);
 });
 
-test('fresh Miner, available Scout, and weighted Rig fleet validation',()=>{
+test('fresh Miner, available Scout, and one-slot Rig fleet validation',()=>{
  const c=freshCompany();assert.equal(c.fleetCapacity,1);assert.equal(c.fleetComposition.impactMiner,1);
  assert.ok(changeFleet(c,'scout',1)===null);assert.ok(changeFleet(c,'escort',1)===null);
  let ready={...funded(),fleetCapacity:3};ready=changeFleet(ready,'miningRig',1)!;
- assert.equal(usedSlots(ready.fleetComposition),3);assert.ok(!fleetError(ready));
+ assert.equal(usedSlots(ready.fleetComposition),2);assert.ok(!fleetError(ready));
  ready=changeFleet(ready,'impactMiner',-1)!;assert.ok(!fleetError(ready));
- assert.equal(usedSlots(ready.fleetComposition),2);
+ assert.equal(usedSlots(ready.fleetComposition),1);
 });
 test('relay is physically clear and a basic Miner investigates without Scout or Fighter',()=>{
  for(const seed of [0,7,17,42]){
@@ -46,17 +46,17 @@ test('first sensed contact grants Fighter separately from its once-only Tech',()
  c=settle(c,w);assert.ok(c.unlockedTypes.includes('escort'));assert.equal(c.uniqueTechDiscoveries.filter(id=>id==='first_rival_contact').length,1);
  assert.equal(settle(c,w).techPointsEarned,c.techPointsEarned);
 });
-test('branch options are exactly two, category gates and refunds are local',()=>{
- let c=funded();assert.equal(c.techPointsEarned,7);
+test('branch options are exactly two and committed choices are permanent',()=>{
+ let c=funded();assert.equal(c.techPointsEarned,9);
  for(const category of categories)assert.equal(talentOptions(c,category).length,2);
- assert.equal(categoryRequirement(freshCompany(),'fighter'),'Observe a rival with friendly sensors.');
+ assert.equal(categoryRequirement(freshCompany(),'fighter'),'Complete the Miner workshop introduction first.');
+ assert.equal(categoryRequirement({...freshCompany(),basicUpgrades:['cargoAwareness','navigationAssist','workPlanner']},'fighter'),'Observe a rival with friendly sensors.');
  const original=c.techPointsAvailable;c=research(c,'ramSplitter')!;
  assert.deepEqual(talentOptions(c,'miner'),['heavyHead','rapidRecovery']);
  c=research(c,'rapidRecovery')!;assert.deepEqual(talentOptions(c,'miner'),['phaseRam','magneticRam']);
  c=research(c,'magneticRam')!;assert.equal(c.techPointsAvailable,original-6);
- const restored=respec(c,'miner')!;assert.equal(restored.techPointsAvailable,original);assert.deepEqual(restored.talents,[]);
- assert.equal(respec(restored,'miner'),null);assert.deepEqual(parseSave(JSON.stringify(restored)),restored);
- assert.equal(research(restored,'laserCutter')?.talents[0],'laserCutter');
+ assert.equal(c.techPointsAvailable,original-6);assert.deepEqual(parseSave(JSON.stringify(c)),c);
+ assert.equal(research(c,'laserCutter'),null);
  assert.equal(TALENTS.heavyPulse.level,2);
 });
 test('Laser and Ram share bought extraction class, with no laser blueprint tax',()=>{
@@ -64,10 +64,10 @@ test('Laser and Ram share bought extraction class, with no laser blueprint tax',
  assert.equal(canExtract('impactMiner','aurite',['highPowerOptics']),true);
  assert.equal(canExtract('laserMiner','aurite',['highPowerOptics']),true);
  assert.equal(canExtract('miningRig','voidite',['resonanceMining']),true);
- const c=awardTech(freshCompany(),['first_nickel_delivery']);
- assert.equal(buy({...c,credits:250,progress:{...c.progress,richSampled:true}},'highPowerOptics')?.credits,0);
+ const c=awardTech(funded(),['abandoned_research_station']);
+ assert.equal(buy({...c,credits:240,shopOffers:['highPowerOptics']},'highPowerOptics')?.credits,0);
 });
-test('platform is a stable B2 physical investigation and grants a two-slot Rig',()=>{
+test('platform is a stable B2 physical investigation and grants a one-slot Rig',()=>{
  const c={...freshCompany(),fleetCapacity:2,fleetComposition:{...freshCompany().fleetComposition,scout:1}};
  const w=createWorld(c),site=w.definition.pois.find(p=>p.id==='derelict_excavation_platform')!,scout=w.scouts[0];
  assert.equal(regionAt(c.worldSeed,site.x,site.y),'scrap_fields');
@@ -102,20 +102,20 @@ test('v15 company migration refunds recognized Tech once and preserves the entir
  const data=new Map([['aisteroids-company-v15',JSON.stringify(old)]]);
  const io={getItem:(key:string)=>data.get(key)??null,setItem:(key:string,value:string)=>{data.set(key,value);},removeItem:(key:string)=>{data.delete(key);}};
  const read=readCompany(io);assert.equal(read.issue,'migrated');assert.ok(read.company);
- const next=read.company!;assert.equal(next.version,16);assert.equal(next.credits,187);assert.equal(next.worldSeed,17);
+ const next=read.company!;assert.equal(next.version,17);assert.equal(next.credits,187);assert.equal(next.worldSeed,17);
  assert.deepEqual(next.rockHp,{0:2});assert.deepEqual(next.ores,old.ores);assert.equal(next.explored,base.explored);
  assert.equal(next.techPointsAvailable,3);assert.equal(next.fleetComposition.impactMiner,1);assert.equal(next.fleetComposition.laserMiner,0);
  assert.ok(next.unlockedTypes.includes('hauler'));assert.ok(next.unlockedTypes.includes('escort'));
  assert.equal(data.has('aisteroids-company-v15'),false);assert.deepEqual(readCompany(io).company,next);assert.ok(data.has(SAVE_KEY));
 });
-test('capabilities derive from chosen nodes and do not stack after respec',()=>{
+test('capabilities derive from persistent chosen nodes',()=>{
  let c=funded();c=research(c,'laserCutter')!;c=research(c,'longRangeOptics')!;
  assert.equal(createWorld(c).drones[0].gear.laserRange,136);
- c=respec(c,'miner')!;assert.equal(createWorld(c).drones[0].kind,'impactMiner');
+ assert.equal(parseSave(JSON.stringify(c))?.talents.join(','),c.talents.join(','));
  let h=funded();h=research(h,'expressDelivery')!;h=research(h,'precisionJump')!;
  h={...h,fleetCapacity:2,fleetComposition:{...h.fleetComposition,hauler:1}};
  assert.equal(createWorld(h).haulers[0].capacity,6);
- h=respec(h,'hauler')!;assert.equal(createWorld(h).haulers[0].capacity,10);
+ assert.equal(createWorld(h).haulers[0].capacity,6);
  let f=funded();f=research(f,'guardianFrame')!;f=research(f,'shieldProjector')!;
  f={...f,fleetCapacity:2,fleetComposition:{...f.fleetComposition,escort:1}};
  assert.equal(createWorld(f).guards[0].maxHp,9);

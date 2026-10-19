@@ -17,7 +17,7 @@ function trace(w:World){
 }
 test('seeded original 20-second recovery stall is gone across four doctrines',()=>{
  for(const doctrine of doctrineIds){
-  const w=createWorld({...freshCompany(),doctrine},7),t=trace(w);
+  const w=createWorld({...freshCompany(),rounds:1,basicUpgrades:['cargoAwareness','navigationAssist','workPlanner'],doctrine},7),t=trace(w);
   assert.equal(w.phase,'done');assert.equal(w.drones[0].state,'docked');assert.ok(t.impacts.length>=2);
   assert.ok(t.impacts[1]-t.impacts[0]<12,`${doctrine} delayed second ram by ${t.impacts[1]-t.impacts[0]}`);
   assert.ok(t.slowMining<6,`${doctrine} stalled for ${t.slowMining.toFixed(2)}s`);

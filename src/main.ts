@@ -6,13 +6,13 @@ import '@fontsource/barlow-condensed/500.css';
 import '@fontsource/barlow-condensed/600.css';
 import '@fontsource/barlow-condensed/700.css';
 import './style.css';
-import {buy,buyEnvironment,createWorld,freshCompany,settle,step,STEP,lockTarget,clearTarget,canTarget,investigated,setFocus,type Company,type Purchase,type World} from './sim.ts';
+import {buy,buyEnvironment,createWorld,freshCompany,introComplete,settle,step,STEP,lockTarget,clearTarget,canTarget,investigated,setFocus,type Company,type Purchase,type World} from './sim.ts';
 import {render} from './render.ts';
 import {readCompany,SAVE_KEY} from './storage.ts';
 import {renderLobby,type LobbyTab} from './lobby.ts';
 import {changeFleet,fleetError,usedSlots,type FleetType} from './fleet.ts';
 import {POIS,type PoiId} from './knowledge.ts';
-import {TECH_DISCOVERIES,TALENTS,talentOptions,research,respec,categoryName,type TalentId,type Category} from './research.ts';
+import {TECH_DISCOVERIES,TALENTS,talentOptions,research,categoryName,type TalentId,type Category} from './research.ts';
 import {mountArtGallery} from './art-gallery.ts';
 import {BIOMES,type EnvironmentUpgrade} from './biomes.ts';
 import {MINERALS,canExtract} from './minerals.ts';
@@ -45,7 +45,7 @@ function saveCompany(next:Company){try{localStorage.setItem(SAVE_KEY,JSON.string
 function save(){saveCompany(company);}
 function showMenu(){
  menuCleanup?.();menuCleanup=null;screen='menu';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':bootIssue==='migrated'?'Previous research Tech was returned for the new fleet choices. Your world and company were preserved.':'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.26.0</small></main>`;
+ app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':bootIssue==='migrated'?(company?.migrationNotice?'Previous research Tech was returned for the new fleet choices. Your world and company were preserved.':'Your company and research choices were preserved for the new progression.'):'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.27.0</small></main>`;
  menuCleanup=mountMenuScene(app.querySelector<HTMLCanvasElement>('#menu-scene')!,isReduced());
  app.querySelector('#menu-continue')?.addEventListener('click',()=>{if(hasCompany)showWorkshop();});
  app.querySelector('#menu-new')?.addEventListener('click',openNewGame);
@@ -53,13 +53,13 @@ function showMenu(){
 }
 function showWorkshop(){
  if(!hasCompany)return;
+ if(activeTab==='research'&&!introComplete(company))activeTab='workshop';
  menuCleanup?.();menuCleanup=null;screen='workshop';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">Rock Bottom Robotics · Alpha 0.26.0</footer></main>`;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">Rock Bottom Robotics · Alpha 0.27.0</footer></main>`;
  for(const tab of ['workshop','hangar','research'] as const)document.querySelector(`#tab-${tab}`)?.addEventListener('click',()=>{
   activeTab=tab;researchOpen=false;try{localStorage.setItem('aisteroids-lobby-tab',tab);}catch{}showWorkshop();
  });
  document.querySelectorAll<HTMLButtonElement>('[data-upgrade]').forEach(b=>b.onclick=()=>openTalentChoices(b.dataset.upgrade as Category,b));
- document.querySelectorAll<HTMLButtonElement>('[data-respec]').forEach(b=>b.onclick=()=>openRespec(b.dataset.respec as Category,b));
  document.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b=>b.onclick=()=>{const next=buy(company,b.dataset.buy as Purchase);if(next){company=next;save();showWorkshop();}});
  document.querySelectorAll<HTMLButtonElement>('[data-environment]').forEach(b=>b.onclick=()=>{const next=buyEnvironment(company,b.dataset.environment as EnvironmentUpgrade);if(next){company=next;save();showWorkshop();}});
  document.querySelectorAll<HTMLButtonElement>('[data-type][data-delta]').forEach(b=>b.onclick=()=>{const next=changeFleet(company,b.dataset.type as FleetType,Number(b.dataset.delta) as -1|1);if(next){company=usedSlots(next.fleetComposition)===next.fleetCapacity?{...next,capacityReminder:next.fleetCapacity}:next;save();showWorkshop();}});
@@ -108,15 +108,6 @@ function openTalentChoices(category:Category,opener:HTMLElement){
  });
  backdrop.addEventListener('click',e=>{if(e.target===backdrop)close();});
  trapDialog(backdrop,close);backdrop.querySelector<HTMLElement>('[data-choice]')?.focus();
-}
-function openRespec(category:Category,opener:HTMLElement){
- const owned=company.talents.filter(id=>TALENTS[id].category===category);if(!owned.length)return;
- const refund=owned.reduce((sum,id)=>sum+TALENTS[id].level,0),backdrop=document.createElement('div');backdrop.className='capacity-backdrop';
- backdrop.innerHTML=`<section role="dialog" aria-modal="true" aria-label="Reset ${categoryName[category]} research" class="capacity-dialog"><h2>RESET ${categoryName[category].toUpperCase()}?</h2><p>Return ◈ ${refund} Tech. This clears this category’s choices for all its units. Its blueprint remains available.</p><button id="confirm-respec" class="primary">CONFIRM RESPEC</button><button id="cancel-respec">CANCEL</button></section>`;
- app.append(backdrop);const close=()=>{backdrop.remove();if(opener.isConnected)opener.focus();};
- backdrop.querySelector<HTMLButtonElement>('#cancel-respec')!.onclick=close;
- backdrop.querySelector<HTMLButtonElement>('#confirm-respec')!.onclick=()=>{const next=respec(company,category);if(!next||!saveCompany(next))return;company=next;backdrop.remove();showWorkshop();};
- backdrop.addEventListener('click',e=>{if(e.target===backdrop)close();});trapDialog(backdrop,close);backdrop.querySelector<HTMLButtonElement>('#cancel-respec')!.focus();
 }
 function openNewGame(){
  if((screen!=='workshop'&&screen!=='menu')||document.querySelector('#new-game-dialog'))return;

@@ -106,6 +106,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    if(d.state==='dead'){ c.strokeStyle='#7d5350';c.lineWidth=2;c.beginPath();c.moveTo(d.x-5,d.y-5);c.lineTo(d.x+5,d.y+5);c.moveTo(d.x-5,d.y+5);c.lineTo(d.x+5,d.y-5);c.stroke();continue;}
    if(selected===d.id){c.strokeStyle='#f5b74388';c.lineWidth=1;c.beginPath();c.arc(d.x,d.y,21,0,7);c.stroke();}
    drawShip(c,d.kind,d.x,d.y,d.angle,{time:w.time,thrust:d.state==='mine'||d.state==='return'});
+   if(d.state==='full'){c.fillStyle='#f5b743';c.font='bold 16px Barlow Condensed';c.textAlign='center';c.fillText('?',d.x,d.y-22);}
    if(d.hp<d.maxHp){c.fillStyle='#1a2933';c.fillRect(d.x-10,d.y+24,20,2);c.fillStyle=d.hp/d.maxHp>.4?'#72b5a4':'#db795c';c.fillRect(d.x-10,d.y+24,20*d.hp/d.maxHp,2);}
  }
  for(const h of w.haulers){

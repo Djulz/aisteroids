@@ -4,7 +4,7 @@ export type FleetType='impactMiner'|'laserMiner'|'escort'|'hauler'|'scout'|'mini
 export type FleetComposition=Record<FleetType,number>;
 export const MAX_FLEET_CAPACITY=6;
 export const freshComposition=():FleetComposition=>({impactMiner:1,laserMiner:0,escort:0,hauler:0,scout:0,miningRig:0});
-export const usedSlots=(fleet:FleetComposition)=>fleet.impactMiner+fleet.laserMiner+fleet.hauler+fleet.escort+fleet.scout+2*fleet.miningRig;
+export const usedSlots=(fleet:FleetComposition)=>fleet.impactMiner+fleet.laserMiner+fleet.hauler+fleet.escort+fleet.scout+fleet.miningRig;
 export type FleetOwner={fleetCapacity:number;fleetComposition:FleetComposition;unlockedTypes:FleetType[];progress:{rivalSeen:boolean}};
 export const typeAvailable=(c:FleetOwner,type:FleetType)=>type==='impactMiner'||type==='scout'||type==='escort'&&c.progress.rivalSeen||type==='hauler'&&c.unlockedTypes.includes('hauler')||type==='miningRig'&&c.unlockedTypes.includes('miningRig');
 export function fleetError(c:FleetOwner):string|undefined{
