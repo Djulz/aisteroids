@@ -9,6 +9,7 @@ export const POIS=[
  {id:'abandoned_cargo_relay',name:'Abandoned Cargo Relay'},
  {id:'derelict_freight_shuttle',name:'Derelict Freight Shuttle'},
  {id:'automated_sorting_archive',name:'Automated Sorting Archive'},
+ {id:'derelict_excavation_platform',name:'Derelict Excavation Platform'},
 ] as const satisfies readonly {id:DiscoveryId&WorldPoiId;name:string}[];
 export type PoiId=(typeof POIS)[number]['id'];
 export type Sensor={x:number;y:number;radius:number};

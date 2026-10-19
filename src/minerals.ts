@@ -28,9 +28,11 @@ export function mineralForRock(id:number,x:number,y:number,seed:number):MineralI
  hash^=hash>>>16;hash=Math.imul(hash,0x7feb352d)>>>0;hash^=hash>>>15;
  return choices[(hash>>>0)%choices.length];
 }
-export function canExtract(kind:'impactMiner'|'laserMiner',mineral:MineralId,upgrades:readonly string[]):boolean{
+export function canExtract(kind:'impactMiner'|'laserMiner'|'miningRig',mineral:MineralId,upgrades:readonly string[]):boolean{
  const tool=MINERALS[mineral].tool;
- return tool==='impact'||kind==='laserMiner'&&(tool==='laser'||tool==='highPowerOptics'&&upgrades.includes('highPowerOptics')||tool==='resonanceMining'&&upgrades.includes('resonanceMining'));
+ return tool==='impact'||tool==='laser'&&upgrades.includes('highPowerOptics')||
+  tool==='highPowerOptics'&&upgrades.includes('highPowerOptics')||
+  tool==='resonanceMining'&&upgrades.includes('resonanceMining');
 }
 export function depositReserve(mineral:MineralId,radius:number):number{
  return Math.max(3,Math.round(MINERALS[mineral].density*radius/29));

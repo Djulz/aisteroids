@@ -13,8 +13,8 @@ test('careful retreat and convoy coordination still apply to type-based fleet',(
  for(const w of [convoy,careful]){w.enemies.push({id:99,x:w.drones[0].x+30,y:w.drones[0].y-20,vx:0,vy:0,hp:3,cooldown:1,path:[],pathKey:'',pathAge:0});step(w,STEP);}
  assert.ok(careful.disengagements>=1);assert.equal(convoy.doctrine,'convoy');
 });
-test('Full Contact never converts Laser Miner to ramming',()=>{
- const base=freshCompany(),c:Company={...base,unlockedTypes:['impactMiner','laserMiner'],fleetComposition:{...base.fleetComposition,impactMiner:0,laserMiner:1},doctrine:'fullContact'};
+test('Full Contact never converts Laser Cutter to ramming',()=>{
+ const base=freshCompany(),c:Company={...base,talents:['laserCutter'],doctrine:'fullContact'};
  const w=run(createWorld(c));assert.ok(w.shots>0);assert.equal(w.collisions,0);
 });
 test('unlocked Escort and built HQ Turret still fire on valid in-range hostiles',()=>{

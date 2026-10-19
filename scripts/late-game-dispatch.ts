@@ -4,8 +4,8 @@ import {createWorld,freshCompany,step,STEP,planMinerWork,type Company} from '../
 
 for(const [seed,slots,cleared] of [[7,5,900],[7,6,900],[19,6,1300]] as const){
  const c:Company={...freshCompany(seed),fleetCapacity:slots,enduranceLevel:3,
-  fleetComposition:{impactMiner:0,laserMiner:slots,scout:0,hauler:0,escort:0,miningRig:0},
-  unlockedTypes:['impactMiner','scout','laserMiner'],unlockedTechnologies:['laserMining','rapidCooling'],
+  fleetComposition:{impactMiner:slots,laserMiner:0,scout:0,hauler:0,escort:0,miningRig:0},
+  unlockedTypes:['impactMiner','scout'],talents:['laserCutter','longRangeOptics'],
   extractionUpgrades:['highPowerOptics','resonanceMining'],environmentUpgrades:['radiationShielding','navigationStabilizers']};
  const w=createWorld(c);w.explored.fill(255);w.rocks.forEach(r=>{w.identifiedRocks.add(r.id);if(Math.hypot(r.x-w.base.x,r.y-w.base.y)<cleared)r.hp=0;});
  w.wave=1;w.nextRaid=Infinity;

@@ -1,7 +1,7 @@
 import {type Camera,newCamera} from './camera.ts';
 import { HOME, W, H, ORE_PICKUP_DELAY, visibleAt, exploredAt, investigated, type World } from './sim.ts';
 import {CELL,COLS,ROWS} from './knowledge.ts';
-import {drawShip,drawMother,drawOutpost,drawTurret,drawRock,rockArtTier,drawPoi,rockPalette,drawMineral,type RockPalette} from './art.ts';
+import {drawShip,drawMother,drawOutpost,drawTurret,drawRock,rockArtTier,drawPoi,rockPalette,drawMineral,drawMiningRig,drawCargoCart,type RockPalette} from './art.ts';
 import {BIOMES,biomeAt} from './biomes.ts';
 import {newTrailState,updateTrails,drawTrails,type TrailSource,type TrailState} from './trails.ts';
 import {MINERALS} from './minerals.ts';
@@ -114,6 +114,15 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    drawShip(c,'hauler',h.x,h.y,h.angle,{cargo:h.cargo,capacity:h.capacity,time:w.time,thrust:h.state==='work'||h.state==='return'});
    if(h.hp<h.maxHp){c.fillStyle='#102a34';c.fillRect(h.x-11,h.y+23,22,2);c.fillStyle='#9bd5cb';c.fillRect(h.x-11,h.y+23,22*h.hp/h.maxHp,2);}
  }
+ for(const rig of w.rigs){if(rig.state==='dead')continue;
+  drawMiningRig(c,rig.x,rig.y,rig.angle,rig.state,rig.cargo,rig.capacity,w.time);
+  if(rig.state==='deploy'||rig.state==='pack'){c.strokeStyle='#eeb950';c.lineWidth=2;c.beginPath();c.arc(rig.x,rig.y,29,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,rig.setup/2));c.stroke();}
+ }
+ for(const cart of w.carts)if(!cart.destroyed)drawCargoCart(c,cart.x,cart.y,cart.cargo,cart.capacity,cart.hp,cart.maxHp);
+ if(w.service){const buoy=w.service;c.save();c.translate(buoy.x,buoy.y);c.strokeStyle='#72c7bd';c.lineWidth=2;c.strokeRect(-11,-11,22,22);c.fillStyle='#1b3640';c.fillRect(-7,-7,14,14);c.fillStyle='#72c7bd';c.fillRect(-2,-5,4,10);c.fillRect(-5,-2,10,4);if(buoy.cargoItems.length){c.fillStyle='#f5b743';c.fillRect(-8,14,16*buoy.cargoItems.length/12,2);}c.restore();}
+ for(const b of w.beacons){c.strokeStyle='#72c7bd99';c.lineWidth=1;c.beginPath();c.arc(b.x,b.y,8,0,7);c.stroke();c.fillStyle='#72c7bd';c.fillRect(b.x-2,b.y-2,4,4);}
+ for(const d of w.decoys){c.strokeStyle='#e69c30';c.beginPath();c.arc(d.x,d.y,8+(d.expires-w.time)*3,0,7);c.stroke();}
+ for(const s of w.shields){const worker=[...w.drones,...w.haulers,...w.rigs].find(d=>d.id===s.targetId&&d.state!=='dead');if(!worker)continue;c.strokeStyle='#8bded0aa';c.lineWidth=1.3;c.beginPath();c.arc(worker.x,worker.y,24,0,7);c.stroke();}
  for(const g of w.guards){if(g.hp<=0){c.strokeStyle='#558b86';c.beginPath();c.moveTo(g.x-5,g.y-5);c.lineTo(g.x+5,g.y+5);c.moveTo(g.x-5,g.y+5);c.lineTo(g.x+5,g.y-5);c.stroke();continue;}if(selected===-1000-g.id){c.strokeStyle='#8ee3cc';c.beginPath();c.arc(g.x,g.y,21,0,7);c.stroke();}drawShip(c,'escort',g.x,g.y,g.angle);if(g.hp<g.maxHp){c.fillStyle='#0b2029';c.fillRect(g.x-8,g.y+17,16,2);c.fillStyle='#8ee3cc';c.fillRect(g.x-8,g.y+17,g.hp/g.maxHp*16,2);}}
  for(const s of w.scouts){if(s.state==='dead'||s.state==='docked')continue;
   drawShip(c,'scout',s.x,s.y,s.angle,{time:w.time,thrust:s.state==='exploring'||s.state==='return'});
@@ -133,6 +142,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    }
    else if(e.type==='enemyShot'||e.type==='guardShot'||e.type==='turretShot'){c.strokeStyle=e.type==='enemyShot'?'#f5848d':e.type==='turretShot'?'#f5b743':'#8af0dc';c.lineWidth=3*a+1;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.fillStyle=c.strokeStyle;c.beginPath();c.arc(e.tx!,e.ty!,3+(1-a)*8,0,7);c.fill();}
    else if(e.type==='laser'){c.strokeStyle='#67d9ce';c.lineWidth=4;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.strokeStyle='#eaffec';c.lineWidth=1.2;c.stroke();}
+   else if(e.type==='phase'){c.strokeStyle='#f5b743';c.lineWidth=2;c.setLineDash([6,5]);c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.setLineDash([]);}
    else if(e.type==='ore'&&e.max-e.life<.25&&e.tx!==undefined){
     const t=1-Math.exp(-(e.max-e.life)*16),x=e.tx+(e.x-e.tx)*t,y=e.ty!+(e.y-e.ty!)*t;
     c.globalAlpha=1;c.save();c.translate(x,y);c.rotate(t*4);drawMineral(c,e.items?.[0]?.mineral??'ferrite',0,0,4);c.restore();

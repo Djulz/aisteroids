@@ -1,7 +1,6 @@
 import {performance} from 'node:perf_hooks';
 import {freshCompany,createWorld,step,settle,buy,STEP,type Company} from '../src/sim.ts';
 import {changeFleet} from '../src/fleet.ts';
-import {research} from '../src/research.ts';
 
 export function campaign(seed:number,rounds=8){
  let company=freshCompany(seed);const rows=[];
@@ -9,9 +8,8 @@ export function campaign(seed:number,rounds=8){
   if(company.fleetCapacity===1&&company.credits>=28)company=buy(company,'fleetSlot')!;
   if(company.fleetCapacity>=2&&company.fleetComposition.scout===0)company=changeFleet(company,'scout',1)!;
   if(company.fleetComposition.scout>0&&!company.focuses.scout)company={...company,focuses:{...company.focuses,scout:{x:800,y:3420}}};
-  if(company.progress.rivalSeen&&company.techPointsAvailable>0&&!company.unlockedTechnologies.includes('escortProgram'))company=research(company,'escortProgram')??company;
-  if(company.unlockedTechnologies.includes('escortProgram')&&company.fleetCapacity<3&&company.credits>=58)company=buy(company,'fleetSlot')!;
-  if(company.fleetCapacity>=3&&company.unlockedTechnologies.includes('escortProgram')&&company.fleetComposition.escort===0)company=changeFleet(company,'escort',1)!;
+  if(company.progress.rivalSeen&&company.fleetCapacity<3&&company.credits>=58)company=buy(company,'fleetSlot')!;
+  if(company.fleetCapacity>=3&&company.progress.rivalSeen&&company.fleetComposition.escort===0)company=changeFleet(company,'escort',1)!;
   if(company.fleetComposition.escort>0)company={...company,focuses:{...company.focuses,mining:{x:800,y:3420}}};
   const start=performance.now(),world=createWorld(company);
   for(let tick=0;world.phase!=='done'&&tick<210/STEP;tick++)step(world);

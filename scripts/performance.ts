@@ -4,9 +4,8 @@ import {createWorld,freshCompany,step,W,H,type Company} from '../src/sim.ts';
 import {route,navigationStats} from '../src/navigation.ts';
 
 const c:Company={...freshCompany(7),fleetCapacity:6,enduranceLevel:3,
- fleetComposition:{impactMiner:2,laserMiner:1,scout:1,hauler:1,escort:1,miningRig:0},
- unlockedTypes:['impactMiner','laserMiner','scout','hauler','escort'],
- unlockedTechnologies:['laserMining','escortProgram','expandedHauler'],
+ fleetComposition:{impactMiner:3,laserMiner:0,scout:1,hauler:1,escort:1,miningRig:0},
+ unlockedTypes:['impactMiner','scout','hauler','escort'],talents:['laserCutter','bulkCarrier'],
  extractionUpgrades:['highPowerOptics','resonanceMining'],
  environmentUpgrades:['radiationShielding','navigationStabilizers'],
  progress:{farSurveyed:true,richSampled:true,rivalSeen:true,outpostSurveyed:true}};

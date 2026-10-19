@@ -3,7 +3,7 @@ import type {BiomeId} from './biomes.ts';
 
 export const GENERATOR_VERSION=1;
 export type Place={x:number;y:number};
-export type WorldPoiId='abandoned_research_station'|'experimental_probe_salvaged'|'abandoned_cargo_relay'|'derelict_freight_shuttle'|'automated_sorting_archive';
+export type WorldPoiId='abandoned_research_station'|'experimental_probe_salvaged'|'abandoned_cargo_relay'|'derelict_freight_shuttle'|'automated_sorting_archive'|'derelict_excavation_platform';
 export type Deposit={id:number;x:number;y:number;r:number;shape:number[];rich:boolean};
 export type Universe={seed:number;generatorVersion:number;width:number;height:number;hq:Place;outpost:Place;silentCore:Place;pois:readonly (Place&{id:WorldPoiId;name:string})[];deposits:readonly Deposit[];rivalHomes:readonly Place[]};
 const cache=new Map<number,Universe>();
@@ -22,7 +22,7 @@ export function generateUniverse(seed:number):Universe{
  const places=random(seed^0x48f0a19),rocks=random(seed^0x27b8c5d);
  const jitter=(x:number,y:number,amount:number):Place=>({x:clamp(x+(places()-.5)*amount,120,W-120),y:clamp(y+(places()-.5)*amount,120,H-120)});
  const outpost=jitter(FAR.x,FAR.y,90);
- const pois:Universe['pois']=[
+ const pois:(Place&{id:WorldPoiId;name:string})[]=[
   {id:'abandoned_research_station',name:'Derelict Research Station',...jitter(1690,2300,160)},
   {id:'abandoned_cargo_relay',name:'Abandoned Cargo Relay',...jitter(2140,2990,180)},
   {id:'experimental_probe_salvaged',name:'Experimental Probe',...jitter(2470,2010,180)},
@@ -43,6 +43,26 @@ export function generateUniverse(seed:number):Universe{
     deposits.some(p=>Math.hypot(p.x-x,p.y-y)<p.r+r+27))continue;
   const id=deposits.length;deposits.push({id,x,y,r,rich:regionAt(seed,x,y)!=='home_belt'&&id%4===0,shape:Array.from({length:11},()=>.77+rocks()*.23)});i++;
  }
+ // Content patch after generating the unchanged Pass O deposits: old rock IDs,
+ // reserves and shape RNG remain byte-for-byte stable on existing companies.
+ const clear=(p:Place)=>deposits.every(r=>Math.hypot(p.x-r.x,p.y-r.y)>r.r+92)&&Math.hypot(p.x-HOME.x,p.y-HOME.y)>125;
+ const site=(region:BiomeId,centers:readonly Place[])=>{
+  for(const center of centers)for(let ring=0;ring<12;ring++)for(let side=0;side<12;side++){
+   const p={x:center.x+ring*33*Math.cos(side*Math.PI/6),y:center.y+ring*33*Math.sin(side*Math.PI/6)};
+   if(regionAt(seed,p.x,p.y)===region&&clear(p)&&p.x>120&&p.x<W-120&&p.y>120&&p.y<H-120)return p;
+  }
+  throw Error('No clear Pass P site');
+ };
+ const relay=pois.find(p=>p.id==='abandoned_cargo_relay')!;
+ const nearHome=(()=>{
+  for(let radius=95;radius<=220;radius+=5)for(let angle=0;angle<24;angle++){
+   const a=(angle+12)*Math.PI/12,p={x:HOME.x+Math.cos(a)*radius,y:HOME.y+Math.sin(a)*radius};
+   if(regionAt(seed,p.x,p.y)==='home_belt'&&deposits.every(r=>Math.hypot(p.x-r.x,p.y-r.y)>r.r+46))return p;
+  }
+  throw Error('No reachable Home Belt relay');
+ })();
+ Object.assign(relay,nearHome);
+ pois.push({id:'derelict_excavation_platform',name:'Derelict Excavation Platform',...site('scrap_fields',[{x:HOME.x+470,y:HOME.y+730},{x:HOME.x-450,y:HOME.y+780}])});
  const definition:Universe={seed,generatorVersion:GENERATOR_VERSION,width:W,height:H,hq:HOME,outpost,silentCore:{x:5630,y:770},pois,deposits,rivalHomes};
  if(cache.size>=8)cache.delete(cache.keys().next().value!);
  cache.set(seed,definition);return definition;

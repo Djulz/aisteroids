@@ -1,4 +1,4 @@
-import {drawShip,drawMother,drawOutpost,drawRock,drawPoi,drawMineral,rockPalette,shipArt,rockArtTiers,poiArt,type ShipArt} from './art.ts';
+import {drawShip,drawMother,drawOutpost,drawMiningRig,drawCargoCart,drawRock,drawPoi,drawMineral,rockPalette,shipArt,rockArtTiers,poiArt,type ShipArt} from './art.ts';
 import {POIS} from './knowledge.ts';
 import {BIOMES,type BiomeId} from './biomes.ts';
 import {drawTrails,newTrailState,updateTrails} from './trails.ts';
@@ -7,10 +7,12 @@ import {MINERALS,mineralIds} from './minerals.ts';
 // Direct URL test scene only. No game navigation points here, and no company
 // data or simulation state is changed by opening the gallery.
 export function mountArtGallery(host:HTMLElement){
- const labels:Record<string,string>={impactMiner:'Impact Miner',laserMiner:'Laser Miner',escort:'Escort',scout:'Scout',hauler:'Hauler',enemyScout:'Enemy Scout',enemyFighter:'Enemy Fighter',abandoned_research_station:'Derelict Research Station',experimental_probe_salvaged:'Experimental Probe',abandoned_cargo_relay:'Abandoned Cargo Relay',derelict_freight_shuttle:'Derelict Freight Shuttle',automated_sorting_archive:'Automated Sorting Archive'};
+ const labels:Record<string,string>={impactMiner:'Impact Miner',laserMiner:'Laser Miner',escort:'Fighter',scout:'Scout',hauler:'Hauler',enemyScout:'Enemy Scout',enemyFighter:'Enemy Fighter',abandoned_research_station:'Derelict Research Station',experimental_probe_salvaged:'Experimental Probe',abandoned_cargo_relay:'Abandoned Cargo Relay',derelict_freight_shuttle:'Derelict Freight Shuttle',automated_sorting_archive:'Automated Sorting Archive',derelict_excavation_platform:'Derelict Excavation Platform'};
  const entries=[...shipArt.map(kind=>({id:kind,label:labels[kind],draw:(c:CanvasRenderingContext2D)=>drawShip(c,kind,0,0,-Math.PI/2,{thrust:true,cargo:5,capacity:10})})),
   {id:'hq',label:'HQ',draw:(c:CanvasRenderingContext2D)=>drawMother(c,0,0,0,0)},
   {id:'outpost',label:'Outpost',draw:(c:CanvasRenderingContext2D)=>drawOutpost(c,0,0,true,0)},
+  {id:'mining-rig',label:'Mining Rig · deployed',draw:(c:CanvasRenderingContext2D)=>drawMiningRig(c,0,0,-Math.PI/2,'drill',3,6,1)},
+  {id:'cargo-cart',label:'Cargo Cart',draw:(c:CanvasRenderingContext2D)=>drawCargoCart(c,0,0,6,12,6,6)},
   ...rockArtTiers.map(tier=>({id:`tier-${tier}`,label:`${MINERALS[mineralIds[tier-1]].name} · ${MINERALS[mineralIds[tier-1]].credits} credits`,draw:(c:CanvasRenderingContext2D)=>drawRock(c,{id:0,x:0,y:0,r:29,hp:50,max:50,shape:[.89,.83,.98,.9,.85,.97,.8,.94,.9,.98,.78]},tier)})),
   ...poiArt.map(id=>({id,label:labels[id]??POIS.find(p=>p.id===id)!.name,draw:(c:CanvasRenderingContext2D)=>drawPoi(c,id,0,0)}))];
  const biomeIds=Object.keys(BIOMES) as BiomeId[];

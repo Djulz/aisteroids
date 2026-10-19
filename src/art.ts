@@ -13,7 +13,27 @@ export type RockArtTier=1|2|3|4|5;
 export type ShipArt='impactMiner'|'laserMiner'|'escort'|'scout'|'hauler'|'enemyScout'|'enemyFighter';
 export const shipArt:readonly ShipArt[]=['impactMiner','laserMiner','escort','scout','hauler','enemyScout','enemyFighter'];
 export const rockArtTiers:readonly RockArtTier[]=[1,2,3,4,5];
-export const poiArt:readonly PoiId[]=['abandoned_research_station','experimental_probe_salvaged','abandoned_cargo_relay','derelict_freight_shuttle','automated_sorting_archive'];
+export const poiArt:readonly PoiId[]=['abandoned_research_station','experimental_probe_salvaged','abandoned_cargo_relay','derelict_freight_shuttle','automated_sorting_archive','derelict_excavation_platform'];
+
+export function drawMiningRig(c:C,x:number,y:number,angle:number,state:string,cargo:number,capacity:number,time:number){
+ c.save();c.translate(x,y);c.rotate(angle+Math.PI/2);
+ const working=state==='drill'||state==='blocked',spread=working?1:.55;
+ rect(c,-17,-15,34,30,hull,gold,2);
+ poly(c,[[-10,-12],[10,-12],[14,-5],[14,9],[8,13],[-8,13],[-14,9],[-14,-5]],gold);
+ rect(c,-9,-9,18,12,hull,cream,1);
+ for(const side of [-1,1]){
+  rect(c,side*22-4*spread,-11,8*spread,23,cream,amber,1.5);
+  rect(c,side*27-3,-4,6,8,hull,gold,1);
+ }
+ poly(c,[[-6,14],[0,22+(working?Math.sin(time*10)*2:0)],[6,14]],working?teal:amber);
+ rect(c,-8,6,16,4,hull);rect(c,-7,7,14*Math.min(1,cargo/Math.max(1,capacity)),2,state==='blocked'?coral:teal);
+ c.restore();
+}
+export function drawCargoCart(c:C,x:number,y:number,cargo:number,capacity:number,hp:number,maxHp:number){
+ c.save();c.translate(x,y);rect(c,-11,-8,22,16,hull,hp<maxHp*.4?coral:gold,1.5);
+ rect(c,-8,-5,16,10,slate,cream,1);rect(c,-7,-3,14*Math.min(1,cargo/capacity),6,amber);
+ rect(c,-13,-5,3,10,edge);rect(c,10,-5,3,10,edge);c.restore();
+}
 
 function path(c:C,points:readonly Point[]){c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();}
 function poly(c:C,points:readonly Point[],fill:string,stroke?:string,width=1){path(c,points);c.fillStyle=fill;c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
@@ -168,6 +188,10 @@ export function drawPoi(c:C,id:PoiId,x:number,y:number,done=false,locked=false){
    c.strokeStyle=edge;c.lineWidth=5;c.beginPath();c.arc(0,0,13,-2.6,-.55);c.arc(0,0,13,.4,2.5);c.stroke();
    c.strokeStyle=amber;c.lineWidth=2;c.beginPath();c.arc(0,0,13,-.45,.25);c.stroke();
    ring(c,0,0,8,'#4d6972',2);rect(c,-3,-3,6,6,hull,teal);break;
+  case 'derelict_excavation_platform':
+   poly(c,[[-14,-8],[-9,-14],[9,-14],[14,-8],[14,9],[8,14],[-8,14],[-14,9]],slate,edge);
+   rect(c,-7,-8,14,15,hull,amber);rect(c,-3,-4,6,8,'#07121b',teal);
+   rect(c,-20,-5,6,12,amber);rect(c,14,-5,6,12,amber);break;
  }
  if(locked){c.strokeStyle=gold;c.lineWidth=2;c.beginPath();c.arc(0,0,25,-Math.PI*.55,Math.PI*.05);c.stroke();}
  c.restore();

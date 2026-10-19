@@ -34,9 +34,9 @@ export function overview(c:Camera,w?:World){
  c.zoom=Math.min(.75,c.width/(right-left+180),c.height/(bottom-top+180));c.x=(left+right)/2;c.y=(top+bottom)/2;clampCamera(c);
 }
 export function fleetCenter(w:World){
- const fleet=[...w.drones.filter(d=>d.state==='mine'||d.state==='handoff'||d.state==='return'||d.state==='unload'),...w.haulers.filter(h=>h.state==='work'||h.state==='return'||h.state==='unload')];
- const wrecks=[...w.drones,...w.haulers].filter(d=>d.state==='dead');
- const targets=fleet.length?fleet:wrecks.length===w.drones.length+w.haulers.length?wrecks:[w.base];
+ const fleet=[...w.drones.filter(d=>d.state==='mine'||d.state==='handoff'||d.state==='return'||d.state==='unload'),...w.haulers.filter(h=>h.state==='work'||h.state==='return'||h.state==='unload'),...w.rigs.filter(r=>r.state!=='dead'&&r.state!=='docked')];
+ const wrecks=[...w.drones,...w.haulers,...w.rigs].filter(d=>d.state==='dead');
+ const targets=fleet.length?fleet:wrecks.length===w.drones.length+w.haulers.length+w.rigs.length?wrecks:[w.base];
  const x=(Math.min(...targets.map(d=>d.x))+Math.max(...targets.map(d=>d.x)))/2;
  const y=(Math.min(...targets.map(d=>d.y))+Math.max(...targets.map(d=>d.y)))/2;
  return {x,y};

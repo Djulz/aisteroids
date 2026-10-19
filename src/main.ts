@@ -12,7 +12,7 @@ import {readCompany,SAVE_KEY} from './storage.ts';
 import {renderLobby,type LobbyTab} from './lobby.ts';
 import {changeFleet,fleetError,usedSlots,type FleetType} from './fleet.ts';
 import {POIS,type PoiId} from './knowledge.ts';
-import {TECH_DISCOVERIES,research,type TechnologyId} from './research.ts';
+import {TECH_DISCOVERIES,TALENTS,talentOptions,research,respec,categoryName,type TalentId,type Category} from './research.ts';
 import {mountArtGallery} from './art-gallery.ts';
 import {BIOMES,type EnvironmentUpgrade} from './biomes.ts';
 import {MINERALS,canExtract} from './minerals.ts';
@@ -24,7 +24,7 @@ import {mountDevMap} from './dev-map.ts';
 import {readMotion,reducedMotion,saveMotion,type MotionChoice} from './preferences.ts';
 
 const app=document.querySelector<HTMLDivElement>('#app')!;
-let company:Company,world:World,hasCompany=false,storageOK=true,bootIssue:'corrupt'|'reset'|'storage'|null=null;
+let company:Company,world:World,hasCompany=false,storageOK=true,bootIssue:'corrupt'|'reset'|'migrated'|'storage'|null=null;
 try{const saved=readCompany(localStorage,crypto.getRandomValues(new Uint32Array(1))[0]);hasCompany=!!saved.company;if(saved.company)company=saved.company;storageOK=saved.storageOK;bootIssue=saved.issue;}
 catch{storageOK=false;bootIssue='storage';}
 let screen:'menu'|'workshop'|'mission'='menu',speed=1,accumulator=0,last=0,debriefShown=false,recallVisible=0,resolving=false,missionToken=0;
@@ -45,7 +45,7 @@ function saveCompany(next:Company){try{localStorage.setItem(SAVE_KEY,JSON.string
 function save(){saveCompany(company);}
 function showMenu(){
  menuCleanup?.();menuCleanup=null;screen='menu';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.25.0</small></main>`;
+ app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':bootIssue==='migrated'?'Previous research Tech was returned for the new fleet choices. Your world and company were preserved.':'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.26.0</small></main>`;
  menuCleanup=mountMenuScene(app.querySelector<HTMLCanvasElement>('#menu-scene')!,isReduced());
  app.querySelector('#menu-continue')?.addEventListener('click',()=>{if(hasCompany)showWorkshop();});
  app.querySelector('#menu-new')?.addEventListener('click',openNewGame);
@@ -54,11 +54,12 @@ function showMenu(){
 function showWorkshop(){
  if(!hasCompany)return;
  menuCleanup?.();menuCleanup=null;screen='workshop';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">Rock Bottom Robotics · Alpha 0.25.0</footer></main>`;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">Rock Bottom Robotics · Alpha 0.26.0</footer></main>`;
  for(const tab of ['workshop','hangar','research'] as const)document.querySelector(`#tab-${tab}`)?.addEventListener('click',()=>{
   activeTab=tab;researchOpen=false;try{localStorage.setItem('aisteroids-lobby-tab',tab);}catch{}showWorkshop();
  });
- document.querySelectorAll<HTMLButtonElement>('[data-research]').forEach(b=>b.onclick=()=>{const next=research(company,b.dataset.research as TechnologyId);if(next){company=next;save();showWorkshop();}});
+ document.querySelectorAll<HTMLButtonElement>('[data-upgrade]').forEach(b=>b.onclick=()=>openTalentChoices(b.dataset.upgrade as Category,b));
+ document.querySelectorAll<HTMLButtonElement>('[data-respec]').forEach(b=>b.onclick=()=>openRespec(b.dataset.respec as Category,b));
  document.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b=>b.onclick=()=>{const next=buy(company,b.dataset.buy as Purchase);if(next){company=next;save();showWorkshop();}});
  document.querySelectorAll<HTMLButtonElement>('[data-environment]').forEach(b=>b.onclick=()=>{const next=buyEnvironment(company,b.dataset.environment as EnvironmentUpgrade);if(next){company=next;save();showWorkshop();}});
  document.querySelectorAll<HTMLButtonElement>('[data-type][data-delta]').forEach(b=>b.onclick=()=>{const next=changeFleet(company,b.dataset.type as FleetType,Number(b.dataset.delta) as -1|1);if(next){company=usedSlots(next.fleetComposition)===next.fleetCapacity?{...next,capacityReminder:next.fleetCapacity}:next;save();showWorkshop();}});
@@ -89,6 +90,33 @@ function showWorkshop(){
  document.querySelector('#new-game')?.addEventListener('click',openNewGame);
  document.querySelector('#main-menu')?.addEventListener('click',showMenu);
  document.querySelector('#copy-seed')?.addEventListener('click',()=>copySeed(app));
+}
+function openTalentChoices(category:Category,opener:HTMLElement){
+ const options=talentOptions(company,category);if(options.length!==2)return;
+ const backdrop=document.createElement('div');backdrop.className='capacity-backdrop';
+ backdrop.innerHTML=`<section role="dialog" aria-modal="true" aria-label="${categoryName[category]} research choices" class="capacity-dialog talent-dialog"><h2>${categoryName[category]} · LEVEL ${company.talents.filter(id=>TALENTS[id].category===category).length+1}</h2><p>Applies to all present and future ${categoryName[category]} units.</p>${options.map(id=>`<button class="talent-choice" data-choice="${id}"><b>${TALENTS[id].name}</b><small>${TALENTS[id].effect}</small><strong>◈ ${TALENTS[id].level}</strong></button>`).join('')}<button id="talent-cancel">BACK</button></section>`;
+ app.append(backdrop);
+ const close=()=>{backdrop.remove();if(opener.isConnected)opener.focus();};
+ backdrop.querySelector<HTMLButtonElement>('#talent-cancel')!.onclick=close;
+ backdrop.querySelectorAll<HTMLButtonElement>('[data-choice]').forEach(button=>button.onclick=()=>{
+  const id=button.dataset.choice as TalentId,node=TALENTS[id];
+  backdrop.querySelector<HTMLButtonElement>('#talent-cancel')!.textContent='CANCEL';
+  backdrop.querySelectorAll<HTMLButtonElement>('[data-choice]').forEach(other=>{other.hidden=other!==button;other.disabled=true;});
+  const confirm=document.createElement('button');confirm.className='primary';confirm.textContent=`CONFIRM ${node.name} · ◈ ${node.level}`;
+  button.after(confirm);confirm.focus();
+  confirm.onclick=()=>{confirm.disabled=true;const next=research(company,id);if(!next){close();return;}if(!saveCompany(next)){confirm.disabled=false;return;}company=next;backdrop.remove();showWorkshop();};
+ });
+ backdrop.addEventListener('click',e=>{if(e.target===backdrop)close();});
+ trapDialog(backdrop,close);backdrop.querySelector<HTMLElement>('[data-choice]')?.focus();
+}
+function openRespec(category:Category,opener:HTMLElement){
+ const owned=company.talents.filter(id=>TALENTS[id].category===category);if(!owned.length)return;
+ const refund=owned.reduce((sum,id)=>sum+TALENTS[id].level,0),backdrop=document.createElement('div');backdrop.className='capacity-backdrop';
+ backdrop.innerHTML=`<section role="dialog" aria-modal="true" aria-label="Reset ${categoryName[category]} research" class="capacity-dialog"><h2>RESET ${categoryName[category].toUpperCase()}?</h2><p>Return ◈ ${refund} Tech. This clears this category’s choices for all its units. Its blueprint remains available.</p><button id="confirm-respec" class="primary">CONFIRM RESPEC</button><button id="cancel-respec">CANCEL</button></section>`;
+ app.append(backdrop);const close=()=>{backdrop.remove();if(opener.isConnected)opener.focus();};
+ backdrop.querySelector<HTMLButtonElement>('#cancel-respec')!.onclick=close;
+ backdrop.querySelector<HTMLButtonElement>('#confirm-respec')!.onclick=()=>{const next=respec(company,category);if(!next||!saveCompany(next))return;company=next;backdrop.remove();showWorkshop();};
+ backdrop.addEventListener('click',e=>{if(e.target===backdrop)close();});trapDialog(backdrop,close);backdrop.querySelector<HTMLButtonElement>('#cancel-respec')!.focus();
 }
 function openNewGame(){
  if((screen!=='workshop'&&screen!=='menu')||document.querySelector('#new-game-dialog'))return;
@@ -214,8 +242,8 @@ function updateHUD(){if(screen!=='mission')return;
  }else poiSheetKey='';
  const rockSheet=document.querySelector<HTMLElement>('#rock-sheet')!,rock=world.rocks.find(r=>r.id===selectedRock&&r.hp>0);
  rockSheet.hidden=!rock||!!selectedPoi;
- if(rock){const spec=MINERALS[rock.mineral],available=world.drones.some(d=>d.state!=='dead'&&canExtract(d.kind,rock.mineral,world.company.extractionUpgrades));
-  const requirement=spec.tool==='highPowerOptics'?'High-Power Optics':spec.tool==='resonanceMining'?'Resonance Mining':spec.tool==='laser'?'Laser Miner':'compatible Miner';
+ if(rock){const spec=MINERALS[rock.mineral],available=world.drones.some(d=>d.state!=='dead'&&canExtract(d.kind,rock.mineral,world.company.extractionUpgrades))||world.rigs.some(r=>r.state!=='dead'&&canExtract('miningRig',rock.mineral,world.company.extractionUpgrades));
+  const requirement=spec.tool==='highPowerOptics'||spec.tool==='laser'?'High-Power Optics':spec.tool==='resonanceMining'?'Resonance Mining':'compatible Miner';
   const key=`${rock.id}:${rock.hp}:${available}`;
   if(key!==rockSheetKey){rockSheetKey=key;rockSheet.innerHTML=`<div><b>${spec.name} deposit</b><button id="close-rock" aria-label="Close deposit details">×</button></div><small>${rock.hp} fragments · ${spec.credits} Credits each${available?'':` · Requires ${requirement}`}</small>`;
    rockSheet.querySelector('#close-rock')?.addEventListener('click',()=>{selectedRock=null;updateHUD();});
@@ -225,8 +253,9 @@ function updateHUD(){if(screen!=='mission')return;
 function showDebrief(settled:Company){
  const minerLosses=world.drones.filter(d=>d.state==='dead').length,haulerLosses=world.haulers.filter(h=>h.state==='dead').length;
  const scoutLosses=world.scouts.filter(s=>s.state==='dead').length,escortLosses=world.guards.filter(g=>g.hp<=0).length;
- const fleetLost=minerLosses===world.drones.length&&haulerLosses===world.haulers.length;
- const lossParts=[minerLosses&&`${minerLosses} Miner${minerLosses===1?'':'s'}`,haulerLosses&&`${haulerLosses} Hauler${haulerLosses===1?'':'s'}`,scoutLosses&&`${scoutLosses} Scout${scoutLosses===1?'':'s'}`,escortLosses&&`${escortLosses} Fighter${escortLosses===1?'':'s'}`].filter(Boolean);
+ const rigLosses=world.rigs.filter(r=>r.state==='dead').length;
+ const fleetLost=minerLosses===world.drones.length&&haulerLosses===world.haulers.length&&rigLosses===world.rigs.length;
+ const lossParts=[minerLosses&&`${minerLosses} Miner${minerLosses===1?'':'s'}`,rigLosses&&`${rigLosses} Rig${rigLosses===1?'':'s'}`,haulerLosses&&`${haulerLosses} Hauler${haulerLosses===1?'':'s'}`,scoutLosses&&`${scoutLosses} Scout${scoutLosses===1?'':'s'}`,escortLosses&&`${escortLosses} Fighter${escortLosses===1?'':'s'}`].filter(Boolean);
  const milestones=([['farSurveyed','Scrap Fields charted'],['richSampled','Valuable sample delivered'],['rivalSeen','Rival scout encountered'],['outpostSurveyed','Outpost site surveyed']] as const).filter(([key])=>world.progress[key]&&!world.company.progress[key]).map(([,name])=>name);
  const discovery=[...new Set([...milestones,...world.newRegions.map(id=>`${BIOMES[id].name} charted`),...world.pendingTech.filter(e=>!['far_belt_charted','first_rich_sample','first_rival_contact','outpost_site_surveyed'].includes(e.id)).map(e=>TECH_DISCOVERIES[e.id]),...world.newSignals.flatMap(id=>{const site=POIS.find(p=>p.id===id);return site?[site.name]:[];})])];
  const result=document.createElement('div');result.className='debrief-backdrop';

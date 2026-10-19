@@ -6,7 +6,7 @@ import {workRate} from '../src/work.ts';
 import {scoutScanRadius} from '../src/biomes.ts';
 import {hasCell} from '../src/knowledge.ts';
 
-const laser=():Company=>({...freshCompany(),unlockedTypes:['impactMiner','scout','laserMiner'],fleetComposition:{...freshCompany().fleetComposition,impactMiner:0,laserMiner:1}});
+const laser=():Company=>({...freshCompany(),talents:['laserCutter']});
 test('route masks survive alternating mining targets and invalidate on depletion',()=>{
  const rocks:Obstacle[]=[{id:0,x:145,y:300,r:35,hp:3},{id:1,x:250,y:300,r:35,hp:3},
   {id:10,x:200,y:100,r:12,hp:3},{id:11,x:200,y:500,r:12,hp:3}];
@@ -39,6 +39,8 @@ test('a Laser finishes the last fragment of its current asteroid before changing
 });
 test('planning is bounded in quiet flight but depleted cached jobs invalidate immediately',()=>{
  const w=createWorld(laser()),d=w.drones[0];w.explored.fill(255);w.rocks.forEach(r=>w.identifiedRocks.add(r.id));
+ // Isolate the mining planner from the new first-shift relay investigation.
+ w.company.uniqueTechDiscoveries.push('abandoned_cargo_relay');
  d.cooldown=10;
  for(let i=0;i<60;i++)step(w);
  assert.ok(miningPlannerRuns(w)<12,`planner ran ${miningPlannerRuns(w)} times in one second`);

@@ -1,21 +1,20 @@
 import {cost,unlocked,missionDuration,ENDURANCE_DURATIONS,type Company,type Purchase} from './sim.ts';
 import {fleetError,usedSlots,MAX_FLEET_CAPACITY,type FleetType,typeAvailable} from './fleet.ts';
-import {TECH,technologyIds,researched,researchReason,type TechnologyId} from './research.ts';
+import {TALENTS,categories,categoryName,categoryRequirement,path,type Category,type TalentId} from './research.ts';
 import {ENVIRONMENT_UPGRADES,environmentIds} from './biomes.ts';
 
 export type LobbyTab='workshop'|'hangar'|'research';
 export type LobbyView={tab:LobbyTab;researchOpen?:boolean;error:string;storageOK:boolean};
 const fmt=(n:number)=>n.toLocaleString('en-US');
-const labels:Record<FleetType,string>={impactMiner:'Impact Miner',laserMiner:'Laser Miner',escort:'Fighter',hauler:'Hauler',scout:'Scout',miningRig:'Mobile Mining Rig'};
+const labels:Record<FleetType,string>={impactMiner:'Miner',laserMiner:'Miner',escort:'Fighter',hauler:'Hauler',scout:'Scout',miningRig:'Mining Rig'};
 const icons:Record<FleetType,string>={impactMiner:'⬡',laserMiner:'↗',escort:'✥',hauler:'▣',scout:'◇',miningRig:'▤'};
-const shortEffects:Record<TechnologyId,string>={laserMining:'Unlock ranged Laser Miners',impactRecovery:'Ram again sooner · 1.0 → 0.65 s',rapidCooling:'Laser fires faster · 2.0 → 1.6 s',escortProgram:'Unlock Fighters',threatTracking:'Fighters protect miners more effectively',haulerOperation:'Unlock Haulers',expandedHauler:'Hauler capacity · 10 → 14'};
 function workshop(c:Company){
  const items:Purchase[]=['fleetSlot','endurance','highPowerOptics','resonanceMining','turret','outpost'];
  const available=items.filter(item=>unlocked(c,item)&&!(item==='fleetSlot'?c.fleetCapacity>=MAX_FLEET_CAPACITY:item==='endurance'?c.enduranceLevel>=3:item==='highPowerOptics'||item==='resonanceMining'?c.extractionUpgrades.includes(item):c[item]));
  const purchaseRow=(item:Purchase,featured=false)=>{
   const price=cost(c,item),affordable=c.credits>=price;
   const title=item==='fleetSlot'?'Fleet Slot':item==='endurance'?'Shift Endurance':item==='highPowerOptics'?'High-Power Optics':item==='resonanceMining'?'Resonance Mining':item==='turret'?'HQ Turret':'Outer Outpost';
-  const detail=item==='fleetSlot'?`${c.fleetCapacity} / ${MAX_FLEET_CAPACITY} slots`:item==='endurance'?`${missionDuration(c)} → ${ENDURANCE_DURATIONS[c.enduranceLevel+1]} sec`:item==='highPowerOptics'?'Laser Miners can mine Aurite':item==='resonanceMining'?'Laser Miners can mine Voidite':item==='turret'?'Defend HQ':'Launch from the frontier';
+  const detail=item==='fleetSlot'?`${c.fleetCapacity} / ${MAX_FLEET_CAPACITY} slots`:item==='endurance'?`${missionDuration(c)} → ${ENDURANCE_DURATIONS[c.enduranceLevel+1]} sec`:item==='highPowerOptics'?'Shared extraction: Aurite and Cryonite':item==='resonanceMining'?'Shared extraction: Voidite':item==='turret'?'Defend HQ':'Launch from the frontier';
   return `<div class="upgrade${featured?' upgrade-featured':''}">${featured?'<span class="upgrade-milestone">NEXT MILESTONE</span>':''}<span class="upgrade-icon" aria-hidden="true">${{fleetSlot:'⬡',endurance:'◷',highPowerOptics:'◈',resonanceMining:'◉',turret:'⌖',outpost:'⌂'}[item]}</span><div class="upgrade-copy"><b>${title}</b><small>${detail}</small></div><button data-buy="${item}" ${affordable?'':'disabled'} aria-label="Buy ${title} for ${price} Credits">BUY · ◆${fmt(price)}</button></div>`;
  };
  const outpost=available.includes('outpost')?purchaseRow('outpost',true):'';
@@ -27,25 +26,26 @@ function workshop(c:Company){
 }
 function hangar(c:Company){
  const f=c.fleetComposition,slots=usedSlots(f);
- const row=(type:Exclude<FleetType,'miningRig'>)=>{
+ const row=(type:FleetType)=>{
   if(!typeAvailable(c,type))return '';
-  const canRemove=f[type]>0&&(type==='impactMiner'||type==='laserMiner'?f.impactMiner+f.laserMiner>1:true);
-  return `<div class="fleet-row"><span class="fleet-icon" aria-hidden="true">${icons[type]}</span><b>${labels[type]}</b><div class="fleet-stepper"><button data-type="${type}" data-delta="-1" aria-label="Remove ${labels[type]}" ${canRemove?'':'disabled'}>−</button><strong>${f[type]}</strong><button data-type="${type}" data-delta="1" aria-label="Add ${labels[type]}" ${slots<c.fleetCapacity?'':'disabled'}>+</button></div></div>`;
+  const weight=type==='miningRig'?2:1;
+  return `<div class="fleet-row"><span class="fleet-icon" aria-hidden="true">${icons[type]}</span><b>${labels[type]}${weight===2?' · 2 slots':''}${type==='impactMiner'?`<small> · ${c.talents.includes('laserCutter')?'Laser':'Impact'}</small>`:''}</b><div class="fleet-stepper"><button data-type="${type}" data-delta="-1" aria-label="Remove ${labels[type]}" ${f[type]&&!(type==='impactMiner'&&f[type]===1&&!f.miningRig||type==='miningRig'&&f[type]===1&&!f.impactMiner)?'':'disabled'}>−</button><strong>${f[type]}</strong><button data-type="${type}" data-delta="1" aria-label="Add ${labels[type]}" ${slots+weight<=c.fleetCapacity?'':'disabled'}>+</button></div></div>`;
  };
- return `<section class="tab-content" aria-label="Hangar"><div class="hangar-title"><h2>HANGAR</h2><span>${slots} / ${c.fleetCapacity} SLOTS</span></div><div class="capacity-meter"><span style="width:${slots/c.fleetCapacity*100}%"></span></div>${(['impactMiner','laserMiner','scout','hauler','escort'] as const).map(row).join('')}</section>`;
+ return `<section class="tab-content" aria-label="Hangar"><div class="hangar-title"><h2>HANGAR</h2><span>${slots} / ${c.fleetCapacity} SLOTS</span></div><div class="capacity-meter"><span style="width:${slots/c.fleetCapacity*100}%"></span></div>${(['impactMiner','scout','hauler','escort','miningRig'] as const).map(row).join('')}${f.miningRig&&!f.hauler?'<p class="empty-note">A Hauler makes the Rig’s production deliverable. The Rig can still deploy without one.</p>':''}</section>`;
 }
 function researchPanel(c:Company){
- const nodes=technologyIds.filter(id=>researched(c,id)||id!=='escortProgram'||c.progress.rivalSeen).filter(id=>researched(c,id)||TECH[id].requires.every(required=>researched(c,required)));
- const available=nodes.filter(id=>!researched(c,id)),completed=nodes.filter(id=>researched(c,id));
- const row=(id:TechnologyId,owned:boolean)=>{
-  const node=TECH[id],reason=researchReason(c,id);
-  return `<details class="research-node"><summary><span class="research-copy"><b>${node.name}</b><small>${shortEffects[id]}</small></span><span class="research-cost">${owned?'DONE':`◈ ${node.cost}`}</span></summary><div class="research-detail"><small>${node.branch} · ${node.description}</small>${owned?'':`<button data-research="${id}" ${reason?'disabled':''} aria-label="Research ${node.name}, cost ${node.cost} Tech Point${node.cost===1?'':'s'}">${reason?'SAVE ◈':`RESEARCH · ◈ ${node.cost}`}</button>`}${reason?`<small class="research-reason">${reason}</small>`:''}</div></details>`;
+ const card=(category:Category)=>{
+  const chosen=path(c,category),level=chosen.length,requirement=categoryRequirement(c,category);
+  const summary=chosen.map(id=>TALENTS[id].name).join(' · ')||'Basic systems';
+  const future=Object.entries(TALENTS).filter(([,node])=>node.category===category&&node.level>level&&(!node.requires||!chosen.length||chosen.includes(node.requires as TalentId)))
+   .map(([,node])=>`L${node.level} ${node.name}: ${node.effect}`);
+  return `<article class="research-card"><div><b>${categoryName[category]}</b><small>LEVEL ${level}/3 · ${summary}</small>${requirement&&level<3?`<small class="research-reason">${requirement}</small>`:''}</div><div class="research-card-actions">${level===3?'<span>MAX</span>':`<button data-upgrade="${category}" ${requirement||c.techPointsAvailable<level+1?'disabled':''}>UPGRADE · ◈ ${level+1}</button>`}${level>0?`<button data-respec="${category}" class="secondary-action">RESPEC</button>`:''}</div><details><summary>View path</summary><small>${future.join(' · ')||'Path complete.'}</small></details></article>`;
  };
- return `<section class="research-panel" aria-label="Technology research"><div class="research-balance">◈ ${c.techPointsAvailable} <span>RESEARCH POINT${c.techPointsAvailable===1?'':'S'}</span></div><h2>AVAILABLE RESEARCH</h2>${available.map(id=>row(id,false)).join('')||'<p class="empty-note">No research available yet.</p>'}<details class="completed-research"><summary>COMPLETED (${completed.length})</summary>${completed.map(id=>row(id,true)).join('')||'<p class="empty-note">No completed research yet.</p>'}</details></section>`;
+ return `<section class="research-panel" aria-label="Technology research"><div class="research-balance">◈ ${c.techPointsAvailable} <span>TECH AVAILABLE</span></div>${c.migrationNotice?'<p class="empty-note">Previous research Tech was returned. Choose new role talents whenever you are ready.</p>':''}<h2>FLEET RESEARCH</h2>${categories.map(card).join('')}</section>`;
 }
 export function renderLobby(c:Company,view:LobbyView){
  const slots=usedSlots(c.fleetComposition),error=fleetError(c);
- const objective=!c.progress.farSurveyed?'Reach the Scrap Fields':!c.progress.richSampled?'Deliver a valuable mineral sample':!c.progress.rivalSeen?'Make contact in Scrap Fields':!c.progress.outpostSurveyed?'Survey the Outer Reach':!c.outpost?'Build the Outer Outpost':'Explore the frontier';
+ const objective=!c.unlockedTypes.includes('hauler')?'Investigate the nearby Cargo Relay':!c.progress.farSurveyed?'Reach the Scrap Fields':!c.progress.rivalSeen?'Make contact in Scrap Fields':!c.uniqueTechDiscoveries.includes('first_nickel_delivery')?'Deliver Nickel':!c.unlockedTypes.includes('miningRig')?'Investigate the Excavation Platform':!c.outpost?'Survey the Outer Reach':'Explore the frontier';
  const researchTab=view.tab==='research'||view.researchOpen===true;
  return `<div class="lobby"><div class="wallet"><strong><i>◆</i> ${fmt(c.credits)} <span>Credits</span></strong><p>NEXT · ${objective}</p></div>
  <nav class="lobby-tabs" aria-label="Mission Control"><button id="tab-workshop" aria-current="${view.tab==='workshop'&&!researchTab?'page':'false'}"><span class="tab-name">WORKSHOP</span><span class="tab-sub">◆ ${fmt(c.credits)}</span></button><button id="tab-hangar" aria-current="${view.tab==='hangar'&&!researchTab?'page':'false'}"><span class="tab-name">HANGAR</span><span class="tab-sub"><small>${slots}/${c.fleetCapacity}</small>${c.fleetCapacity>slots?`<span class="slot-badge" aria-label="${c.fleetCapacity-slots} unused slots">${c.fleetCapacity-slots}</span>`:''}</span></button><button id="tab-research" aria-current="${researchTab?'page':'false'}"><span class="tab-name">RESEARCH</span><span class="tab-sub">◈ ${c.techPointsAvailable}</span></button></nav>

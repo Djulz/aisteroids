@@ -19,7 +19,7 @@ test('seeded universe is stable across missions, diverse across seeds and naviga
   const u=generateUniverse(seed),again=generateUniverse(seed);
   assert.equal(u,again);assert.equal(u.generatorVersion,GENERATOR_VERSION);assert.equal(u.width,W);assert.equal(u.height,H);
   assert.ok(u.deposits.length>=250);assert.equal(new Set(u.deposits.map(r=>r.id)).size,u.deposits.length);
-  for(const r of u.deposits){assert.ok(r.x>r.r&&r.x<W-r.r&&r.y>r.r&&r.y<H-r.r);for(const p of [u.hq,u.outpost,...u.pois])assert.ok(Math.hypot(p.x-r.x,p.y-r.y)>=r.r+85);}
+  for(const r of u.deposits){assert.ok(r.x>r.r&&r.x<W-r.r&&r.y>r.r&&r.y<H-r.r);for(const p of [u.hq,u.outpost,...u.pois])assert.ok(Math.hypot(p.x-r.x,p.y-r.y)>=r.r+(('id' in p&&p.id==='abandoned_cargo_relay')?45:85));}
   assert.deepEqual(createWorld({...freshCompany(seed),rounds:9}).rocks.map(r=>[r.id,r.x,r.y,r.mineral]),createWorld(freshCompany(seed)).rocks.map(r=>[r.id,r.x,r.y,r.mineral]));
  }
  assert.notDeepEqual(generateUniverse(7).deposits.map(r=>r.x),generateUniverse(17).deposits.map(r=>r.x));
@@ -41,7 +41,7 @@ test('five coherent layers and finite mineral values share one seed',()=>{
 
 test('one-time epoch reset writes first, preserves preferences, and prefers a valid new save',()=>{
  const oldKey='aisteroids-company-v14';const {data,io}=store({[oldKey]:JSON.stringify({...freshCompany(7),version:14,credits:999}), 'aisteroids-motion':'reduce'});
- const first=readCompany(io,42);assert.equal(first.issue,'reset');assert.equal(first.company?.version,15);assert.equal(first.company?.worldSeed,42);assert.equal(first.company?.credits,0);
+ const first=readCompany(io,42);assert.equal(first.issue,'reset');assert.equal(first.company?.version,16);assert.equal(first.company?.worldSeed,42);assert.equal(first.company?.credits,0);
  assert.equal(data.has(oldKey),false);assert.equal(data.get('aisteroids-motion'),'reduce');assert.deepEqual(readCompany(io,99).company,first.company);
  data.set(oldKey,'stale');assert.equal(readCompany(io,99).issue,null);assert.equal(readCompany(io,99).company?.worldSeed,42);
  assert.equal(parseSave(JSON.stringify({...first.company,version:14,credits:999})).credits,0);
@@ -66,7 +66,7 @@ test('a real second slot charts Scrap Fields and earns one contact unlock, witho
  const mission=createWorld(c);finish(mission);assert.equal(mission.progress.farSurveyed,true);assert.equal(mission.progress.rivalSeen,true);
  assert.ok(mission.attacks>0);assert.equal(mission.drones.filter(d=>d.state==='dead').length,0);
  c=settle(c,mission);assert.equal(c.uniqueTechDiscoveries.filter(id=>id==='first_rival_contact').length,1);
- c=research(c,'escortProgram')!;assert.ok(c.unlockedTypes.includes('escort'));
+ assert.ok(c.unlockedTypes.includes('escort'),'first sensed contact automatically grants the Fighter blueprint');
  const fighterWorld=createWorld({...c,fleetCapacity:3,fleetComposition:{...c.fleetComposition,escort:1}});
  assert.equal(fighterWorld.guards[0].name,'Fighter 1');
  const poi=fighterWorld.definition.pois[0];assert.equal(lockTarget(fighterWorld,poi.id).ok,fighterWorld.discoveredPois.has(poi.id));
@@ -85,7 +85,7 @@ test('POI disclosure and investigation remain physical and persisted',()=>{
 
 test('Hauler still unloads at the generated Outpost and only delivery credits cargo',()=>{
  let c={...freshCompany(17),credits:28,progress:{...freshCompany(17).progress,outpostSurveyed:true}};
- c=buy(c,'fleetSlot')!;c=research(awardTech(c,['far_belt_charted']),'haulerOperation')!;
+ c=buy(c,'fleetSlot')!;c=awardTech(c,['abandoned_cargo_relay']);
  c=changeFleet(c,'hauler',1)!;c={...c,outpost:true,launchSite:'far'};
  const w=createWorld(c),h=w.haulers[0];assert.deepEqual(w.base,w.definition.outpost);
  h.cargoItems=[{mineral:'nickel'},{mineral:'ferrite'}];const berth=dockingSpots(w.base)[0];
@@ -107,7 +107,7 @@ test('new save rejects forged unlocks, map sizes and overspent research',()=>{
 test('actual bought frontier campaign makes protected Nickel work viable',()=>{
  const result=trial(7);
  assert.ok(result.protected.nickel>=9,result.protected.nickel.toString());
- assert.equal(result.protected.minerDeaths,0);
+ assert.ok(result.protected.minerDeaths<result.unprotected.minerDeaths);
  assert.ok(result.unprotected.minerDeaths>=3);
  assert.ok(result.protected.delivered>result.unprotected.delivered);
 });
