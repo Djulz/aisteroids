@@ -27,7 +27,8 @@ test('seeded original 20-second recovery stall is gone across four doctrines',()
 });
 test('post-impact recovery waypoint is anchored at the collision, not recalculated from the moving miner',()=>{
  const w=createWorld(freshCompany()),d=w.drones[0];
- while(w.collisions===0)step(w);
+ for(let i=0;w.collisions===0&&i<1800;i++)step(w);
+ assert.ok(w.collisions>0,'the first ram must happen within a shift');
  const point=[d.recoveryX,d.recoveryY];assert.ok(point.every(Number.isFinite));
  let furthest=0;for(let i=0;i<120;i++){step(w);furthest=Math.max(furthest,Math.hypot(d.x-w.rocks[0].x,d.y-w.rocks[0].y));}
  assert.deepEqual([d.recoveryX,d.recoveryY],point);assert.equal(d.armed,true);

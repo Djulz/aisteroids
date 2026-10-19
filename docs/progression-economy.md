@@ -15,8 +15,8 @@ At most two current offers are shown, including unaffordable ones. Main progress
 | Credits | Purchase | Unlock |
 |---:|---|---|
 | 3 / 6 / 12 | Cargo Awareness / Navigation Assist / Work Planner | Sequential introduction |
-| 24 / 48 / 120 / 320 / 800 | Fleet Slots 2–6 | Intro / contact / Nickel / Aurite / Cryonite |
-| 32 / 120 / 400 | Endurance 45 / 60 / 90 seconds | Two slots and frontier need / Nickel / Aurite |
+| 24 / 48 / 120 / 320 / 800 | Fleet Slots 2–6 | Intro / two slots / Nickel / Aurite / Cryonite |
+| 32 / 120 / 400 | Endurance 45 / 60 / 90 seconds | Two slots / Nickel / Aurite |
 | 24 / 80 | HQ Turret / Wide-Area Scanner | HQ intrusion / Cargo Relay |
 | 180 / 240 | Deflector Shields / Extraction Class II | Research Station and Nickel |
 | 600 / 600 | Outer Outpost / Navigation Stabilizers | Surveyed site and Aurite delivered during a Deflector-equipped shift / Probe and Aurite |

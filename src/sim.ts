@@ -21,8 +21,8 @@ export const BASIC_UPGRADES:Record<BasicUpgrade,{name:string;price:number;effect
 export type StoredOre={x:number;y:number;value:1;rich:boolean;mineral:MineralId};
 export type Purchase='cargoAwareness'|'navigationAssist'|'workPlanner'|'fleetSlot'|'turret'|'outpost'|'endurance'|'deflectorShields'|'highPowerOptics'|'resonanceMining';
 export type Offer=Purchase|EnvironmentUpgrade;
-export type Company={version:17;contentVersion:1;basicUpgrades:BasicUpgrade[];shopOffers:Offer[];shopPurchases:Offer[];deflectorShields:boolean;focuses:Focuses;environmentUpgrades:EnvironmentUpgrade[];extractionUpgrades:('highPowerOptics'|'resonanceMining')[];enduranceLevel:number;credits:number;fleetCapacity:number;capacityReminder:number;fleetComposition:FleetComposition;unlockedTypes:FleetType[];techPointsAvailable:number;techPointsEarned:number;uniqueTechDiscoveries:DiscoveryId[];talents:TalentId[];migrationNotice:boolean;legacyHaulerAccess:boolean;turret:boolean;rounds:number;total:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;poiProgress:Partial<Record<PoiId,number>>;identifiedRocks:number[];explored:string;discoveredPois:PoiId[];doctrine:DoctrineId};
-export const freshCompany=(worldSeed=7):Company=>({version:17,contentVersion:1,basicUpgrades:[],shopOffers:[],shopPurchases:[],deflectorShields:false,focuses:emptyFocuses(),environmentUpgrades:[],extractionUpgrades:[],enduranceLevel:0,credits:0,fleetCapacity:1,capacityReminder:1,fleetComposition:freshComposition(),unlockedTypes:['impactMiner','scout'],techPointsAvailable:0,techPointsEarned:0,uniqueTechDiscoveries:[],talents:[],migrationNotice:false,legacyHaulerAccess:false,turret:false,rounds:0,total:0,outpost:false,launchSite:'home',worldSeed,rockHp:{},ores:[],progress:freshProgress(),poiProgress:{},identifiedRocks:[],explored:encodeMap(blankMap()),discoveredPois:[],doctrine:'standard'});
+export type Company={version:17;contentVersion:1|2;seenUnlocks?:('hauler'|'escort'|'miningRig')[];basicUpgrades:BasicUpgrade[];shopOffers:Offer[];shopPurchases:Offer[];deflectorShields:boolean;focuses:Focuses;environmentUpgrades:EnvironmentUpgrade[];extractionUpgrades:('highPowerOptics'|'resonanceMining')[];enduranceLevel:number;credits:number;fleetCapacity:number;capacityReminder:number;fleetComposition:FleetComposition;unlockedTypes:FleetType[];techPointsAvailable:number;techPointsEarned:number;uniqueTechDiscoveries:DiscoveryId[];talents:TalentId[];migrationNotice:boolean;legacyHaulerAccess:boolean;turret:boolean;rounds:number;total:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;poiProgress:Partial<Record<PoiId,number>>;identifiedRocks:number[];explored:string;discoveredPois:PoiId[];doctrine:DoctrineId};
+export const freshCompany=(worldSeed=7):Company=>({version:17,contentVersion:2,seenUnlocks:[],basicUpgrades:[],shopOffers:[],shopPurchases:[],deflectorShields:false,focuses:emptyFocuses(),environmentUpgrades:[],extractionUpgrades:[],enduranceLevel:0,credits:0,fleetCapacity:1,capacityReminder:1,fleetComposition:freshComposition(),unlockedTypes:['impactMiner','scout'],techPointsAvailable:0,techPointsEarned:0,uniqueTechDiscoveries:[],talents:[],migrationNotice:false,legacyHaulerAccess:false,turret:false,rounds:0,total:0,outpost:false,launchSite:'home',worldSeed,rockHp:{},ores:[],progress:freshProgress(),poiProgress:{},identifiedRocks:[],explored:encodeMap(blankMap()),discoveredPois:[],doctrine:'standard'});
 export const introComplete=(c:Company)=>c.basicUpgrades.includes('workPlanner');
 export const missionDuration=(c:Company)=>c.rounds===0&&!c.basicUpgrades.includes('cargoAwareness')?TRIAL_TIME:ENDURANCE_DURATIONS[c.enduranceLevel]??ROUND_TIME;
 export function unlocked(c:Company,item:Purchase){
@@ -30,8 +30,8 @@ export function unlocked(c:Company,item:Purchase){
  if(item==='navigationAssist')return c.basicUpgrades.includes('cargoAwareness');
  if(item==='workPlanner')return c.basicUpgrades.includes('navigationAssist');
  if(!introComplete(c))return false;
- if(item==='fleetSlot')return c.fleetCapacity===1||c.fleetCapacity===2&&c.progress.rivalSeen||c.fleetCapacity===3&&c.uniqueTechDiscoveries.includes('first_nickel_delivery')||c.fleetCapacity===4&&c.uniqueTechDiscoveries.includes('first_aurite_delivery')||c.fleetCapacity===5&&c.uniqueTechDiscoveries.includes('first_cryonite_delivery');
- if(item==='endurance')return c.enduranceLevel===0?c.fleetCapacity>=2&&(c.progress.farSurveyed||c.progress.rivalSeen):c.enduranceLevel===1?c.uniqueTechDiscoveries.includes('first_nickel_delivery'):c.uniqueTechDiscoveries.includes('first_aurite_delivery');
+ if(item==='fleetSlot')return c.fleetCapacity<=2||c.fleetCapacity===3&&c.uniqueTechDiscoveries.includes('first_nickel_delivery')||c.fleetCapacity===4&&c.uniqueTechDiscoveries.includes('first_aurite_delivery')||c.fleetCapacity===5&&c.uniqueTechDiscoveries.includes('first_cryonite_delivery');
+ if(item==='endurance')return c.enduranceLevel===0?c.fleetCapacity>=2:c.enduranceLevel===1?c.uniqueTechDiscoveries.includes('first_nickel_delivery'):c.uniqueTechDiscoveries.includes('first_aurite_delivery');
  if(item==='turret')return c.progress.hqIntrusion;
  if(item==='deflectorShields')return c.uniqueTechDiscoveries.includes('abandoned_research_station')&&c.uniqueTechDiscoveries.includes('first_nickel_delivery');
  if(item==='outpost')return c.progress.outpostSurveyed&&c.progress.protectedAuriteDelivery&&c.deflectorShields;
@@ -70,6 +70,18 @@ export function nextOffers(c:Company):Offer[]{
  if(c.uniqueTechDiscoveries.includes('automated_sorting_archive')&&c.uniqueTechDiscoveries.includes('first_cryonite_delivery')&&!c.environmentUpgrades.includes('radiationShielding')&&!main.includes('radiationShielding'))side.push('radiationShielding');
  return [...main,...side].slice(0,2);
 }
+export function progressionHint(c:Company):string{
+ if(!introComplete(c))return 'Complete the Miner introduction. Your next system is offered after a shift.';
+ if(c.fleetCapacity<3)return 'Expand your fleet or extend the shift. Assign a Scout in the Hangar to explore the frontier.';
+ if(!c.progress.rivalSeen)return 'Send a Scout toward the Scrap Fields. First contact unlocks the Fighter for your next expedition.';
+ if(!c.uniqueTechDiscoveries.includes('first_nickel_delivery'))return 'Deliver Nickel from the Scrap Fields to unlock the fourth slot and longer shifts. A Fighter can protect the expedition.';
+ if(!c.uniqueTechDiscoveries.includes('abandoned_research_station'))return 'Investigate the Derelict Research Station for the next extraction and protection blueprints.';
+ if(!c.uniqueTechDiscoveries.includes('first_aurite_delivery'))return 'Prepare Deflectors and Extraction Class II, then bring home Aurite from Contested Territory.';
+ if(!c.progress.outpostSurveyed)return 'Survey the Outer Outpost site to establish a frontier launch base.';
+ if(!c.uniqueTechDiscoveries.includes('experimental_probe_salvaged'))return 'Investigate the Experimental Probe for Navigation Stabilizers.';
+ if(!c.uniqueTechDiscoveries.includes('first_cryonite_delivery'))return 'Prepare the storm expedition and deliver Cryonite to unlock the final fleet slot.';
+ return 'Investigate the Sorting Archive for the Dead Zone equipment blueprints.';
+}
 export function buy(c:Company,item:Purchase):Company|null{
  if(!['cargoAwareness','navigationAssist','workPlanner','fleetSlot','turret','outpost','endurance','deflectorShields','highPowerOptics','resonanceMining'].includes(item)||!c.shopOffers.includes(item)||c.shopPurchases.includes(item)||!unlocked(c,item)||c.credits<cost(c,item)||(item==='fleetSlot'?c.fleetCapacity>=MAX_FLEET_CAPACITY:item==='endurance'?c.enduranceLevel>=3:item==='highPowerOptics'||item==='resonanceMining'?c.extractionUpgrades.includes(item):item in BASIC_UPGRADES?c.basicUpgrades.includes(item as BasicUpgrade):c[item as 'turret'|'outpost'|'deflectorShields']))return null;
  return {...c,credits:c.credits-cost(c,item),shopPurchases:[...c.shopPurchases,item],...(item in BASIC_UPGRADES?{basicUpgrades:[...c.basicUpgrades,item as BasicUpgrade]}:item==='fleetSlot'?{fleetCapacity:c.fleetCapacity+1}:item==='endurance'?{enduranceLevel:c.enduranceLevel+1}:item==='highPowerOptics'||item==='resonanceMining'?{extractionUpgrades:[...c.extractionUpgrades,item]}:{[item]:true})};
@@ -94,7 +106,7 @@ const minerCapabilities=(c:Company):MinerCapabilities=>({cargo:3,speed:speedBonu
 const guardCapabilities=(c:Company):GuardCapabilities=>({speed:speedBonus(c)*(t(c,'interceptorEngines')?1.4:1),accel:1,guardRange:t(c,'interceptorEngines')?169:135,guardCooldown:1.05,threatTracking:true});
 export type CargoHold={cargoItems:CargoItem[];cargo:number;richCargo:number};
 export type Drone=CargoHold&{id:number;kind:MinerType;name:string;gear:MinerCapabilities;x:number;y:number;angle:number;hp:number;maxHp:number;oreQueue:number[];cooldown:number;targetX:number;targetY:number;wander:number;vx:number;vy:number;recoil:number;armed:boolean;lastRock:number;targetRock:number;targetHold:number;pulses:number;magnetUntil:number;approachX:number;approachY:number;recoveryX:number;recoveryY:number;ramTarget:boolean;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;meetX:number;meetY:number;handoffUntil:number;haulerId:number;state:'mine'|'full'|'handoff'|'unload'|'return'|'docked'|'dead'};
-export type Hauler=CargoHold&{id:number;name:string;x:number;y:number;vx:number;vy:number;angle:number;hp:number;maxHp:number;capacity:number;jumpReady:number;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;assignedMiner:number;targetOre:number;blockedOre:number;blockedUntil:number;lastWork:number;state:'work'|'return'|'unload'|'docked'|'dead';task:'Collecting'|'Rendezvous'|'Returning'|'Unloading'|'Assisting'|'Docked'|'Destroyed'};
+export type Hauler=CargoHold&{id:number;name:string;x:number;y:number;vx:number;vy:number;angle:number;hp:number;maxHp:number;capacity:number;jumpReady:number;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;assignedMiner:number;targetOre:number;blockedOre:number;blockedUntil:number;lastWork:number;state:'work'|'return'|'unload'|'docked'|'dead';task:'Collecting'|'Rendezvous'|'Returning'|'Unloading'|'Assisting'|'Waiting'|'Docked'|'Destroyed'};
 export type Rig=CargoHold&{id:number;x:number;y:number;vx:number;vy:number;angle:number;hp:number;maxHp:number;capacity:number;state:'travel'|'deploy'|'drill'|'blocked'|'pack'|'return'|'unload'|'docked'|'dead';setup:number;cycle:number;targetRock:number;streak:number;packReason:'recall'|'relocate'|'threat';packUntil:number;foldReady:number;restartUntil:number;loaders:number;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number};
 export type Cart=CargoHold&{id:number;ownerId:number;x:number;y:number;hp:number;maxHp:number;capacity:12;attached:boolean;destroyed:boolean};
 // The array is authoritative. Numeric accessors preserve the established
@@ -517,6 +529,44 @@ export function handoff(w:World,d:Drone,h:Hauler):number{
  effect(w,{type:'handoff',x:d.x,y:d.y,tx:h.x,ty:h.y,amount,items:h.cargoItems.slice(-amount).map(item=>({...item}))},.45);
  return amount;
 }
+type HaulerJob={kind:'ore';ore:Ore;rate:number}|{kind:'rig';rig:Rig;rate:number}|{kind:'depot';point:Point;rate:number};
+type HaulDecision={world:World;until:number;room:number;job:HaulerJob|undefined};
+const haulDecisions=new WeakMap<Hauler,HaulDecision>();
+function haulerWork(w:World,h:Hauler):HaulerJob|undefined{
+ const cached=haulDecisions.get(h),job=cached?.job,room=h.capacity-h.cargo;
+ const valid=!job||job.kind==='ore'&&w.ores.includes(job.ore)&&availableTo(w,job.ore.id,'hauler',h.id)&&!(h.blockedOre===job.ore.id&&h.blockedUntil>w.time)||
+  job.kind==='rig'&&(job.rig.state==='drill'||job.rig.state==='blocked')&&job.rig.cargo>0||job.kind==='depot'&&!!w.service?.cargoItems.length;
+ if(cached&&cached.world===w&&cached.until>w.time&&cached.room===room&&valid)return job;
+ const next=planHaulerWork(w,h);haulDecisions.set(h,{world:w,until:w.time+.35+(h.id%3)*.04,room,job:next});return next;
+}
+// Freight jobs contain cargo now. A travelling/empty worker is never a job.
+export function planHaulerWork(w:World,h:Hauler):HaulerJob|undefined{
+ const room=h.capacity-h.cargo;if(room<=0)return;
+ const remaining=w.missionDuration-w.time,speed=92*speedBonus(w.company)*(t(w.company,'expressDelivery')?2.5:1);
+ const threats=w.enemies.filter(e=>e.hp>0&&visibleAt(w,e));
+ const risk=(p:Point)=>threats.reduce((sum,e)=>sum+Math.max(0,190-distance(p,e))/30,0);
+ const rate=(p:Point,pieces:number,credits:number)=>workRate({pieces,credits,travel:distance(h,p),returnDistance:distance(p,w.base),actionSeconds:.35*pieces,risk:risk(p),focusDistance:w.focuses.mining?distance(w.focuses.mining,p):undefined});
+ const reachable=(p:Point)=>distance(h,p)/speed+.5<remaining&&!(knownBiomeAt(w,p)==='dead_zone'&&!w.company.environmentUpgrades.includes('radiationShielding'));
+ const ores=w.ores.filter(o=>exploredAt(w,o)&&(o.age??1)>=ORE_PICKUP_DELAY&&availableTo(w,o.id,'hauler',h.id)&&!(h.blockedOre===o.id&&w.time<h.blockedUntil)&&reachable(o));
+ const buckets=new Map<string,number>(),key=(o:Ore)=>Math.floor(o.x/80)+':'+Math.floor(o.y/80)+':'+o.mineral;
+ for(const ore of ores)buckets.set(key(ore),(buckets.get(key(ore))??0)+1);
+ let best:HaulerJob|undefined;
+ const consider=(job:HaulerJob)=>{if(!best||job.rate>best.rate)best=job;};
+ for(const ore of ores)consider({kind:'ore',ore,rate:rate(ore,Math.min(room,buckets.get(key(ore))??1),MINERALS[ore.mineral].credits)});
+ for(const rig of w.rigs){
+  if((rig.state!=='drill'&&rig.state!=='blocked')||!rig.cargo||!exploredAt(w,rig)||!reachable(rig))continue;
+  if(!t(w.company,'dualLoadingArms')&&w.haulers.some(other=>{
+   const reservation=haulDecisions.get(other);
+   return other!==h&&other.state==='work'&&reservation?.world===w&&reservation.until>w.time&&reservation.job?.kind==='rig'&&reservation.job.rig===rig;
+  }))continue;
+  const pieces=Math.min(room,rig.cargo),credits=cargoValue(rig.cargoItems.slice(0,pieces))/pieces;
+  consider({kind:'rig',rig,rate:rate(rig,pieces,credits)});
+ }
+ if(w.service?.cargoItems.length&&reachable(w.service)){
+  const pieces=Math.min(room,w.service.cargoItems.length);consider({kind:'depot',point:w.service,rate:rate(w.service,pieces,cargoValue(w.service.cargoItems.slice(0,pieces))/pieces)});
+ }
+ return best;
+}
 function updateHaulers(w:World,dt:number){
  for(const h of w.haulers){
   if(h.state==='dead'||h.state==='docked'){releaseHaulerClaim(w,h);continue;}
@@ -547,28 +597,20 @@ function updateHaulers(w:World,dt:number){
    else if(miner){target={x:miner.meetX,y:miner.meetY};h.task='Rendezvous';releaseHaulerClaim(w,h);}
    else{
     h.assignedMiner=-1;
-    const activeRig=w.rigs.filter(r=>r.state==='travel'||r.state==='deploy'||r.state==='drill'||r.state==='blocked').filter(r=>r.cargo>0||w.drones.length===0)
-      .sort((a,b)=>distance(h,a)-distance(h,b))[0];
-    if(activeRig&&distance(h,activeRig)<1250){target={x:activeRig.x+23,y:activeRig.y+15};h.task='Rendezvous';releaseHaulerClaim(w,h);}
-    // Commit to a reachable fragment until it is collected or disappears.
-    const relevant=target?[]:w.ores.filter(o=>exploredAt(w,o)&&(o.age??1)>=ORE_PICKUP_DELAY&&distance(h,o)<(h.cargo>=h.capacity-1?110:235)&&!(o.id===h.blockedOre&&w.time<h.blockedUntil)&&availableTo(w,o.id,'hauler',h.id)&&
-      (w.company.environmentUpgrades.includes('radiationShielding')||h.hp>3||knownBiomeAt(w,o)!=='dead_zone')&&
-      (w.doctrine!=='convoy'||w.drones.some(d=>d.state==='mine'&&distance(d,o)<195)));
-    const score=(o:Ore)=>workRate({credits:MINERALS[o.mineral??'ferrite'].credits,pieces:1,travel:distance(h,o),returnDistance:distance(o,w.base),actionSeconds:.8,risk:knownBiomeAt(w,o)==='dead_zone'&&!w.company.environmentUpgrades.includes('radiationShielding')?5:0,focusDistance:w.focuses.mining?distance(w.focuses.mining,o):undefined});
-    let best:Ore|undefined,held:Ore|undefined,bestRate=-Infinity,heldRate=-Infinity;
-    for(const ore of relevant){const rate=score(ore);if(rate>bestRate||rate===bestRate&&ore.id<(best?.id??Infinity)){best=ore;bestRate=rate;}if(ore.id===h.targetOre){held=ore;heldRate=rate;}}
-    const selected=held&&heldRate>=bestRate*.82?held:best;
-    if(h.targetOre>=0&&selected?.id!==h.targetOre)releaseHaulerClaim(w,h);
-    if(selected){target=oreApproach(w,h,selected);if(target){ownClaim(w,selected.id,'hauler',h.id);h.targetOre=selected.id;}else{releaseHaulerClaim(w,h);h.blockedOre=selected.id;h.blockedUntil=w.time+7;}h.task='Collecting';}
-    if(!target){releaseHaulerClaim(w,h);
-     const buoy=w.service;
-     if(buoy&&buoy.cargoItems.length&&h.cargo<h.capacity&&distance(h,buoy)<450){target=buoy;h.task='Collecting';}
-     const rig=w.rigs.filter(r=>r.state==='drill'||r.state==='blocked').filter(r=>r.cargo>0&&distance(h,r)<500).sort((a,b)=>distance(h,a)-distance(h,b))[0];
-     if(!target&&rig){target={x:rig.x+(t(w.company,'dualLoadingArms')&&h.id%2?-24:24),y:rig.y+15};h.task='Rendezvous';}
-     const worker=[...w.drones.filter(d=>d.state==='mine'||d.state==='handoff'),...w.rigs.filter(r=>r.state==='drill'||r.state==='travel')].sort((a,b)=>distance(h,a)-distance(h,b))[0];
-     if(h.cargo>0&&w.time-h.lastWork>5){h.state='return';}
-     else if(!target&&worker){target={x:worker.x+24,y:worker.y+24};h.task='Assisting';}
-     else if(!target)h.state='return';
+    const job=haulerWork(w,h);
+    if(job?.kind==='ore'){
+     if(h.targetOre>=0&&h.targetOre!==job.ore.id)releaseHaulerClaim(w,h);
+     target=oreApproach(w,h,job.ore);
+     if(target){ownClaim(w,job.ore.id,'hauler',h.id);h.targetOre=job.ore.id;h.task='Collecting';}
+     else{releaseHaulerClaim(w,h);h.blockedOre=job.ore.id;h.blockedUntil=w.time+7;}
+    }else{
+     releaseHaulerClaim(w,h);
+     if(job?.kind==='rig'){target={x:job.rig.x+(t(w.company,'dualLoadingArms')&&h.id%2?-24:24),y:job.rig.y+15};h.task='Rendezvous';}
+     else if(job?.kind==='depot'){target=job.point;h.task='Collecting';}
+    }
+    if(!target){
+     if(h.cargo>0)h.state='return';
+     else{target={x:w.base.x+65+(h.id%3)*24,y:w.base.y+85};h.task='Waiting';}
     }
    }
   }
@@ -638,7 +680,7 @@ export function planMinerWork(w:World,d:Drone,room=d.gear.cargo-d.cargo):MinerJo
  plannerCounts.set(w,(plannerCounts.get(w)??0)+1);
  if(room<=0)return;
  const remaining=w.missionDuration-w.time,focus=w.focuses.mining;
- const area=w.company.basicUpgrades.includes('workPlanner')?w.rocks.find(r=>r.id===d.targetRock):undefined;
+ const area=w.company.basicUpgrades.includes('workPlanner')?w.rocks.find(r=>r.id===d.targetRock&&r.hp>0):undefined;
  const threats=w.enemies.filter(e=>e.hp>0&&visibleAt(w,e));
  const peers=w.drones.filter(p=>p!==d&&p.state==='mine');
  // Dense persistent salvage would make a scan of every fragment for every
@@ -693,9 +735,15 @@ export function planMinerWork(w:World,d:Drone,room=d.gear.cargo-d.cargo):MinerJo
   if(d.kind==='impactMiner'&&d.hp<=1&&travel>=130)continue;
   if(travel/(66*movementFactor(d,w.company.environmentUpgrades,w.company.outpost,w.company.worldSeed))+.55>remaining)continue;
   const pieces=nearbyCount(ore,65,ore.mineral),price=MINERALS[ore.mineral??'ferrite'].credits;
-  const rate=workRate({credits:price,pieces,travel,returnDistance,actionSeconds:.55*pieces+.2,risk:risk(ore),focusDistance:focus?distance(focus,ore):undefined,areaDistance:area?distance(area,ore):undefined});
+  // The focus is an order to deliver from this patch, not merely shoot it.
+  const expedition=focus&&distance(focus,ore)<300&&knownBiomeAt(w,ore)==='scrap_fields'?25:1;
+  const rate=expedition*workRate({credits:price,pieces,travel,returnDistance,actionSeconds:.55*pieces+.2,risk:risk(ore),focusDistance:focus?distance(focus,ore):undefined,areaDistance:area?distance(area,ore):undefined});
   jobs.push({kind:'ore',ore,rate});
  }
+ // Close the extraction -> pickup -> delivery loop before creating more ore.
+ // Only free, mature, known fragments count; another worker's claims stay theirs.
+ const local=jobs.filter((j):j is Extract<MinerJob,{kind:'ore'}>=>j.kind==='ore'&&distance(d,j.ore)<190&&risk(j.ore)<6);
+ if(local.length>=room)return local.reduce((a,b)=>distance(d,b.ore)<distance(d,a.ore)?b:a);
  const best=jobs.reduce<MinerJob|undefined>((a,b)=>!a||b.rate>a.rate||b.rate===a.rate&&(b.kind==='rock'?b.rock.id:b.ore.id)<(a.kind==='rock'?a.rock.id:a.ore.id)?b:a,undefined);
  // Finish the last one/two pieces of the deposit we are already working.
  // This is deliberate completion behavior, not a claim of optimal income.
@@ -891,7 +939,7 @@ export function step(w:World,dt=STEP){
    if(amount>0){const items=d.cargoItems.splice(0,amount);effect(w,{type:'transfer',x:d.x,y:d.y,tx:w.base.x,ty:w.base.y+7,amount,items},.35);}
    if(d.unloadTime>=1.15){
     if(w.phase==='recall'||waitingForWork.has(d)||!w.rocks.some(r=>r.hp>0)&&!w.ores.length)d.state='docked';
-    else{d.state='mine';d.berth=-1;d.wander=0;d.pathKey='';}
+    else{d.state='mine';d.berth=-1;d.wander=0;d.pathKey='';d.targetRock=-1;d.pulses=0;}
    }
    continue;
   }

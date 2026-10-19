@@ -55,9 +55,9 @@ export function generateUniverse(seed:number):Universe{
  };
  const relay=pois.find(p=>p.id==='abandoned_cargo_relay')!;
  const nearHome=(()=>{
-  for(let radius=95;radius<=220;radius+=5)for(let angle=0;angle<24;angle++){
+  for(let radius=340;radius<=460;radius+=10)for(let angle=0;angle<24;angle++){
    const a=(angle+12)*Math.PI/12,p={x:HOME.x+Math.cos(a)*radius,y:HOME.y+Math.sin(a)*radius};
-   if(regionAt(seed,p.x,p.y)==='home_belt'&&deposits.every(r=>Math.hypot(p.x-r.x,p.y-r.y)>r.r+46))return p;
+   if(regionAt(seed,p.x,p.y)==='home_belt'&&pois.every(site=>site===relay||Math.hypot(p.x-site.x,p.y-site.y)>140)&&deposits.every(r=>Math.hypot(p.x-r.x,p.y-r.y)>r.r+46))return p;
   }
   throw Error('No reachable Home Belt relay');
  })();

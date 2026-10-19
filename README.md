@@ -1,4 +1,4 @@
-# Rock Bottom Robotics · Alpha 0.27.0
+# Rock Bottom Robotics · Alpha 0.27.1
 
 A mobile-first autonomous mining game. [Play the current release](https://djulz.github.io/aisteroids/). Continue a saved company or start a seeded one, prepare a fleet in Mission Control, and deploy into a timed shift with physical recall. Drag and pinch the full-screen asteroid field, set Mining or Scout focus by tapping, and use Follow Fleet when detached. Only delivered cargo earns Credits. The persistent 6000 × 5200 world remembers fog, exhausted rocks, salvage, discoveries, infrastructure and focus pins.
 
@@ -37,3 +37,5 @@ Valid v16 companies migrate **once** to v17 with all three basic Miner capabilit
 ## Earlier passes
 
 The current visual assets follow the [approved flat art notes](docs/pass-h-art.md). The [Pass G interface](docs/pass-g-ui.md), [Pass I biomes](docs/pass-i-regions-biomes.md), [Pass L focus and recall](docs/pass-l-focus-recall.md), [Pass N mining performance](docs/pass-n-performance-mining.md) and [Pass O seeded universe](docs/pass-o-universe.md) remain relevant. Older research tables in historical documents describe their respective releases; the current tree and unlocks are in the Pass P notes. Enemy Fighter artwork is future-only in the [development asset gallery](https://djulz.github.io/aisteroids/?assetGallery=1); it does not create a new hostile class.
+
+Alpha 0.27.1 fixes the two-slot offer deadlock, gives explicit acknowledged drone-unlock cards, moves the safe Cargo Relay away from HQ, closes focused Miner pickup/delivery loops, and replaces Hauler worker-following with real freight jobs. See [work-loop fixes](docs/work-loop-fixes.md). Existing companies remain loadable.

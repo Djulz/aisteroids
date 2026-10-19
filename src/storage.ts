@@ -32,13 +32,14 @@ function validWorld(c:Company){
 function decodeSave(raw:string|null):Company|null{
  try{
   const c=JSON.parse(raw||'null') as Company;
-  if(!c||c.version!==17||c.contentVersion!==1||!Number.isSafeInteger(c.worldSeed)||c.worldSeed<0||c.worldSeed>4294967295||
+  if(!c||c.version!==17||![1,2].includes(c.contentVersion)||!Number.isSafeInteger(c.worldSeed)||c.worldSeed<0||c.worldSeed>4294967295||
    !Number.isSafeInteger(c.credits)||c.credits<0||!Number.isSafeInteger(c.total)||c.total<0||!Number.isSafeInteger(c.rounds)||c.rounds<0||
    !Number.isInteger(c.fleetCapacity)||c.fleetCapacity<1||c.fleetCapacity>MAX_FLEET_CAPACITY||!c.fleetComposition||
    Object.keys(c.fleetComposition).sort().join()!==Object.keys(freshComposition()).sort().join()||
    !Array.isArray(c.unlockedTypes)||!Array.isArray(c.uniqueTechDiscoveries)||!Array.isArray(c.environmentUpgrades)||
    !Array.isArray(c.extractionUpgrades)||!Array.isArray(c.identifiedRocks)||!Array.isArray(c.discoveredPois)||
    !validFocuses(c.focuses)||!validDoctrine(c.doctrine)||typeof c.migrationNotice!=='boolean'||typeof c.legacyHaulerAccess!=='boolean'||typeof c.deflectorShields!=='boolean'||
+   (c.seenUnlocks!==undefined&&(!Array.isArray(c.seenUnlocks)||new Set(c.seenUnlocks).size!==c.seenUnlocks.length||c.seenUnlocks.some(id=>!['hauler','escort','miningRig'].includes(id)||!c.unlockedTypes.includes(id))))||
    !Array.isArray(c.basicUpgrades)||c.basicUpgrades.some((id,i)=>!Object.hasOwn(BASIC_UPGRADES,id)||(['cargoAwareness','navigationAssist','workPlanner'] as string[])[i]!==id)||
    !Array.isArray(c.shopOffers)||c.shopOffers.length>2||new Set(c.shopOffers).size!==c.shopOffers.length||c.shopOffers.some(id=>!['cargoAwareness','navigationAssist','workPlanner','fleetSlot','turret','outpost','endurance','deflectorShields','highPowerOptics','resonanceMining',...environmentIds].includes(id))||
    !Array.isArray(c.shopPurchases)||new Set(c.shopPurchases).size!==c.shopPurchases.length||c.shopPurchases.some(id=>!['cargoAwareness','navigationAssist','workPlanner','fleetSlot','turret','outpost','endurance','deflectorShields','highPowerOptics','resonanceMining',...environmentIds].includes(id))||
@@ -58,7 +59,7 @@ function decodeSave(raw:string|null):Company|null{
    c.techPointsAvailable!==c.techPointsEarned-talentSpent(c.talents)||
    !Array.isArray(c.ores)||c.ores.length>20000||c.ores.some((o:StoredOre)=>!o||!Number.isFinite(o.x)||o.x<0||o.x>W||!Number.isFinite(o.y)||o.y<0||o.y>H||o.value!==1||!mineralIds.includes(o.mineral))||
    fleetError(c))return null;
-  return validWorld(c)?c:null;
+  return validWorld(c)?{...c,contentVersion:2}:null;
  }catch{return null;}
 }
 // Validate the old economy before crediting a one-time refund. No world is
@@ -88,7 +89,7 @@ export type CompanyRead={company:Company|null;issue:'corrupt'|'reset'|'migrated'
 /** Commit the new key first. A valid v17 always wins, even with stale keys. */
 export function readCompany(store:SaveStore,seed=7):CompanyRead{
  const raw=store.getItem(SAVE_KEY);
- if(raw!==null){const company=decodeSave(raw);return {company,issue:company?null:'corrupt',storageOK:true};}
+ if(raw!==null){let company=decodeSave(raw);if(company&&!company.shopPurchases.length)company={...company,shopOffers:nextOffers(company)};return {company,issue:company?null:'corrupt',storageOK:true};}
  const oldV16=store.getItem(V16_KEY);
  if(oldV16!==null){const company=upgradeV16(oldV16);if(!company)return {company:null,issue:'corrupt',storageOK:true};
   try{store.setItem(SAVE_KEY,JSON.stringify(company));store.removeItem(V16_KEY);return {company,issue:'migrated',storageOK:true};}

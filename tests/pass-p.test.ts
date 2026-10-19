@@ -34,8 +34,10 @@ test('fresh Miner, available Scout, and one-slot Rig fleet validation',()=>{
 test('relay is physically clear and a basic Miner investigates without Scout or Fighter',()=>{
  for(const seed of [0,7,17,42]){
   const c=freshCompany(seed),site=generateUniverse(seed).pois.find(p=>p.id==='abandoned_cargo_relay')!;
-  assert.equal(regionAt(seed,site.x,site.y),'home_belt');assert.ok(Math.hypot(site.x-HOME.x,site.y-HOME.y)<130);
-  const w=createWorld(c);finish(w);assert.ok(w.pendingTech.some(e=>e.id===site.id));
+  assert.equal(regionAt(seed,site.x,site.y),'home_belt');assert.ok(Math.hypot(site.x-HOME.x,site.y-HOME.y)>=340);
+  const w=createWorld(c);assert.equal(w.discoveredPois.has(site.id),false,'site is beyond the starting sensors');
+  Object.assign(w.drones[0],{x:site.x+55,y:site.y});updateKnowledge(w);
+  finish(w);assert.ok(w.pendingTech.some(e=>e.id===site.id));
   assert.ok(settle(c,w).unlockedTypes.includes('hauler'));
  }
 });

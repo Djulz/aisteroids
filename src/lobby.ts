@@ -1,4 +1,4 @@
-import {cost,missionDuration,ENDURANCE_DURATIONS,BASIC_UPGRADES,introComplete,type Company,type Purchase} from './sim.ts';
+import {cost,missionDuration,ENDURANCE_DURATIONS,BASIC_UPGRADES,introComplete,progressionHint,type Company,type Purchase} from './sim.ts';
 import {fleetError,usedSlots,MAX_FLEET_CAPACITY,type FleetType,typeAvailable} from './fleet.ts';
 import {TALENTS,categories,categoryName,categoryRequirement,path,type Category,type TalentId} from './research.ts';
 import {ENVIRONMENT_UPGRADES,environmentIds} from './biomes.ts';
@@ -22,7 +22,7 @@ function workshop(c:Company){
  const environment=environmentIds.filter(id=>c.shopOffers.includes(id)&&!c.shopPurchases.includes(id)&&!c.environmentUpgrades.includes(id)).map(id=>{
   const upgrade=ENVIRONMENT_UPGRADES[id];return `<div class="upgrade"><span class="upgrade-icon" aria-hidden="true">◇</span><div class="upgrade-copy"><b>${upgrade.name}</b><small>${upgrade.detail}</small></div><button data-environment="${id}" ${c.credits<upgrade.cost?'disabled':''} aria-label="Buy ${upgrade.name} for ${upgrade.cost} Credits">BUY · ◆${fmt(upgrade.cost)}</button></div>`;
  }).join('');
- return `<section class="tab-content" aria-label="Workshop">${outpost}${rows}${environment}${outpost||rows||environment?'':'<p class="empty-note">Next offer arrives after the following shift.</p>'}</section>`;
+ return `<section class="tab-content" aria-label="Workshop">${outpost}${rows}${environment}${outpost||rows||environment?'':`<p class="empty-note">${c.shopPurchases.length?'Your purchases are ready. Complete a shift for the next offers.':progressionHint(c)}</p>`}</section>`;
 }
 function hangar(c:Company){
  const f=c.fleetComposition,slots=usedSlots(f);

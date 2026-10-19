@@ -22,6 +22,8 @@ import {finishRecall} from './recall.ts';
 import {mountMenuScene} from './menu.ts';
 import {mountDevMap} from './dev-map.ts';
 import {readMotion,reducedMotion,saveMotion,type MotionChoice} from './preferences.ts';
+import {BLUEPRINTS,pendingBlueprints,acknowledgeBlueprint,renderBlueprintCard,type BlueprintId} from './discoveries.ts';
+import {drawShip,drawMiningRig} from './art.ts';
 
 const app=document.querySelector<HTMLDivElement>('#app')!;
 let company:Company,world:World,hasCompany=false,storageOK=true,bootIssue:'corrupt'|'reset'|'migrated'|'storage'|null=null;
@@ -30,6 +32,8 @@ catch{storageOK=false;bootIssue='storage';}
 let screen:'menu'|'workshop'|'mission'='menu',speed=1,accumulator=0,last=0,debriefShown=false,recallVisible=0,resolving=false,missionToken=0;
 let activeTab:LobbyTab='workshop',researchOpen=false,selectedPoi:PoiId|null=null,selectedRock:number|null=null,focusPopup:{world:{x:number;y:number};screen:{x:number;y:number}}|null=null,poiSheetKey='',rockSheetKey='',followVisible=false,returning=false;
 let regionNoticeCount=0,regionNoticeUntil=0;
+let unlockOpen=false;
+const missionUnlocksAcknowledged=new Set<BlueprintId>();
 try{const tab=localStorage.getItem('aisteroids-lobby-tab');activeTab=tab==='hangar'||tab==='research'?tab:'workshop';}catch{}
 let canvas:HTMLCanvasElement|null=null,camera=newCamera(),observer:ResizeObserver|null=null;
 let menuCleanup:(()=>void)|null=null,motionChoice:MotionChoice='system';
@@ -45,7 +49,7 @@ function saveCompany(next:Company){try{localStorage.setItem(SAVE_KEY,JSON.string
 function save(){saveCompany(company);}
 function showMenu(){
  menuCleanup?.();menuCleanup=null;screen='menu';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':bootIssue==='migrated'?(company?.migrationNotice?'Previous research Tech was returned for the new fleet choices. Your world and company were preserved.':'Your company and research choices were preserved for the new progression.'):'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.27.0</small></main>`;
+ app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':bootIssue==='migrated'?(company?.migrationNotice?'Previous research Tech was returned for the new fleet choices. Your world and company were preserved.':'Your company and research choices were preserved for the new progression.'):'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.27.1</small></main>`;
  menuCleanup=mountMenuScene(app.querySelector<HTMLCanvasElement>('#menu-scene')!,isReduced());
  app.querySelector('#menu-continue')?.addEventListener('click',()=>{if(hasCompany)showWorkshop();});
  app.querySelector('#menu-new')?.addEventListener('click',openNewGame);
@@ -55,7 +59,7 @@ function showWorkshop(){
  if(!hasCompany)return;
  if(activeTab==='research'&&!introComplete(company))activeTab='workshop';
  menuCleanup?.();menuCleanup=null;screen='workshop';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">Rock Bottom Robotics · Alpha 0.27.0</footer></main>`;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">Rock Bottom Robotics · Alpha 0.27.1</footer></main>`;
  for(const tab of ['workshop','hangar','research'] as const)document.querySelector(`#tab-${tab}`)?.addEventListener('click',()=>{
   activeTab=tab;researchOpen=false;try{localStorage.setItem('aisteroids-lobby-tab',tab);}catch{}showWorkshop();
  });
@@ -90,6 +94,25 @@ function showWorkshop(){
  document.querySelector('#new-game')?.addEventListener('click',openNewGame);
  document.querySelector('#main-menu')?.addEventListener('click',showMenu);
  document.querySelector('#copy-seed')?.addEventListener('click',()=>copySeed(app));
+ const blueprint=pendingBlueprints(company)[0];
+ if(blueprint)showBlueprint(blueprint,()=>{
+  const next=acknowledgeBlueprint(company,blueprint.id);if(!saveCompany(next))return false;company=next;return true;
+ },showWorkshop);
+}
+function showBlueprint(blueprint:typeof BLUEPRINTS[number],acknowledge:()=>boolean,after=()=>{}){
+ if(unlockOpen)return;unlockOpen=true;accumulator=0;
+ const background=app.querySelector<HTMLElement>('main');if(background)background.inert=true;
+ const backdrop=document.createElement('div');backdrop.className='capacity-backdrop blueprint-backdrop';backdrop.innerHTML=renderBlueprintCard(blueprint);app.append(backdrop);
+ const preview=backdrop.querySelector<HTMLCanvasElement>('canvas')!,ctx=preview.getContext('2d')!;
+ ctx.translate(240,160);ctx.scale(6,6);
+ if(blueprint.id==='miningRig')drawMiningRig(ctx,0,0,-Math.PI/2,'drill',0,6,0);
+ else drawShip(ctx,blueprint.id,0,0,-Math.PI/2);
+ const confirm=backdrop.querySelector<HTMLButtonElement>('#acknowledge-blueprint')!;
+ confirm.onclick=()=>{
+  if(!acknowledge()){backdrop.querySelector<HTMLElement>('.form-error')!.hidden=false;return;}
+  backdrop.remove();if(background)background.inert=false;unlockOpen=false;accumulator=0;last=0;after();
+ };
+ trapDialog(backdrop,()=>{});confirm.focus();
 }
 function openTalentChoices(category:Category,opener:HTMLElement){
  const options=talentOptions(company,category);if(options.length!==2)return;
@@ -188,6 +211,7 @@ function openFocus(screenPoint:{x:number;y:number},point:{x:number;y:number}){
  updateHUD();
 }
 function launch(){
+ missionUnlocksAcknowledged.clear();
  world=createWorld(company,company.worldSeed);missionToken++;screen='mission';speed=1;accumulator=0;last=0;recallVisible=0;resolving=false;selectedPoi=null;selectedRock=null;focusPopup=null;poiSheetKey='';rockSheetKey='';regionNoticeCount=0;regionNoticeUntil=0;debriefShown=false;followVisible=false;returning=false;
  camera=newCamera();camera.x=world.base.x;camera.y=world.base.y;
  app.innerHTML=`<main class="mission"><canvas id="field" aria-label="Asteroid field. Drag to pan, pinch to zoom, tap anywhere to set Mining or Scout focus."></canvas><div class="mission-hud"><div><span>TIME LEFT</span><b id="timer">00:30</b></div><div class="ore-count"><span>DELIVERED CREDITS</span><b>◆ <span id="delivered">0</span></b></div></div><div id="region-notice" class="region-notice" hidden></div><div class="poi-sheet" id="poi-sheet" hidden></div><div class="poi-sheet" id="rock-sheet" hidden></div><div class="focus-popup" id="focus-popup" hidden></div><button id="follow" class="follow-control" hidden>◎ FOLLOW FLEET</button><button id="speed" class="speed-control" aria-label="Speed 1 times. Toggle to 2 times">1×</button></main>`;
@@ -257,7 +281,8 @@ function showDebrief(settled:Company){
 let hudTime=0;
 function completeMission(){
  if(debriefShown||world.phase!=='done')return;
- debriefShown=true;const next=settle(company,world);
+ debriefShown=true;let next=settle(company,world);
+ for(const id of missionUnlocksAcknowledged)next=acknowledgeBlueprint(next,id);
  saveCompany(next);showDebrief(next);company=next;
 }
 function startFastRecall(){
@@ -274,12 +299,16 @@ function startFastRecall(){
 }
 function frame(time:number){const raw=last?Math.max(0,(time-last)/1000):0,dt=Math.min(raw,.1);last=time;
  if(screen==='mission'&&!document.hidden){
-  if(!resolving&&!debriefShown){
+  if(!resolving&&!debriefShown&&!unlockOpen){
    // Keep fixed physics steps, but never let catch-up monopolize a mobile frame.
    // Excess wall time is already clamped above; bound the backlog as well.
    accumulator=Math.min(.2,accumulator+dt*(world.phase==='aftermath'?1:speed));
    const deadline=performance.now()+7;
    while(accumulator>=STEP&&performance.now()<deadline){if(world.phase==='done')break;step(world);accumulator-=STEP;}
+   if(world.phase==='mining'){
+    const blueprint=pendingBlueprints({...company,seenUnlocks:[...(company.seenUnlocks??[]),...missionUnlocksAcknowledged]},world.pendingTech.map(e=>e.id))[0];
+    if(blueprint)showBlueprint(blueprint,()=>{missionUnlocksAcknowledged.add(blueprint.id);return true;});
+   }
    if(world.phase==='recall')recallVisible+=raw;
    else recallVisible=0;
    if(world.phase==='done')completeMission();

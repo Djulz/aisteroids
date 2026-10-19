@@ -35,7 +35,8 @@ test('basic workshop offers occur one per preparation phase with real purchases'
  assert.ok(c.credits>=6);c=buy(c,'navigationAssist')!;
  assert.equal(createWorld(c).drones[0].gear.turn,1);
  c=shift(c).company;assert.deepEqual(c.shopOffers,['workPlanner']);
- while(c.credits<12)c=shift(c).company;
+ for(let attempts=0;c.credits<12&&attempts<12;attempts++)c=shift(c).company;
+ assert.ok(c.credits>=12,'basic income must fund Work Planner within the bounded trial');
  c=buy(c,'workPlanner')!;
  assert.equal(c.basicUpgrades.length,3);
  assert.equal(categoryRequirement(c,'miner'),undefined);
