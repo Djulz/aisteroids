@@ -10,6 +10,7 @@ import {MINERALS,mineralForRock,depositReserve,canExtract,cargoValue,type Minera
 import {emptyFocuses,withFocus,validFocusPoint,type Focuses,type FocusRole} from './focus.ts';
 import {workRate} from './work.ts';
 import {generateUniverse,type Universe} from './universe.ts';
+import {currentObjective} from './progression.ts';
 // Fixed-step seeded simulation: independent of browser and rendering.
 export {W,H,HOME,FAR};
 export const ROUND_TIME=30,TRIAL_TIME=22,STEP=1/60,CAPACITY=3,OUTPOST_COST=600;
@@ -22,8 +23,8 @@ export const BASIC_UPGRADES:Record<BasicUpgrade,{name:string;price:number;effect
 export type StoredOre={x:number;y:number;value:1;rich:boolean;mineral:MineralId};
 export type Purchase='cargoAwareness'|'navigationAssist'|'workPlanner'|'fleetSlot'|'turret'|'outpost'|'endurance'|'deflectorShields'|'highPowerOptics'|'resonanceMining';
 export type Offer=Purchase|EnvironmentUpgrade;
-export type Company={version:17;contentVersion:1|2;seenUnlocks?:('hauler'|'escort'|'miningRig')[];basicUpgrades:BasicUpgrade[];shopOffers:Offer[];shopPurchases:Offer[];deflectorShields:boolean;focuses:Focuses;environmentUpgrades:EnvironmentUpgrade[];extractionUpgrades:('highPowerOptics'|'resonanceMining')[];enduranceLevel:number;credits:number;fleetCapacity:number;capacityReminder:number;fleetComposition:FleetComposition;unlockedTypes:FleetType[];techPointsAvailable:number;techPointsEarned:number;uniqueTechDiscoveries:DiscoveryId[];talents:TalentId[];migrationNotice:boolean;legacyHaulerAccess:boolean;turret:boolean;rounds:number;total:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;poiProgress:Partial<Record<PoiId,number>>;identifiedRocks:number[];explored:string;discoveredPois:PoiId[];doctrine:DoctrineId};
-export const freshCompany=(worldSeed=7):Company=>({version:17,contentVersion:2,seenUnlocks:[],basicUpgrades:[],shopOffers:[],shopPurchases:[],deflectorShields:false,focuses:emptyFocuses(),environmentUpgrades:[],extractionUpgrades:[],enduranceLevel:0,credits:0,fleetCapacity:1,capacityReminder:1,fleetComposition:freshComposition(),unlockedTypes:['impactMiner','scout'],techPointsAvailable:0,techPointsEarned:0,uniqueTechDiscoveries:[],talents:[],migrationNotice:false,legacyHaulerAccess:false,turret:false,rounds:0,total:0,outpost:false,launchSite:'home',worldSeed,rockHp:{},ores:[],progress:freshProgress(),poiProgress:{},identifiedRocks:[],explored:encodeMap(blankMap()),discoveredPois:[],doctrine:'standard'});
+export type Company={aiSeen?:string[];version:17;contentVersion:1|2;seenUnlocks?:('hauler'|'escort'|'miningRig')[];basicUpgrades:BasicUpgrade[];shopOffers:Offer[];shopPurchases:Offer[];deflectorShields:boolean;focuses:Focuses;environmentUpgrades:EnvironmentUpgrade[];extractionUpgrades:('highPowerOptics'|'resonanceMining')[];enduranceLevel:number;credits:number;fleetCapacity:number;capacityReminder:number;fleetComposition:FleetComposition;unlockedTypes:FleetType[];techPointsAvailable:number;techPointsEarned:number;uniqueTechDiscoveries:DiscoveryId[];talents:TalentId[];migrationNotice:boolean;legacyHaulerAccess:boolean;turret:boolean;rounds:number;total:number;outpost:boolean;launchSite:LaunchSite;worldSeed:number;rockHp:Record<string,number>;ores:StoredOre[];progress:Progress;poiProgress:Partial<Record<PoiId,number>>;identifiedRocks:number[];explored:string;discoveredPois:PoiId[];doctrine:DoctrineId};
+export const freshCompany=(worldSeed=7):Company=>({aiSeen:[],version:17,contentVersion:2,seenUnlocks:[],basicUpgrades:[],shopOffers:[],shopPurchases:[],deflectorShields:false,focuses:emptyFocuses(),environmentUpgrades:[],extractionUpgrades:[],enduranceLevel:0,credits:0,fleetCapacity:1,capacityReminder:1,fleetComposition:freshComposition(),unlockedTypes:['impactMiner','scout'],techPointsAvailable:0,techPointsEarned:0,uniqueTechDiscoveries:[],talents:[],migrationNotice:false,legacyHaulerAccess:false,turret:false,rounds:0,total:0,outpost:false,launchSite:'home',worldSeed,rockHp:{},ores:[],progress:freshProgress(),poiProgress:{},identifiedRocks:[],explored:encodeMap(blankMap()),discoveredPois:[],doctrine:'standard'});
 export const introComplete=(c:Company)=>c.basicUpgrades.includes('workPlanner');
 export const missionDuration=(c:Company)=>c.rounds===0&&!c.basicUpgrades.includes('cargoAwareness')?TRIAL_TIME:ENDURANCE_DURATIONS[c.enduranceLevel]??ROUND_TIME;
 export function unlocked(c:Company,item:Purchase){
@@ -71,18 +72,8 @@ export function nextOffers(c:Company):Offer[]{
  if(c.uniqueTechDiscoveries.includes('automated_sorting_archive')&&c.uniqueTechDiscoveries.includes('first_cryonite_delivery')&&!c.environmentUpgrades.includes('radiationShielding')&&!main.includes('radiationShielding'))side.push('radiationShielding');
  return [...main,...side].slice(0,2);
 }
-export function progressionHint(c:Company):string{
- if(!introComplete(c))return 'Complete the Miner introduction. Your next system is offered after a shift.';
- if(c.fleetCapacity<3)return 'Expand your fleet or extend the shift. Assign a Scout in the Hangar to explore the frontier.';
- if(!c.progress.rivalSeen)return 'Send a Scout toward the Scrap Fields. First contact unlocks the Fighter for your next expedition.';
- if(!c.uniqueTechDiscoveries.includes('first_nickel_delivery'))return 'Deliver Nickel from the Scrap Fields to unlock the fourth slot and longer shifts. A Fighter can protect the expedition.';
- if(!c.uniqueTechDiscoveries.includes('abandoned_research_station'))return 'Investigate the Derelict Research Station for the next extraction and protection blueprints.';
- if(!c.uniqueTechDiscoveries.includes('first_aurite_delivery'))return 'Prepare Deflectors and Extraction Class II, then bring home Aurite from Contested Territory.';
- if(!c.progress.outpostSurveyed)return 'Survey the Outer Outpost site to establish a frontier launch base.';
- if(!c.uniqueTechDiscoveries.includes('experimental_probe_salvaged'))return 'Investigate the Experimental Probe for Navigation Stabilizers.';
- if(!c.uniqueTechDiscoveries.includes('first_cryonite_delivery'))return 'Prepare the storm expedition and deliver Cryonite to unlock the final fleet slot.';
- return 'Investigate the Sorting Archive for the Dead Zone equipment blueprints.';
-}
+export function progressionHint(c:Company):string{return currentObjective(c).detail;}
+
 export function buy(c:Company,item:Purchase):Company|null{
  if(!['cargoAwareness','navigationAssist','workPlanner','fleetSlot','turret','outpost','endurance','deflectorShields','highPowerOptics','resonanceMining'].includes(item)||!c.shopOffers.includes(item)||c.shopPurchases.includes(item)||!unlocked(c,item)||c.credits<cost(c,item)||(item==='fleetSlot'?c.fleetCapacity>=MAX_FLEET_CAPACITY:item==='endurance'?c.enduranceLevel>=3:item==='highPowerOptics'||item==='resonanceMining'?c.extractionUpgrades.includes(item):item in BASIC_UPGRADES?c.basicUpgrades.includes(item as BasicUpgrade):c[item as 'turret'|'outpost'|'deflectorShields']))return null;
  return {...c,credits:c.credits-cost(c,item),shopPurchases:[...c.shopPurchases,item],...(item in BASIC_UPGRADES?{basicUpgrades:[...c.basicUpgrades,item as BasicUpgrade]}:item==='fleetSlot'?{fleetCapacity:c.fleetCapacity+1}:item==='endurance'?{enduranceLevel:c.enduranceLevel+1}:item==='highPowerOptics'||item==='resonanceMining'?{extractionUpgrades:[...c.extractionUpgrades,item]}:{[item]:true})};

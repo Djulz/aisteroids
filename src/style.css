@@ -87,3 +87,19 @@
 .blueprint-preview{display:block;width:240px;height:160px;max-width:100%;margin:8px auto;background:radial-gradient(ellipse,#17343d80,transparent 70%)}
 .blueprint-dialog h2{font-size:1.8rem;margin:8px 0 14px}
 .blueprint-hint{font-size:.8rem;color:#9fb7bb}
+
+/* A single expandable objective and short, non-blocking company commentary. */
+.objective-guidance{margin:7px 0 14px;max-width:100%}
+.objective-guidance summary{color:#b4c9cb;font:12px/1.4 Barlow,sans-serif;cursor:pointer;min-height:44px;padding:8px 0;overflow-wrap:anywhere}
+.objective-guidance summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.wallet .objective-guidance p{margin:6px 0 0;border:0;padding:0;white-space:normal;overflow:visible;text-overflow:clip;color:#a5bec2;font:12px/1.5 Barlow,sans-serif}
+.director-briefing{margin:10px 0 14px;padding:10px 12px;border-left:2px solid #83bcb4;background:#102730;color:#d8e4df;text-align:left;overflow-wrap:anywhere}
+.director-briefing>span{display:block;color:#8fc8bd;font:9px/1.4 monospace;letter-spacing:.1em}
+.director-briefing p{margin:4px 0 0;font:13px/1.45 Barlow,sans-serif;color:inherit}
+.director-toast{position:absolute;z-index:3;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(84px,calc(env(safe-area-inset-bottom) + 72px));max-width:410px;pointer-events:none}
+.director-toast .director-briefing{margin:0;background:#0c222eea;box-shadow:0 3px 16px #0005}
+.director-toast[hidden]{display:none}
+.blueprint-dialog .director-briefing{margin-block:12px}
+.debrief .director-briefing{margin-block:14px}
+.debrief-objective{color:#b5ceca;font:12px/1.45 Barlow,sans-serif;overflow-wrap:anywhere}
+@media(max-height:500px){.director-toast{max-width:300px}.director-toast .director-briefing{padding:6px 9px}.director-toast p{font-size:12px}}

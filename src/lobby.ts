@@ -2,9 +2,11 @@ import {cost,missionDuration,ENDURANCE_DURATIONS,BASIC_UPGRADES,introComplete,pr
 import {fleetError,usedSlots,MAX_FLEET_CAPACITY,type FleetType,typeAvailable} from './fleet.ts';
 import {TALENTS,categories,categoryName,categoryRequirement,path,type Category,type TalentId} from './research.ts';
 import {ENVIRONMENT_UPGRADES,environmentIds} from './biomes.ts';
+import {currentObjective} from './progression.ts';
+import {directorMessage,type DialogueId} from './director.ts';
 
 export type LobbyTab='workshop'|'hangar'|'research';
-export type LobbyView={tab:LobbyTab;researchOpen?:boolean;error:string;storageOK:boolean};
+export type LobbyView={directorLine?:DialogueId;tab:LobbyTab;researchOpen?:boolean;error:string;storageOK:boolean};
 const fmt=(n:number)=>n.toLocaleString('en-US');
 const labels:Record<FleetType,string>={impactMiner:'Miner',laserMiner:'Miner',escort:'Fighter',hauler:'Hauler',scout:'Scout',miningRig:'Mining Rig'};
 const icons:Record<FleetType,string>={impactMiner:'⬡',laserMiner:'↗',escort:'✥',hauler:'▣',scout:'◇',miningRig:'▤'};
@@ -45,10 +47,10 @@ function researchPanel(c:Company){
 }
 export function renderLobby(c:Company,view:LobbyView){
  const slots=usedSlots(c.fleetComposition),error=fleetError(c);
- const objective=c.rounds===0?'Bring home your first cargo':!introComplete(c)?'Upgrade your Miner':!c.unlockedTypes.includes('hauler')?'Investigate the nearby Cargo Relay':!c.progress.farSurveyed?'Reach the Scrap Fields':!c.progress.rivalSeen?'Make contact in Scrap Fields':!c.uniqueTechDiscoveries.includes('first_nickel_delivery')?'Deliver Nickel':!c.unlockedTypes.includes('miningRig')?'Investigate the Excavation Platform':!c.uniqueTechDiscoveries.includes('first_aurite_delivery')?'Prepare an Aurite expedition':!c.progress.protectedAuriteDelivery?'Deliver Aurite with Deflector Shields':'Explore the frontier';
+ const objective=currentObjective(c);
  const researchTab=introComplete(c)&&(view.tab==='research'||view.researchOpen===true);
  const meaningfulResearch=introComplete(c)&&categories.some(category=>path(c,category).length<3&&!categoryRequirement(c,category)&&c.techPointsAvailable>path(c,category).length);
- return `<div class="lobby"><div class="wallet"><strong><i>◆</i> ${fmt(c.credits)} <span>Credits</span></strong><p>NEXT · ${objective}</p></div>
+ return `<div class="lobby"><div class="wallet"><strong><i>◆</i> ${fmt(c.credits)} <span>Credits</span></strong><details class="objective-guidance"><summary>NEXT · ${objective.title}</summary><p>${objective.detail}</p></details></div>${view.directorLine?directorMessage(view.directorLine):''}
  <nav class="lobby-tabs" aria-label="Mission Control"><button id="tab-workshop" aria-current="${view.tab==='workshop'&&!researchTab?'page':'false'}"><span class="tab-name">WORKSHOP</span><span class="tab-sub">◆ ${fmt(c.credits)}</span></button><button id="tab-hangar" aria-current="${view.tab==='hangar'&&!researchTab?'page':'false'}"><span class="tab-name">HANGAR</span><span class="tab-sub"><small>${slots}/${c.fleetCapacity}</small>${c.fleetCapacity>slots?`<span class="slot-badge" aria-label="${c.fleetCapacity-slots} unused slots">${c.fleetCapacity-slots}</span>`:''}</span></button>${introComplete(c)?`<button id="tab-research" aria-current="${researchTab?'page':'false'}"><span class="tab-name">RESEARCH</span><span class="tab-sub">◈ ${c.techPointsAvailable}${meaningfulResearch?' · AVAILABLE':''}</span></button>`:''}</nav>
  ${researchTab?researchPanel(c):view.tab==='hangar'?hangar(c):workshop(c)}
  ${!view.storageOK?'<p class="save-warning">Saving is unavailable. Progress may be lost on reload.</p>':''}

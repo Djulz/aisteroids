@@ -1,5 +1,6 @@
 import type {Company} from './sim.ts';
 import type {DiscoveryId} from './research.ts';
+import {blueprintDialogue,directorMessage} from './director.ts';
 
 export type BlueprintId='hauler'|'escort'|'miningRig';
 export const BLUEPRINTS:readonly {id:BlueprintId;event:DiscoveryId;name:string;source:string;description:string}[]=[
@@ -15,5 +16,5 @@ export function acknowledgeBlueprint(c:Company,id:BlueprintId):Company{
  return {...c,seenUnlocks:[...(c.seenUnlocks??[]),id]};
 }
 export function renderBlueprintCard(b:typeof BLUEPRINTS[number]){
- return `<section role="dialog" aria-modal="true" aria-labelledby="blueprint-title" class="capacity-dialog blueprint-dialog"><div class="eyebrow">NEW DISCOVERY</div><p class="blueprint-source">${b.source}</p><canvas width="480" height="320" class="blueprint-preview" role="img" aria-label="${b.name} drone"></canvas><div class="eyebrow">NEW DRONE TYPE</div><h2 id="blueprint-title">${b.name} unlocked</h2><p>${b.description}</p><p class="blueprint-hint">1 fleet slot · Assign in Hangar${b.id==='escort'?'':' · No blueprint fee'}</p><p class="form-error" hidden>Could not save. Please try again.</p><button class="primary" id="acknowledge-blueprint">GOT IT</button></section>`;
+ return `<section role="dialog" aria-modal="true" aria-labelledby="blueprint-title" class="capacity-dialog blueprint-dialog"><div class="eyebrow">NEW DISCOVERY</div><p class="blueprint-source">${b.source}</p><canvas width="480" height="320" class="blueprint-preview" role="img" aria-label="${b.name} drone"></canvas><div class="eyebrow">NEW DRONE TYPE</div><h2 id="blueprint-title">${b.name} unlocked</h2><p>${b.description}</p>${directorMessage(blueprintDialogue[b.id])}<p class="blueprint-hint">1 fleet slot · Assign in Hangar${b.id==='escort'?'':' · No blueprint fee'}</p><p class="form-error" hidden>Could not save. Please try again.</p><button class="primary" id="acknowledge-blueprint">GOT IT</button></section>`;
 }

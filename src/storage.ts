@@ -7,6 +7,7 @@ import {mineralIds} from './minerals.ts';
 import {ENVIRONMENT_UPGRADES,environmentIds} from './biomes.ts';
 import {validFocuses} from './focus.ts';
 import {GENERATOR_VERSION} from './universe.ts';
+import {normalizeDialogueHistory} from './director.ts';
 
 export const SAVE_KEY='aisteroids-company-v17';
 const V16_KEY='aisteroids-company-v16';
@@ -59,7 +60,7 @@ function decodeSave(raw:string|null):Company|null{
    c.techPointsAvailable!==c.techPointsEarned-talentSpent(c.talents)||
    !Array.isArray(c.ores)||c.ores.length>20000||c.ores.some((o:StoredOre)=>!o||!Number.isFinite(o.x)||o.x<0||o.x>W||!Number.isFinite(o.y)||o.y<0||o.y>H||o.value!==1||!mineralIds.includes(o.mineral))||
    fleetError(c))return null;
-  return validWorld(c)?{...c,contentVersion:2}:null;
+  return validWorld(c)?{...c,contentVersion:2,...(c.aiSeen===undefined?{}:{aiSeen:normalizeDialogueHistory(c.aiSeen)})}:null;
  }catch{return null;}
 }
 // Validate the old economy before crediting a one-time refund. No world is
