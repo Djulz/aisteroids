@@ -46,7 +46,7 @@ export function currentObjective(c:Company):Objective{
   return goal('aurite','Deliver Aurite','Scout into Contested Territory, then focus a protected mining group on identified Aurite. Return the cargo to HQ.');
  }
  if(c.fleetCapacity<2)return purchase('fleetSlot','Expand to two fleet slots',24,'A second slot lets you try a Scout or another Miner. Assign roles in Hangar.');
- if(!c.progress.rivalSeen)return goal('first_contact','Make contact in Scrap Fields','A Scout can explore toward Scrap Fields. Actual friendly sensor contact unlocks the Fighter for the next expedition.');
+ if(!c.progress.rivalSeen)return goal('first_contact','Make contact in Scrap Fields','Send a Scout toward the Scrap Fields. Actual friendly sensor contact unlocks the Fighter for the next expedition.');
  if(!c.fleetComposition.escort)return goal('assign_fighter','Prepare a protected Nickel expedition','Assign a Fighter in Hangar to protect your Miner. If needed, buy another slot or extend the shift in Workshop.');
  return goal('nickel','Deliver Nickel','Identify Nickel in Scrap Fields and tap the deposit to set MINING focus. Keep a Fighter near the working group; cargo must reach the station.');
 }
