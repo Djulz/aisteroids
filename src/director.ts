@@ -2,7 +2,7 @@ import type {Company,World} from './sim.ts';
 
 export const DIRECTOR_LINES={
  welcome:{priority:20,text:'Welcome to Rock Bottom Robotics. We have one Miner and a generous interpretation of a business plan. Deploy when ready.'},
- cargo_full:{priority:30,text:'Cargo hold full. It has elected to remain full. Recall will bring it home.'},
+ cargo_full:{priority:30,text:'Cargo hold full. It has elected to remain full. Cargo Awareness will improve this arrangement.'},
  cargo_awareness:{priority:40,text:'Returning cargo is now part of the business model.'},
  navigation_assist:{priority:35,text:'We have distinguished mining from most other collisions.'},
  work_planner:{priority:45,text:'A working Miner. Research is now available. Please note that our technical decisions are permanent.'},

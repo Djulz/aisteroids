@@ -99,6 +99,7 @@
 .director-toast{position:absolute;z-index:3;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(84px,calc(env(safe-area-inset-bottom) + 72px));max-width:410px;pointer-events:none}
 .director-toast .director-briefing{margin:0;background:#0c222eea;box-shadow:0 3px 16px #0005}
 .director-toast[hidden]{display:none}
+.blueprint-dialog{max-height:calc(100dvh - 24px);overflow-y:auto}
 .blueprint-dialog .director-briefing{margin-block:12px}
 .debrief .director-briefing{margin-block:14px}
 .debrief-objective{color:#b5ceca;font:12px/1.45 Barlow,sans-serif;overflow-wrap:anywhere}
