@@ -1,6 +1,6 @@
-# Rock Bottom Robotics · Alpha 0.27.1
+# Rock Bottom Robotics · Alpha 0.28.0
 
-A mobile-first autonomous mining game. [Play the current release](https://djulz.github.io/aisteroids/). Continue a saved company or start a seeded one, prepare a fleet in Mission Control, and deploy into a timed shift with physical recall. Drag and pinch the full-screen asteroid field, set Mining or Scout focus by tapping, and use Follow Fleet when detached. Only delivered cargo earns Credits. The persistent 6000 × 5200 world remembers fog, exhausted rocks, salvage, discoveries, infrastructure and focus pins.
+A mobile-first autonomous mining game. [Play the current release](https://djulz.github.io/aisteroids/). Continue a saved company or start a seeded one, prepare a fleet in Mission Control, and deploy into a timed shift with physical recall. Drag and pinch the full-screen asteroid field, set Mining or Scout focus by tapping, and use Follow Fleet when detached. Only delivered cargo earns Credits. The persistent 6000 × 5200 world remembers explored space, exhausted rocks, salvage, discoveries, infrastructure and focus pins.
 
 ## Run
 
@@ -26,7 +26,7 @@ Each of Miner, Hauler, Scout, Fighter, Mining Rig and Company Core has three Tec
 
 The Rig deploys at a known rock cluster, drills finite reserves into a six-place local buffer, and receives physical Hauler collections. It now uses **one slot**; Haulers and Fighters also use one each. It packs before relocation or recall, returns with cargo, and leaves undelivered contents as persistent physical salvage. Without a Hauler, a full buffer waits until recall. Shared extraction-class Workshop purchases work for Laser, Ram and Rig.
 
-Workshop shows at most two contextual offers each preparation phase. Fleet Slots cost **24 / 48 / 120 / 320 / 800**, Endurance **32 / 120 / 400**, and shared Extraction Class II and Resonance **240 / 2,400**. Additional protection and infrastructure are gated by discoveries. Five minerals still deliver **1 / 3 / 8 / 20 / 60 Credits**. No replacement-ship fees or new currency were added. The mission HUD, focus pins, POI interaction, report, 1×/2× speed, fog and flat sprite language remain.
+Workshop shows at most two contextual offers each preparation phase. Fleet Slots cost **24 / 48 / 120 / 320 / 800**, Endurance **32 / 120 / 400**, and shared Extraction Class II and Resonance **240 / 2,400**. Additional protection and infrastructure are gated by discoveries. Five minerals still deliver **1 / 3 / 8 / 20 / 60 Credits**. No replacement-ship fees or new currency were added. The mission HUD, focus pins, POI interaction, report, 1×/2× speed, black unexplored space and flat sprite language remain. Charted space now stays live without nearby sensors.
 
 The Tech ledger remains once-only. First Aurite, Cryonite and Voidite deliveries now have their own milestone Tech. See [current progression, prices, save handling and measured campaign](docs/progression-economy.md). [Pass P](docs/pass-p-fleet-research.md) records the previous release's research design and benchmarks.
 
@@ -38,4 +38,23 @@ Valid v16 companies migrate **once** to v17 with all three basic Miner capabilit
 
 The current visual assets follow the [approved flat art notes](docs/pass-h-art.md). The [Pass G interface](docs/pass-g-ui.md), [Pass I biomes](docs/pass-i-regions-biomes.md), [Pass L focus and recall](docs/pass-l-focus-recall.md), [Pass N mining performance](docs/pass-n-performance-mining.md) and [Pass O seeded universe](docs/pass-o-universe.md) remain relevant. Older research tables in historical documents describe their respective releases; the current tree and unlocks are in the Pass P notes. Enemy Fighter artwork is future-only in the [development asset gallery](https://djulz.github.io/aisteroids/?assetGallery=1); it does not create a new hostile class.
 
-Alpha 0.27.1 fixes the two-slot offer deadlock, gives explicit acknowledged drone-unlock cards, moves the safe Cargo Relay away from HQ, closes focused Miner pickup/delivery loops, and replaces Hauler worker-following with real freight jobs. See [work-loop fixes](docs/work-loop-fixes.md). Existing companies remain loadable.
+Alpha 0.28.0 fixes the two-slot offer deadlock, gives explicit acknowledged drone-unlock cards, moves the safe Cargo Relay away from HQ, closes focused Miner pickup/delivery loops, and replaces Hauler worker-following with real freight jobs. See [work-loop fixes](docs/work-loop-fixes.md). Existing companies remain loadable.
+
+## Territorial patrols · Alpha 0.28
+
+All 21 enemy ships exist when a shift starts. Eleven seed-stable territories contain
+four solo Scrap Fields patrols, four two-ship Contested Territory groups and three
+three-ship Ion Storm groups. Patrol Drones and Interceptors have distinct silhouettes,
+weapons and sensors. Routes use clear triangles, with a different starting phase
+between shifts. No timed waves, replacement spawns, fleet-capacity scaling or
+19-second disappearance remain. Home Belt and Dead Zone have no patrol ships.
+
+Enemy sensors, acquisition warning, pursuit, last-position search and territorial
+disengagement are separate from permanent map visibility. Tap a visible enemy and
+choose Details for chart-clipped route, sensor and territory overlays. First Contact
+still requires a real friendly sensor observation, preserving the Fighter unlock.
+Workers account for known threats and transport corridors; Fighters stay near their
+working fleet. Station Turret is offered after building the Outpost and defends the
+current launch station. Existing saves, deposits, Credits and permanent talents remain.
+
+See [patrol rules, checks and the following passes](docs/territorial-patrols.md).

@@ -9,7 +9,7 @@ import {renderLobby} from '../src/lobby.ts';
 
 const basics:Company['basicUpgrades']=['cargoAwareness','navigationAssist','workPlanner'];
 function run(w:World,seconds:number){for(let i=0;i<seconds/STEP&&w.phase!=='done';i++)step(w);}
-function quiet(w:World){w.explored.fill(255);w.rocks.forEach(r=>w.identifiedRocks.add(r.id));w.wave=1;w.nextRaid=Infinity;}
+function quiet(w:World){w.explored.fill(255);w.rocks.forEach(r=>w.identifiedRocks.add(r.id));w.enemies=[];}
 function laser(){return createWorld({...freshCompany(7),rounds:9,basicUpgrades:basics,talents:['laserCutter']});}
 
 test('two-slot Home Belt company can buy its next capacity and Endurance without first contact',()=>{

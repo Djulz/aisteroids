@@ -6,6 +6,7 @@ import {BIOMES,biomeAt} from './biomes.ts';
 import {newTrailState,updateTrails,drawTrails,type TrailSource,type TrailState} from './trails.ts';
 import {MINERALS} from './minerals.ts';
 import {focusRoles,markerOffset,type FocusRole} from './focus.ts';
+import {ENEMY_TYPES} from './patrols.ts';
 const gold='#f5b743';
 const rockPalettes=new WeakMap<object,RockPalette>();
 const trailStates=new WeakMap<World,TrailState>();
@@ -15,7 +16,7 @@ function activeTrails(w:World):TrailSource[]{
  for(const h of w.haulers)if(h.state==='work'||h.state==='return')sources.push({id:`hauler:${h.id}`,kind:'hauler',x:h.x,y:h.y,angle:h.angle});
  for(const g of w.guards)if(g.hp>0)sources.push({id:`escort:${g.id}`,kind:'escort',x:g.x,y:g.y,angle:g.angle});
  for(const s of w.scouts)if(s.state==='exploring'||s.state==='avoiding'||s.state==='return')sources.push({id:`scout:${s.id}`,kind:'scout',x:s.x,y:s.y,angle:s.angle});
- for(const e of w.enemies)if(e.hp>0&&visibleAt(w,e))sources.push({id:`enemy:${e.id}`,kind:'enemyScout',x:e.x,y:e.y,angle:Math.hypot(e.vx,e.vy)>.01?Math.atan2(e.vy,e.vx):-Math.PI/2});
+ for(const e of w.enemies)if(e.hp>0&&visibleAt(w,e))sources.push({id:`enemy:${e.id}`,kind:ENEMY_TYPES[e.kind??'patrol'].art,x:e.x,y:e.y,angle:Math.hypot(e.vx,e.vy)>.01?Math.atan2(e.vy,e.vx):-Math.PI/2});
  return sources;
 }
 let biomeCanvas:HTMLCanvasElement|undefined,biomeSeed=-1;
@@ -54,7 +55,7 @@ function fogImage(w:World){
  }
  cached.revision=w.mapRevision;return cached.canvas;
 }
-export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camera:Camera=newCamera()) {
+export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camera:Camera=newCamera(),selectedEnemy:number|null=null) {
  const c = canvas.getContext('2d')!; const VIEW_W=camera.width,VIEW_H=camera.height;const sx=canvas.width/VIEW_W, sy=canvas.height/VIEW_H;
  c.setTransform(sx,0,0,sy,0,0);c.fillStyle='#07121b';c.fillRect(0,0,VIEW_W,VIEW_H);c.save();c.translate(VIEW_W/2,VIEW_H/2);c.scale(camera.zoom,camera.zoom);c.translate(-camera.x,-camera.y);c.fillStyle='#0a1a25';c.fillRect(0,0,W,H);
  const left=Math.max(0,Math.floor(camera.x-VIEW_W/(2*camera.zoom)-30)),top=Math.max(0,Math.floor(camera.y-VIEW_H/(2*camera.zoom)-30));
@@ -73,8 +74,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  for(let i=0;i<144;i++){c.fillStyle=i%4===0?'#71929a66':'#71929a2b';c.fillRect((i*137+19)%W,(i*83+41)%H,i%4===0?1.4:1,1);}
  c.strokeStyle='#68828c3b';for(let i=0;i<9;i++){const x=35+i%3*165,y=34+Math.floor(i/3)*230;c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}
  c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME BELT',HOME.x-100,HOME.y-400);c.fillText('SCRAP FIELDS',HOME.x+900,HOME.y-700);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
- // Explored/visible bitsets drive the field. Unknown cells
- // never get object drawing; known terrain remains a subdued map memory.
+ // Only unexplored cells are black. Charted space always shows live activity.
  const mask=fogImage(w);if(bw&&bh){c.imageSmoothingEnabled=false;c.drawImage(mask,left/CELL,top/CELL,bw/CELL,bh/CELL,left,top,bw,bh);}
  for(const site of w.definition.pois){if(!w.discoveredPois.has(site.id))continue;
   const done=investigated(w,site.id),locked=w.activeTarget===site.id;
@@ -101,7 +101,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  const bounce=Math.max(0,...arrivals.map(e=>{const t=e.max-e.life-.26;return t>0?Math.sin(t/.09*Math.PI)*.065:0;}));
  if(w.base.x===w.definition.outpost.x){drawMother(c,w.time,0,HOME.x,HOME.y);drawOutpost(c,w.definition.outpost.x,w.definition.outpost.y,true,w.time*.6,bounce);}
  else {drawMother(c,w.time,bounce,HOME.x,HOME.y);if(w.company.outpost)drawOutpost(c,w.definition.outpost.x,w.definition.outpost.y,false,w.time*.6);}
- if(w.company.turret){const target=w.enemies.filter(e=>e.hp>0&&visibleAt(w,e)).sort((a,b)=>Math.hypot(a.x-HOME.x,a.y-HOME.y)-Math.hypot(b.x-HOME.x,b.y-HOME.y))[0];drawTurret(c,HOME.x,HOME.y-15,target?Math.atan2(target.y-HOME.y,target.x-HOME.x)+Math.PI/2:w.time*.35);}
+ if(w.company.turret){const target=w.enemies.filter(e=>e.hp>0&&visibleAt(w,e)).sort((a,b)=>Math.hypot(a.x-w.base.x,a.y-w.base.y)-Math.hypot(b.x-w.base.x,b.y-w.base.y))[0];drawTurret(c,w.base.x,w.base.y-15,target?Math.atan2(target.y-w.base.y,target.x-w.base.x)+Math.PI/2:w.time*.35);}
  for(const d of w.drones){
    if(d.state==='dead'){ c.strokeStyle='#7d5350';c.lineWidth=2;c.beginPath();c.moveTo(d.x-5,d.y-5);c.lineTo(d.x+5,d.y+5);c.moveTo(d.x-5,d.y+5);c.lineTo(d.x+5,d.y-5);c.stroke();continue;}
    if(selected===d.id){c.strokeStyle='#f5b74388';c.lineWidth=1;c.beginPath();c.arc(d.x,d.y,21,0,7);c.stroke();}
@@ -130,7 +130,24 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
   if(selected===s.id){c.strokeStyle='#f5b74388';c.beginPath();c.arc(s.x,s.y,20,0,7);c.stroke();}
  }
  for(const foe of w.enemies){if(foe.hp<=0||!visibleAt(w,foe))continue;
-  drawShip(c,'enemyScout',foe.x,foe.y,Math.hypot(foe.vx,foe.vy)>.01?Math.atan2(foe.vy,foe.vx):-Math.PI/2);
+  const stats=ENEMY_TYPES[foe.kind??'patrol'];
+  if(foe.id===selectedEnemy){
+   // Segment clipping prevents a selected patrol from revealing its hidden route.
+   const line=(a:{x:number;y:number},b:{x:number;y:number})=>{
+    const n=Math.max(1,Math.ceil(Math.hypot(a.x-b.x,a.y-b.y)/10));
+    for(let i=0;i<n;i++){const p={x:a.x+(b.x-a.x)*i/n,y:a.y+(b.y-a.y)*i/n},q={x:a.x+(b.x-a.x)*(i+1)/n,y:a.y+(b.y-a.y)*(i+1)/n};
+     if(visibleAt(w,p)&&visibleAt(w,q)){c.moveTo(p.x,p.y);c.lineTo(q.x,q.y);}}
+   };
+   c.strokeStyle='#ed859066';c.lineWidth=1;c.setLineDash([5,5]);c.beginPath();
+   for(const [center,radius] of [[foe,stats.sensors],...(foe.patrol?[[foe.patrol.home,foe.patrol.radius]]:[])] as [{x:number;y:number},number][])
+    for(let i=0;i<80;i++)line({x:center.x+Math.cos(i/80*Math.PI*2)*radius,y:center.y+Math.sin(i/80*Math.PI*2)*radius},{x:center.x+Math.cos((i+1)/80*Math.PI*2)*radius,y:center.y+Math.sin((i+1)/80*Math.PI*2)*radius});
+   c.stroke();c.setLineDash([]);c.strokeStyle='#ed859088';c.beginPath();
+   foe.patrol?.route.forEach((p,i,route)=>line(p,route[(i+1)%route.length]));c.stroke();
+   c.beginPath();c.arc(foe.x,foe.y,23,0,7);c.stroke();
+  }
+  drawShip(c,stats.art,foe.x,foe.y,Math.hypot(foe.vx,foe.vy)>.01?Math.atan2(foe.vy,foe.vx):-Math.PI/2);
+  if(foe.mode==='alert'){c.font='bold 19px Barlow Condensed';c.textAlign='center';c.fillStyle='#ffc363';c.fillText('!',foe.x,foe.y-25);}
+  if(foe.hp<stats.hp){c.fillStyle='#261d28';c.fillRect(foe.x-10,foe.y+20,20,2);c.fillStyle='#ee8590';c.fillRect(foe.x-10,foe.y+20,20*Math.max(0,foe.hp/stats.hp),2);}
  }
  for(const e of w.effects){if(!visibleAt(w,e)&&e.type!=='transfer'&&e.type!=='handoff')continue;const a=e.life/e.max;c.globalAlpha=a;
    if(e.type==='transfer'||e.type==='handoff'){

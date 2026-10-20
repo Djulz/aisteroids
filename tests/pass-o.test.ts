@@ -107,7 +107,9 @@ test('new save rejects forged unlocks, map sizes and overspent research',()=>{
 test('actual bought frontier campaign makes protected Nickel work viable',()=>{
  const result=trial(7);
  assert.ok(result.protected.nickel>=9,result.protected.nickel.toString());
- assert.ok(result.protected.minerDeaths<result.unprotected.minerDeaths);
- assert.ok(result.unprotected.minerDeaths>=3);
+ // The new standard AI disengages instead of repeatedly suiciding into patrols.
+ // Protection must earn its slot through physical production, not mandatory deaths.
+ assert.ok(result.protected.minerDeaths<=result.unprotected.minerDeaths);
+ assert.ok(result.protected.nickel>result.unprotected.nickel);
  assert.ok(result.protected.delivered>result.unprotected.delivered);
 });

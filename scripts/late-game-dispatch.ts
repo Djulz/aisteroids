@@ -8,7 +8,7 @@ for(const [seed,slots,cleared] of [[7,5,900],[7,6,900],[19,6,1300]] as const){
   unlockedTypes:['impactMiner','scout'],talents:['laserCutter','longRangeOptics'],
   extractionUpgrades:['highPowerOptics','resonanceMining'],environmentUpgrades:['radiationShielding','navigationStabilizers']};
  const w=createWorld(c);w.explored.fill(255);w.rocks.forEach(r=>{w.identifiedRocks.add(r.id);if(Math.hypot(r.x-w.base.x,r.y-w.base.y)<cleared)r.hp=0;});
- w.wave=1;w.nextRaid=Infinity;
+ w.enemies=[];
  const current=w.drones.map(()=>0),longest=w.drones.map(()=>0),trace:unknown[]=[];
  const wall=performance.now();let nextTrace=0;
  for(let i=0;i<5401&&w.phase==='mining';i++){

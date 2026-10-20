@@ -6,7 +6,7 @@ import '@fontsource/barlow-condensed/500.css';
 import '@fontsource/barlow-condensed/600.css';
 import '@fontsource/barlow-condensed/700.css';
 import './style.css';
-import {buy,buyEnvironment,createWorld,freshCompany,introComplete,settle,step,STEP,lockTarget,clearTarget,canTarget,investigated,setFocus,type Company,type Purchase,type World} from './sim.ts';
+import {visibleAt,buy,buyEnvironment,createWorld,freshCompany,introComplete,settle,step,STEP,lockTarget,clearTarget,canTarget,investigated,setFocus,type Company,type Purchase,type World} from './sim.ts';
 import {render} from './render.ts';
 import {readCompany,SAVE_KEY} from './storage.ts';
 import {renderLobby,type LobbyTab} from './lobby.ts';
@@ -24,13 +24,14 @@ import {mountDevMap} from './dev-map.ts';
 import {readMotion,reducedMotion,saveMotion,type MotionChoice} from './preferences.ts';
 import {BLUEPRINTS,pendingBlueprints,acknowledgeBlueprint,renderBlueprintCard,type BlueprintId} from './discoveries.ts';
 import {drawShip,drawMiningRig} from './art.ts';
+import {ENEMY_TYPES} from './patrols.ts';
 
 const app=document.querySelector<HTMLDivElement>('#app')!;
 let company:Company,world:World,hasCompany=false,storageOK=true,bootIssue:'corrupt'|'reset'|'migrated'|'storage'|null=null;
 try{const saved=readCompany(localStorage,crypto.getRandomValues(new Uint32Array(1))[0]);hasCompany=!!saved.company;if(saved.company)company=saved.company;storageOK=saved.storageOK;bootIssue=saved.issue;}
 catch{storageOK=false;bootIssue='storage';}
 let screen:'menu'|'workshop'|'mission'='menu',speed=1,accumulator=0,last=0,debriefShown=false,recallVisible=0,resolving=false,missionToken=0;
-let activeTab:LobbyTab='workshop',researchOpen=false,selectedPoi:PoiId|null=null,selectedRock:number|null=null,focusPopup:{world:{x:number;y:number};screen:{x:number;y:number}}|null=null,poiSheetKey='',rockSheetKey='',followVisible=false,returning=false;
+let activeTab:LobbyTab='workshop',researchOpen=false,selectedPoi:PoiId|null=null,selectedRock:number|null=null,selectedEnemy:number|null=null,focusPopup:{world:{x:number;y:number};screen:{x:number;y:number}}|null=null,poiSheetKey='',rockSheetKey='',followVisible=false,returning=false;
 let regionNoticeCount=0,regionNoticeUntil=0;
 let unlockOpen=false;
 const missionUnlocksAcknowledged=new Set<BlueprintId>();
@@ -49,7 +50,7 @@ function saveCompany(next:Company){try{localStorage.setItem(SAVE_KEY,JSON.string
 function save(){saveCompany(company);}
 function showMenu(){
  menuCleanup?.();menuCleanup=null;screen='menu';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':bootIssue==='migrated'?(company?.migrationNotice?'Previous research Tech was returned for the new fleet choices. Your world and company were preserved.':'Your company and research choices were preserved for the new progression.'):'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.27.1</small></main>`;
+ app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':bootIssue==='migrated'?(company?.migrationNotice?'Previous research Tech was returned for the new fleet choices. Your world and company were preserved.':'Your company and research choices were preserved for the new progression.'):'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.28.0</small></main>`;
  menuCleanup=mountMenuScene(app.querySelector<HTMLCanvasElement>('#menu-scene')!,isReduced());
  app.querySelector('#menu-continue')?.addEventListener('click',()=>{if(hasCompany)showWorkshop();});
  app.querySelector('#menu-new')?.addEventListener('click',openNewGame);
@@ -59,7 +60,7 @@ function showWorkshop(){
  if(!hasCompany)return;
  if(activeTab==='research'&&!introComplete(company))activeTab='workshop';
  menuCleanup?.();menuCleanup=null;screen='workshop';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">Rock Bottom Robotics · Alpha 0.27.1</footer></main>`;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK})}<footer class="legal">Rock Bottom Robotics · Alpha 0.28.0</footer></main>`;
  for(const tab of ['workshop','hangar','research'] as const)document.querySelector(`#tab-${tab}`)?.addEventListener('click',()=>{
   activeTab=tab;researchOpen=false;try{localStorage.setItem('aisteroids-lobby-tab',tab);}catch{}showWorkshop();
  });
@@ -198,21 +199,22 @@ function changeFocus(role:FocusRole,p:{x:number;y:number}|null){
 function dismissFocus(){focusPopup=null;const popup=document.querySelector<HTMLElement>('#focus-popup');if(popup)popup.hidden=true;}
 function openFocus(screenPoint:{x:number;y:number},point:{x:number;y:number}){
  focusPopup={world:{...point},screen:{...screenPoint}};
- selectedPoi=null;selectedRock=null;
- const site=world.definition.pois.find(p=>world.discoveredPois.has(p.id)&&Math.hypot(p.x-point.x,p.y-point.y)<Math.max(24,28/camera.zoom));
- const rock=site?undefined:world.rocks.find(r=>r.hp>0&&world.identifiedRocks.has(r.id)&&Math.hypot(r.x-point.x,r.y-point.y)<r.r+Math.max(5,10/camera.zoom));
+ selectedPoi=null;selectedRock=null;selectedEnemy=null;
+ const enemy=world.enemies.find(e=>e.hp>0&&visibleAt(world,e)&&Math.hypot(e.x-point.x,e.y-point.y)<Math.max(22,24/camera.zoom));
+ const site=enemy?undefined:world.definition.pois.find(p=>world.discoveredPois.has(p.id)&&Math.hypot(p.x-point.x,p.y-point.y)<Math.max(24,28/camera.zoom));
+ const rock=site||enemy?undefined:world.rocks.find(r=>r.hp>0&&world.identifiedRocks.has(r.id)&&Math.hypot(r.x-point.x,r.y-point.y)<r.r+Math.max(5,10/camera.zoom));
  const popup=document.querySelector<HTMLElement>('#focus-popup')!;
  popup.style.left=`${Math.max(8,Math.min(camera.width-226,screenPoint.x-105))}px`;
  popup.style.top=`${Math.max(78,Math.min(camera.height-205,screenPoint.y+15))}px`;
- popup.innerHTML=`<div class="focus-actions"><button data-focus="mining" aria-label="Set Mining focus here"><span class="focus-glyph mining" aria-hidden="true"></span>MINING</button><button data-focus="scout" aria-label="Set Scout focus here"><span class="focus-glyph scout" aria-hidden="true"></span>SCOUT</button></div>${site||rock?`<button id="inspect-focus">DETAILS · ${site?site.name:'MINERAL DEPOSIT'}</button>`:''}`;
+ popup.innerHTML=`<div class="focus-actions"><button data-focus="mining" aria-label="Set Mining focus here"><span class="focus-glyph mining" aria-hidden="true"></span>MINING</button><button data-focus="scout" aria-label="Set Scout focus here"><span class="focus-glyph scout" aria-hidden="true"></span>SCOUT</button></div>${site||rock||enemy?`<button id="inspect-focus">DETAILS · ${enemy?ENEMY_TYPES[enemy.kind??'patrol'].name:site?site.name:'MINERAL DEPOSIT'}</button>`:''}`;
  popup.hidden=false;
  popup.querySelectorAll<HTMLButtonElement>('[data-focus]').forEach(button=>button.onclick=()=>{if(focusPopup)changeFocus(button.dataset.focus as FocusRole,focusPopup.world);});
- popup.querySelector<HTMLButtonElement>('#inspect-focus')?.addEventListener('click',()=>{selectedPoi=site?.id??null;selectedRock=rock?.id??null;dismissFocus();updateHUD();});
+ popup.querySelector<HTMLButtonElement>('#inspect-focus')?.addEventListener('click',()=>{selectedPoi=site?.id??null;selectedRock=rock?.id??null;selectedEnemy=enemy?.id??null;dismissFocus();updateHUD();});
  updateHUD();
 }
 function launch(){
  missionUnlocksAcknowledged.clear();
- world=createWorld(company,company.worldSeed);missionToken++;screen='mission';speed=1;accumulator=0;last=0;recallVisible=0;resolving=false;selectedPoi=null;selectedRock=null;focusPopup=null;poiSheetKey='';rockSheetKey='';regionNoticeCount=0;regionNoticeUntil=0;debriefShown=false;followVisible=false;returning=false;
+ world=createWorld(company,company.worldSeed);missionToken++;screen='mission';speed=1;accumulator=0;last=0;recallVisible=0;resolving=false;selectedPoi=null;selectedRock=null;selectedEnemy=null;focusPopup=null;poiSheetKey='';rockSheetKey='';regionNoticeCount=0;regionNoticeUntil=0;debriefShown=false;followVisible=false;returning=false;
  camera=newCamera();camera.x=world.base.x;camera.y=world.base.y;
  app.innerHTML=`<main class="mission"><canvas id="field" aria-label="Asteroid field. Drag to pan, pinch to zoom, tap anywhere to set Mining or Scout focus."></canvas><div class="mission-hud"><div><span>TIME LEFT</span><b id="timer">00:30</b></div><div class="ore-count"><span>DELIVERED CREDITS</span><b>◆ <span id="delivered">0</span></b></div></div><div id="region-notice" class="region-notice" hidden></div><div class="poi-sheet" id="poi-sheet" hidden></div><div class="poi-sheet" id="rock-sheet" hidden></div><div class="focus-popup" id="focus-popup" hidden></div><button id="follow" class="follow-control" hidden>◎ FOLLOW FLEET</button><button id="speed" class="speed-control" aria-label="Speed 1 times. Toggle to 2 times">1×</button></main>`;
  const field=document.querySelector<HTMLCanvasElement>('#field')!;canvas=field;resize();
@@ -230,7 +232,7 @@ function launch(){
  field.onpointercancel=e=>gestures.cancel(e.pointerId);
  field.onlostpointercapture=e=>gestures.cancel(e.pointerId);
  field.addEventListener('wheel',e=>{e.preventDefault();const r=field.getBoundingClientRect();zoomAt(camera,Math.exp(-e.deltaY*.001),e.clientX-r.left,e.clientY-r.top);},{passive:false});
- document.querySelector('#follow')!.addEventListener('click',()=>{camera.follow=true;returning=true;selectedPoi=null;selectedRock=null;focusPopup=null;dismissFocus();updateHUD();});
+ document.querySelector('#follow')!.addEventListener('click',()=>{camera.follow=true;returning=true;selectedPoi=null;selectedRock=null;selectedEnemy=null;focusPopup=null;dismissFocus();updateHUD();});
  document.querySelector('#speed')!.addEventListener('click',()=>{speed=speed===1?2:1;const b=document.querySelector<HTMLButtonElement>('#speed')!;b.textContent=`${speed}×`;b.setAttribute('aria-label',`Speed ${speed} times. Toggle to ${speed===1?2:1} times`);});
  updateHUD();
  requestAnimationFrame(frame);
@@ -246,7 +248,7 @@ function updateHUD(){if(screen!=='mission')return;
  const notice=document.querySelector<HTMLElement>('#region-notice')!;
  if(world.newRegions.length>regionNoticeCount){regionNoticeCount=world.newRegions.length;regionNoticeUntil=world.time+2.7;notice.textContent=`REGION DISCOVERED · ${BIOMES[world.newRegions.at(-1)!].name.toUpperCase()}`;}
  notice.hidden=world.time>=regionNoticeUntil||world.phase!=='mining';
- const button=document.querySelector<HTMLButtonElement>('#follow')!;followVisible=showFollow(camera,world,followVisible);button.hidden=!followVisible||!!selectedPoi||selectedRock!==null||!!focusPopup;
+ const button=document.querySelector<HTMLButtonElement>('#follow')!;followVisible=showFollow(camera,world,followVisible);button.hidden=!followVisible||!!selectedPoi||selectedRock!==null||selectedEnemy!==null||!!focusPopup;
 
  const sheet=document.querySelector<HTMLElement>('#poi-sheet')!,poi=world.definition.pois.find(p=>p.id===selectedPoi);sheet.hidden=!poi;
  if(poi){const done=investigated(world,poi.id),reason=canTarget(world,poi.id),key=`${poi.id}:${done}:${world.activeTarget}:${reason}`;
@@ -264,6 +266,13 @@ function updateHUD(){if(screen!=='mission')return;
    rockSheet.querySelector('#close-rock')?.addEventListener('click',()=>{selectedRock=null;updateHUD();});
   }
  }else rockSheetKey='';
+ const enemy=world.enemies.find(e=>e.id===selectedEnemy&&e.hp>0&&visibleAt(world,e));
+ if(enemy){const stats=ENEMY_TYPES[enemy.kind??'patrol'];rockSheet.hidden=false;
+  const key=`enemy:${enemy.id}:${enemy.mode}:${Math.ceil(enemy.hp)}`;
+  if(key!==rockSheetKey){rockSheetKey=key;rockSheet.innerHTML=`<div><b>${stats.name}</b><button id="close-enemy" aria-label="Close enemy details">×</button></div><small>${(enemy.mode??'patrol').toUpperCase()} · ${Math.ceil(enemy.hp)}/${stats.hp} hull</small><p>${enemy.kind==='interceptor'?'Fast cargo hunter. Keep transport ships protected.':'Territorial patrol. A Fighter can protect nearby workers.'}</p><small>Sensors ${stats.sensors} · Territory ${enemy.patrol?.radius??235} · Solid line: charted patrol route</small>`;
+   rockSheet.querySelector('#close-enemy')?.addEventListener('click',()=>{selectedEnemy=null;updateHUD();});
+  }
+ }else if(selectedEnemy!==null){selectedEnemy=null;}
 }
 function showDebrief(settled:Company){
  const minerLosses=world.drones.filter(d=>d.state==='dead').length,haulerLosses=world.haulers.filter(h=>h.state==='dead').length;
@@ -271,7 +280,7 @@ function showDebrief(settled:Company){
  const rigLosses=world.rigs.filter(r=>r.state==='dead').length;
  const fleetLost=minerLosses===world.drones.length&&haulerLosses===world.haulers.length&&rigLosses===world.rigs.length;
  const lossParts=[minerLosses&&`${minerLosses} Miner${minerLosses===1?'':'s'}`,rigLosses&&`${rigLosses} Rig${rigLosses===1?'':'s'}`,haulerLosses&&`${haulerLosses} Hauler${haulerLosses===1?'':'s'}`,scoutLosses&&`${scoutLosses} Scout${scoutLosses===1?'':'s'}`,escortLosses&&`${escortLosses} Fighter${escortLosses===1?'':'s'}`].filter(Boolean);
- const milestones=([['farSurveyed','Scrap Fields charted'],['richSampled','Valuable sample delivered'],['rivalSeen','Rival scout encountered'],['outpostSurveyed','Outpost site surveyed']] as const).filter(([key])=>world.progress[key]&&!world.company.progress[key]).map(([,name])=>name);
+ const milestones=([['farSurveyed','Scrap Fields charted'],['richSampled','Valuable sample delivered'],['rivalSeen','Rival patrol encountered'],['outpostSurveyed','Outpost site surveyed']] as const).filter(([key])=>world.progress[key]&&!world.company.progress[key]).map(([,name])=>name);
  const discovery=[...new Set([...milestones,...world.newRegions.map(id=>`${BIOMES[id].name} charted`),...world.pendingTech.filter(e=>!['far_belt_charted','first_rich_sample','first_rival_contact','outpost_site_surveyed'].includes(e.id)).map(e=>TECH_DISCOVERIES[e.id]),...world.newSignals.flatMap(id=>{const site=POIS.find(p=>p.id===id);return site?[site.name]:[];})])];
  const result=document.createElement('div');result.className='debrief-backdrop';
  result.innerHTML=`<section class="debrief" role="dialog" aria-label="Mission report"><div class="eyebrow">MISSION ${String(company.rounds+1).padStart(2,'0')} · FINAL REPORT</div><h2 class="${fleetLost?'loss':''}">${fleetLost?'Fleet lost.':'Shift complete.'}</h2><div class="debrief-grid"><div class="result-delivered"><span>CREDITS EARNED</span><b>◆ ${fmt(world.delivered)}</b></div><div><span>FLEET LOSSES</span><b>${lossParts.length?lossParts.join(' · '):'0'}</b></div><div><span>TECH POINTS EARNED</span><b>◈ +${settled.techPointsEarned-company.techPointsEarned}</b></div></div>${discovery.length?`<div class="new-discovery"><strong>NEW</strong><p>${discovery.join(' · ')}</p></div>`:''}<button id="continue" class="primary">RETURN TO MISSION CONTROL <span>↗</span></button></section>`;
@@ -314,7 +323,7 @@ function frame(time:number){const raw=last?Math.max(0,(time-last)/1000):0,dt=Mat
    if(world.phase==='done')completeMission();
    else if(world.phase==='recall'&&recallVisible>=4)startFastRecall();
   }
-  if(canvas&&!resolving&&!debriefShown){followCamera(camera,world,dt,returning);const target=fleetCenter(world);if(returning&&Math.hypot(camera.x-target.x,camera.y-target.y)<8)returning=false;render(canvas,world,-1,camera);hudTime+=dt;if(hudTime>.1){updateHUD();hudTime=0;}}
+  if(canvas&&!resolving&&!debriefShown){followCamera(camera,world,dt,returning);const target=fleetCenter(world);if(returning&&Math.hypot(camera.x-target.x,camera.y-target.y)<8)returning=false;render(canvas,world,-1,camera,selectedEnemy);hudTime+=dt;if(hudTime>.1){updateHUD();hudTime=0;}}
  }
  if(screen==='mission'&&!debriefShown)requestAnimationFrame(frame);
 }

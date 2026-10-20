@@ -75,11 +75,15 @@ export function drawShip(c:C,kind:ShipArt,x:number,y:number,angle:number,options
    poly(c,[[-9,8],[0,-13],[9,8],[3,5],[0,-3],[-3,5]],gold);
    poly(c,[[-2,5],[0,0],[2,5]],cream);break;
   }
-  case 'enemyScout':case 'enemyFighter':{
-   const spread=kind==='enemyFighter'?12:8,tip=kind==='enemyFighter'?-15:-12;
-   poly(c,[[-spread,9],[-2,tip+4],[0,tip],[2,tip+4],[spread,9],[spread-5,7],[3,-1],[3,7],[-3,7],[-3,-1],[-spread+5,7]],coral);
-   rect(c,-2,-5,4,7,'#402630');
-   if(kind==='enemyFighter')rect(c,-3,7,6,3,'#f19b95');
+  case 'enemyScout':{
+   // Squat, square patrol hull; distinguishable from the long Interceptor at mobile scale.
+   poly(c,[[-7,-10],[7,-10],[10,-4],[10,7],[5,11],[-5,11],[-10,7],[-10,-4]],coral);
+   rect(c,-14,-4,5,12,'#bd5968');rect(c,9,-4,5,12,'#bd5968');
+   rect(c,-4,-7,8,8,'#402630');rect(c,-2,-5,4,3,'#ffd18a');rect(c,-3,5,6,3,'#f19b95');break;
+  }
+  case 'enemyFighter':{
+   poly(c,[[-15,12],[-8,-3],[-3,-8],[0,-19],[3,-8],[8,-3],[15,12],[8,8],[3,-1],[3,10],[-3,10],[-3,-1],[-8,8]],coral);
+   rect(c,-2,-9,4,10,'#402630');rect(c,-3,7,6,3,'#f19b95');
    break;
   }
  }
