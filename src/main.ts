@@ -65,7 +65,7 @@ function applyPreparation(next:Company){
 function showWorkshop(){
  if(!hasCompany)return;
  if(!directorReady){director=new DirectorQueue(company.aiSeen??completedDialogue(company));directorReady=true;if(company.rounds===0)director.enqueue(['welcome']);}
- const directorLine=director.take();
+ const directorLine=director.take(pendingBlueprints(company).map(b=>blueprintDialogue[b.id]));
  if(directorLine){company={...company,aiSeen:director.history()};save();}
  if(activeTab==='research'&&!introComplete(company))activeTab='workshop';
  menuCleanup?.();menuCleanup=null;screen='workshop';observer?.disconnect();observer=null;canvas=null;
@@ -303,7 +303,7 @@ function completeMission(){
  debriefShown=true;let next=settle(company,world);
  for(const id of missionUnlocksAcknowledged)next=acknowledgeBlueprint(next,id);
  director=missionDirector??director;director.enqueue(missionDialogue(world));
- const directorLine=director.take();next={...next,aiSeen:director.history()};
+ const directorLine=director.take(pendingBlueprints(next).map(b=>blueprintDialogue[b.id]));next={...next,aiSeen:director.history()};
  saveCompany(next);showDebrief(next,directorLine);company=next;
 }
 function startFastRecall(){

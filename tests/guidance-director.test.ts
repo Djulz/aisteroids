@@ -83,13 +83,14 @@ test('failed-shift advice requires a settled loss without any delivered Credits'
 });
 
 test('dialogue history survives save/load without changing game state or resetting old saves',()=>{
- const c={...freshCompany(),aiSeen:['welcome','cargo_full']};
+ const c={...freshCompany(17),credits:87,total:90,rounds:4,aiSeen:['welcome','cargo_full']};
  assert.deepEqual(parseSave(JSON.stringify(c)),c);
  const old={...c};delete old.aiSeen;
  const store={getItem:(key:string)=>key===SAVE_KEY?JSON.stringify(old):null,setItem:()=>{},removeItem:()=>{}};
  assert.ok(readCompany(store).company);assert.equal(readCompany(store).issue,null);
  assert.deepEqual(normalizeDialogueHistory(['welcome','welcome','invalid',null]),['welcome']);
  assert.equal(parseSave(JSON.stringify({...c,aiSeen:'damaged presentation metadata'})).worldSeed,c.worldSeed);
+ assert.equal(parseSave(JSON.stringify({...c,aiSeen:'damaged presentation metadata'})).credits,87);
  assert.deepEqual(parseSave(JSON.stringify({...c,aiSeen:'damaged presentation metadata'})).aiSeen,[]);
 });
 
@@ -98,4 +99,11 @@ test('AI content has stable voice-ready IDs and renders English text without an 
  assert.match(html,/data-dialogue="first_contact"/);assert.match(html,/Fighter blueprint available/);
  assert.doesNotMatch(html,/<audio|autoplay/);
  assert.equal(new Set(Object.keys(DIRECTOR_LINES)).size,17);
+});
+
+test('report commentary defers pending blueprint lines until their acknowledged discovery card',()=>{
+ const q=new DirectorQueue();q.enqueue(['first_contact','nickel_delivered']);
+ assert.equal(q.take(['first_contact']),'nickel_delivered');
+ assert.equal(q.take(['first_contact']),undefined);
+ q.remember('first_contact');assert.equal(q.take(),undefined);
 });

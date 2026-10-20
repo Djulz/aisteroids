@@ -37,8 +37,9 @@ export class DirectorQueue{
   this.pending.sort((a,b)=>DIRECTOR_LINES[b].priority-DIRECTOR_LINES[a].priority);
   this.pending=this.pending.slice(0,8);
  }
- take():DialogueId|undefined{
-  const id=this.pending.shift();
+ take(exclude:readonly DialogueId[]=[]):DialogueId|undefined{
+  const index=this.pending.findIndex(id=>!exclude.includes(id));
+  const id=index<0?undefined:this.pending.splice(index,1)[0];
   if(id)this.remember(id);
   return id;
  }
