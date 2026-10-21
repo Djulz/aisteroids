@@ -4,7 +4,7 @@ export type Obstacle = Point & { r: number; hp: number; id: number };
 const CELL = 18;
 const SECTOR=100;
 const indices=new WeakMap<Obstacle[],Map<string,Obstacle[]>>();
-type Masks={signature:string;width:number;height:number;open:Map<number,Uint8Array>};
+type Masks={signature:string;width:number;height:number;open:Map<string,Uint8Array>};
 const routeMasks=new WeakMap<Obstacle[],Masks>();
 const diagnostics=new WeakMap<Obstacle[],{calls:number;maskBuilds:number;expanded:number}>();
 export const navigationStats=(rocks:Obstacle[])=>({...diagnostics.get(rocks)??{calls:0,maskBuilds:0,expanded:0}});
@@ -32,34 +32,36 @@ export function clearSegment(a: Point, b: Point, rocks: Obstacle[], ignore = -1,
  }
  return true;
 }
-export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=400,height=620):Point[]{
+export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=400,height=620,clearance=11):Point[]{
  let stats=diagnostics.get(rocks);if(!stats){stats={calls:0,maskBuilds:0,expanded:0};diagnostics.set(rocks,stats);}stats.calls++;
  const COLS=Math.floor(width/CELL)-1,ROWS=Math.floor(height/CELL)-1;
  const point=(id:number):Point=>({x:10+(id%COLS)*CELL,y:10+Math.floor(id/COLS)*CELL});
  // A collision settles at radius+8.2, just inside route-grid clearance.
  // Move outward first so grid search cannot strand a ship at an asteroid's edge.
- const near=rocks.find(r=>r.hp>0&&r.id!==ignore&&Math.hypot(start.x-r.x,start.y-r.y)<r.r+11.5);
- if(near){const len=Math.hypot(start.x-near.x,start.y-near.y)||1;const escape={x:near.x+(start.x-near.x)/len*(near.r+12),y:near.y+(start.y-near.y)/len*(near.r+12)};
-  if(escape.x>=8&&escape.x<=width-8&&escape.y>=8&&escape.y<=height-8&&clearSegment(start,escape,rocks,ignore,8.01))return [escape,...route(escape,goal,rocks,ignore,width,height)];
+ const near=rocks.find(r=>r.hp>0&&r.id!==ignore&&Math.hypot(start.x-r.x,start.y-r.y)<r.r+clearance+.5);
+ if(near){const len=Math.hypot(start.x-near.x,start.y-near.y)||1;const escape={x:near.x+(start.x-near.x)/len*(near.r+clearance+1),y:near.y+(start.y-near.y)/len*(near.r+clearance+1)};
+  if(escape.x>=8&&escape.x<=width-8&&escape.y>=8&&escape.y<=height-8&&clearSegment(start,escape,rocks,ignore,8.01))return [escape,...route(escape,goal,rocks,ignore,width,height,clearance)];
  }
- if(clearSegment(start,goal,rocks,ignore))return [goal];
+ if(clearSegment(start,goal,rocks,ignore,clearance))return [goal];
  const signature=rocks.map(r=>r.hp>0?'1':'0').join('');
  let mask=routeMasks.get(rocks);
  if(!mask||mask.signature!==signature||mask.width!==width||mask.height!==height){
   mask={signature,width,height,open:new Map()};routeMasks.set(rocks,mask);
  }
- let openCell=mask.open.get(ignore);
+ const maskKey=`${ignore}:${clearance}`;
+ let openCell=mask.open.get(maskKey);
  if(!openCell){
   openCell=new Uint8Array(COLS*ROWS).fill(1);
   // Rasterize only obstacle footprints, not ~19,000 spatial queries per target.
-  for(const r of rocks){if(r.hp<=0||r.id===ignore)continue;const radius=r.r+11;
+  for(const r of rocks){if(r.hp<=0||r.id===ignore)continue;const radius=r.r+clearance;
    const left=Math.max(0,Math.ceil((r.x-radius-10)/CELL)),right=Math.min(COLS-1,Math.floor((r.x+radius-10)/CELL));
    const top=Math.max(0,Math.ceil((r.y-radius-10)/CELL)),bottom=Math.min(ROWS-1,Math.floor((r.y+radius-10)/CELL));
    for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)if((10+x*CELL-r.x)**2+(10+y*CELL-r.y)**2<radius*radius)openCell[y*COLS+x]=0;
   }
   if(mask.open.size>=8)mask.open.delete(mask.open.keys().next().value!);
-  mask.open.set(ignore,openCell);stats.maskBuilds++;
- }else{mask.open.delete(ignore);mask.open.set(ignore,openCell);}
+  mask.open.set(maskKey,openCell);stats.maskBuilds++;
+ }else{mask.open.delete(maskKey);mask.open.set(maskKey,openCell);}
+ const segmentClearance=clearance>11?clearance:8.1;
  const nearest=(p:Point)=>{
   const cx=Math.max(0,Math.min(COLS-1,Math.round((p.x-10)/CELL))),cy=Math.max(0,Math.min(ROWS-1,Math.round((p.y-10)/CELL)));
   for(let radius=0;radius<=15;radius++){
@@ -67,7 +69,7 @@ export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=40
    for(let y=Math.max(0,cy-radius);y<=Math.min(ROWS-1,cy+radius);y++)for(let x=Math.max(0,cx-radius);x<=Math.min(COLS-1,cx+radius);x++){
     if(radius&&Math.max(Math.abs(x-cx),Math.abs(y-cy))!==radius)continue;
     const id=y*COLS+x;if(!openCell[id])continue;const q=point(id),dist=Math.hypot(q.x-p.x,q.y-p.y);
-    if(dist<bestDist&&clearSegment(p,q,rocks,ignore,8.1)){best=id;bestDist=dist;}
+    if(dist<bestDist&&clearSegment(p,q,rocks,ignore,segmentClearance)){best=id;bestDist=dist;}
    }
    if(best>=0)return best;
   }
@@ -89,7 +91,7 @@ export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=40
    const nx=x+dx,ny=y+dy,n=ny*COLS+nx;
    if(nx<0||nx>=COLS||ny<0||ny>=ROWS||!openCell[n]||closed[n])continue;
    const next=cost[id]+(dx&&dy?Math.SQRT2:1);
-   if(next>=cost[n]||!clearSegment(point(id),point(n),rocks,ignore))continue;
+   if(next>=cost[n]||!clearSegment(point(id),point(n),rocks,ignore,clearance))continue;
    parent[n]=id;cost[n]=next;push(n,next+heuristic(n));
   }
  }
@@ -97,6 +99,6 @@ export function route(start:Point,goal:Point,rocks:Obstacle[],ignore=-1,width=40
  const raw:Point[]=[goal];for(let id=to;id!==from;id=parent[id])raw.push(point(id));raw.push(point(from));raw.reverse();
  // Shorten the grid route without cutting through a collision circle.
  const result:Point[]=[];let cursor=start,index=0;
- while(index<raw.length){let far=index;while(far+1<raw.length&&clearSegment(cursor,raw[far+1],rocks,ignore,8.1))far++;result.push(raw[far]);cursor=raw[far];index=far+1;}
+ while(index<raw.length){let far=index;while(far+1<raw.length&&clearSegment(cursor,raw[far+1],rocks,ignore,segmentClearance))far++;result.push(raw[far]);cursor=raw[far];index=far+1;}
  return result;
 }

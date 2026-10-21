@@ -102,6 +102,8 @@ The first complete Nickel screen and the paired old/new Cart measurements are co
 
 The full three-shift screen is now complete; see [round 2](balance-lab-round-2.md) for all counts, selected results and the isolated Rig navigation defect. `scripts/balance-lab/diagnose-rig.ts` records bounded geometric and state diagnostics without steering or modifying the simulated engine.
 
+The [paired Rig repair](balance-lab-rig-repair.md) reruns the two Rig builds across both regions after the route/working-position fix. It removes Nickel's zero-income seeds while exposing a Bulk/Cart servicing loss on seed 17. Use its versioned before/after data before changing prices.
+
 ## Recommended investigation order
 
 1. Complete the smoke checks, including the Cart lifecycle, against the current code.

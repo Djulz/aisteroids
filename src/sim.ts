@@ -100,7 +100,7 @@ const guardCapabilities=(c:Company):GuardCapabilities=>({speed:speedBonus(c)*(t(
 export type CargoHold={cargoItems:CargoItem[];cargo:number;richCargo:number};
 export type Drone=CargoHold&{id:number;kind:MinerType;name:string;gear:MinerCapabilities;x:number;y:number;angle:number;hp:number;maxHp:number;oreQueue:number[];cooldown:number;targetX:number;targetY:number;wander:number;vx:number;vy:number;recoil:number;armed:boolean;lastRock:number;targetRock:number;targetHold:number;pulses:number;magnetUntil:number;approachX:number;approachY:number;recoveryX:number;recoveryY:number;ramTarget:boolean;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;meetX:number;meetY:number;handoffUntil:number;haulerId:number;state:'mine'|'full'|'handoff'|'unload'|'return'|'docked'|'dead'};
 export type Hauler=CargoHold&{id:number;name:string;x:number;y:number;vx:number;vy:number;angle:number;hp:number;maxHp:number;capacity:number;jumpReady:number;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number;assignedMiner:number;targetOre:number;blockedOre:number;blockedUntil:number;lastWork:number;state:'work'|'return'|'unload'|'docked'|'dead';task:'Collecting'|'Rendezvous'|'Returning'|'Unloading'|'Assisting'|'Waiting'|'Docked'|'Destroyed'};
-export type Rig=CargoHold&{id:number;x:number;y:number;vx:number;vy:number;angle:number;hp:number;maxHp:number;capacity:number;state:'travel'|'deploy'|'drill'|'blocked'|'pack'|'return'|'unload'|'docked'|'dead';setup:number;cycle:number;targetRock:number;streak:number;packReason:'recall'|'relocate'|'threat';packUntil:number;foldReady:number;restartUntil:number;loaders:number;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number};
+export type Rig=CargoHold&{id:number;x:number;y:number;vx:number;vy:number;angle:number;hp:number;maxHp:number;capacity:number;state:'travel'|'deploy'|'drill'|'blocked'|'pack'|'return'|'unload'|'docked'|'dead';setup:number;cycle:number;targetRock:number;workRock:number;workX:number;workY:number;blockedRock:number;blockedUntil:number;progressX:number;progressY:number;progressAt:number;streak:number;packReason:'recall'|'relocate'|'threat';packUntil:number;foldReady:number;restartUntil:number;loaders:number;berth:number;path:Point[];pathKey:string;pathAge:number;unloadTime:number;unloadCargo:number};
 export type Cart=CargoHold&{id:number;ownerId:number;x:number;y:number;hp:number;maxHp:number;capacity:12;attached:boolean;destroyed:boolean};
 // The array is authoritative. Numeric accessors preserve the established
 // diagnostics/fixture API while never storing a second unsynchronized count.
@@ -144,7 +144,7 @@ export function createWorld(company:Company,seed=company.worldSeed):World{
  for(let i=0;i<composition.hauler;i++){const hp=5*hullBonus(company);w.haulers.push(hold({id:types.length+i,name:`Hauler ${i+1}`,x:base.x+(i-(composition.hauler-1)/2)*17,y:base.y+32,vx:0,vy:0,angle:-Math.PI/2,hp,maxHp:hp,cargoItems:[],capacity:t(company,'bulkCarrier')?15:t(company,'expressDelivery')?6:10,jumpReady:0,berth:-1,path:[],pathKey:'',pathAge:0,unloadTime:0,unloadCargo:0,assignedMiner:-1,targetOre:-1,blockedOre:-1,blockedUntil:0,lastWork:0,state:'work',task:'Assisting'} as unknown as Hauler));}
  for(let i=0;i<composition.escort;i++){const gear=guardCapabilities(company),hp=6*hullBonus(company)*(t(company,'guardianFrame')?1.5:1);w.guards.push({id:i,name:`Fighter ${i+1}`,gear,maxHp:hp,x:base.x+(i?24:-24),y:base.y-85,vx:0,vy:0,angle:-Math.PI/2,hp,cooldown:0,abilityReady:0,path:[],pathKey:'',pathAge:0});}
  for(let i=0;i<composition.scout;i++){const hp=6*hullBonus(company);w.scouts.push({id:1000+i,name:`Scout ${i+1}`,x:base.x+(i?22:-22),y:base.y+55,vx:0,vy:0,angle:-Math.PI/2,hp,maxHp:hp,targetX:base.x,targetY:base.y,targetUntil:0,beaconReady:0,decoyReady:0,path:[],pathKey:'',pathAge:0,state:'exploring'});}
- for(let i=0;i<composition.miningRig;i++){const hp=25*hullBonus(company);w.rigs.push(hold({id:2000+i,x:base.x+(i?32:-32),y:base.y+80,vx:0,vy:0,angle:-Math.PI/2,hp,maxHp:hp,cargoItems:[],capacity:t(company,'industrialReserve')?24:t(company,'loadingGantry')?12:6,state:'travel',setup:0,cycle:0,targetRock:-1,streak:0,packReason:'recall',packUntil:0,foldReady:0,restartUntil:0,loaders:0,berth:-1,path:[],pathKey:'',pathAge:0,unloadTime:0,unloadCargo:0} as unknown as Rig));}
+ for(let i=0;i<composition.miningRig;i++){const hp=25*hullBonus(company),x=base.x+(i?32:-32),y=base.y+80;w.rigs.push(hold({id:2000+i,x,y,vx:0,vy:0,angle:-Math.PI/2,hp,maxHp:hp,cargoItems:[],capacity:t(company,'industrialReserve')?24:t(company,'loadingGantry')?12:6,state:'travel',setup:0,cycle:0,targetRock:-1,workRock:-1,workX:0,workY:0,blockedRock:-1,blockedUntil:0,progressX:x,progressY:y,progressAt:0,streak:0,packReason:'recall',packUntil:0,foldReady:0,restartUntil:0,loaders:0,berth:-1,path:[],pathKey:'',pathAge:0,unloadTime:0,unloadCargo:0} as unknown as Rig));}
  if(t(company,'geminiCart')||t(company,'twinCartLogistics')||t(company,'armoredFreight')){
   for(const h of w.haulers)for(let i=0;i<(t(company,'twinCartLogistics')?2:1);i++){const hp=t(company,'armoredFreight')?12:6;
    w.carts.push(hold({id:3000+h.id*2+i,ownerId:h.id,x:h.x+(i?13:-13),y:h.y,hp,maxHp:hp,capacity:12,cargoItems:[],attached:true,destroyed:false} as unknown as Cart));
@@ -340,12 +340,12 @@ function hit(w:World,r:Rock,d:Drone,laser:boolean,override?:number){
   w.ores.push({id:w.nextId++,x:landing.x,y:landing.y,value:1,mineral:r.mineral,rich:false,originX:r.x,originY:r.y,age:0});
  }
 }
-function waypoint(w:World,d:Pick<Drone,'x'|'y'|'path'|'pathKey'|'pathAge'>,target:Point,key:string,ignore=-1){
+function waypoint(w:World,d:Pick<Drone,'x'|'y'|'path'|'pathKey'|'pathAge'>,target:Point,key:string,ignore=-1,clearance=11){
  d.pathAge+=STEP;
- if(d.pathKey!==key||d.pathAge>(d.path.length?1.5:.5)){d.path=route(d,target,w.rocks,ignore,W,H);d.pathKey=key;d.pathAge=0;}
+ if(d.pathKey!==key||d.pathAge>(d.path.length?1.5:.5)){d.path=route(d,target,w.rocks,ignore,W,H,clearance);d.pathKey=key;d.pathAge=0;}
  while(d.path.length>1&&distance(d,d.path[0])<9)d.path.shift();
  // Only skip a corner after the drone has a clear line, not merely because it's close.
- if(d.path.length>1&&clearSegment(d,d.path[1],w.rocks,ignore,10))d.path.shift();
+ if(d.path.length>1&&clearSegment(d,d.path[1],w.rocks,ignore,clearance>11?clearance:10))d.path.shift();
  return d.path[0]??{x:d.x,y:d.y};
 }
 // An ejected fragment may sit inside an asteroid's navigation clearance while
@@ -479,17 +479,27 @@ function updateRigs(w:World,dt:number){
   if(rig.state==='return')target=berthFor(w,rig);
   else{
    // Stable local assignment; focus is a direction, not omniscient knowledge.
-   let rock=w.rocks.find(r=>r.id===rig.targetRock&&r.hp>0&&exploredAt(w,r));
+   let rock=w.rocks.find(r=>r.id===rig.targetRock&&r.hp>0&&exploredAt(w,r)&&!(r.id===rig.blockedRock&&w.time<rig.blockedUntil));
    if(!rock){
-    rock=w.rocks.filter(r=>r.hp>0&&exploredAt(w,r)&&canExtract('miningRig',r.mineral,w.company.extractionUpgrades)&&
+    rock=w.rocks.filter(r=>r.hp>0&&exploredAt(w,r)&&!(r.id===rig.blockedRock&&w.time<rig.blockedUntil)&&canExtract('miningRig',r.mineral,w.company.extractionUpgrades)&&
       distance(r,rig)<Math.min(1050,Math.max(200,(w.missionDuration-w.time-5)*32)))
       .sort((a,b)=>{const score=(r:Rock)=>MINERALS[r.mineral].credits*(1+Math.min(4,w.rocks.filter(p=>p.hp>0&&distance(p,r)<rigFootprint(w.company)).length)*2)-distance(r,rig)*.035-(w.focuses.mining?distance(r,w.focuses.mining)*.14:0);return score(b)-score(a)||a.id-b.id;})[0];
     rig.targetRock=rock?.id??-1;
    }
    if(!rock||w.missionDuration-w.time<distance(rock,rig)/35+4){rig.state='return';target=berthFor(w,rig);}
-   else target=workPosition(w,rock,Math.atan2(rig.y-rock.y,rig.x-rock.x),Math.max(36,rigFootprint(w.company)-rock.r-10));
+   else{
+    if(rig.workRock!==rock.id){const position=workPosition(w,rock,Math.atan2(rig.y-rock.y,rig.x-rock.x),Math.max(36,rigFootprint(w.company)-rock.r-10),17.2);rig.workRock=rock.id;rig.workX=position.x;rig.workY=position.y;rig.pathKey='';}
+    target={x:rig.workX,y:rig.workY};
+   }
   }
-  const point=waypoint(w,rig,target,rig.state+':'+rig.targetRock);
+  const point=waypoint(w,rig,target,rig.state+':'+rig.targetRock,-1,17.2);
+  if(rig.state==='travel'&&w.time-rig.progressAt>=3){
+   if(distance(rig,{x:rig.progressX,y:rig.progressY})<8&&distance(rig,target)>12&&rig.targetRock>=0){
+    rig.blockedRock=rig.targetRock;rig.blockedUntil=w.time+20;rig.targetRock=-1;rig.workRock=-1;rig.pathKey='';
+    rig.progressAt=w.time;rig.progressX=rig.x;rig.progressY=rig.y;continue;
+   }
+   rig.progressAt=w.time;rig.progressX=rig.x;rig.progressY=rig.y;
+  }
   const dx=point.x-rig.x,dy=point.y-rig.y,len=Math.hypot(dx,dy);
   const speed=29*speedBonus(w.company)*(t(w.company,'rapidDeployment')?1.3:1)*movementFactor(rig,w.company.environmentUpgrades,w.company.outpost,w.company.worldSeed);
   rig.vx+=(dx/Math.max(1,len)*Math.min(speed,len*3)-rig.vx)*Math.min(1,dt*3);
@@ -770,10 +780,10 @@ function selectRock(d:Drone,r:Rock,w:World){
 }
 // Choose a fixed, clear point once, rather than parking forever at a standoff
 // embedded in a neighbouring asteroid. Recovery points remain anchored too.
-function workPosition(w:World,r:Rock,angle:number,offset:number):Point{
+function workPosition(w:World,r:Rock,angle:number,offset:number,clearance=11):Point{
  for(const turn of [0,1,-1,2,-2,3,-3,4,-4,5,-5,6,-6,7,-7,8]){
   const a=angle+turn*Math.PI/8,p={x:r.x+Math.cos(a)*(r.r+offset),y:r.y+Math.sin(a)*(r.r+offset)};
-  if(p.x>=12&&p.x<=W-12&&p.y>=12&&p.y<=H-12&&clearSegment(p,p,w.rocks,-1,11)&&clearSegment(p,r,w.rocks,r.id,0))return p;
+  if(p.x>=12&&p.x<=W-12&&p.y>=12&&p.y<=H-12&&clearSegment(p,p,w.rocks,-1,clearance)&&clearSegment(p,r,w.rocks,r.id,0))return p;
  }
  return {x:r.x+Math.cos(angle)*(r.r+offset),y:r.y+Math.sin(angle)*(r.r+offset)};
 }

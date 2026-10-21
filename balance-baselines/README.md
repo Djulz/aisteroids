@@ -2,6 +2,8 @@
 
 Round 2 is complete: [findings and reproduction commands](../docs/balance-lab-round-2.md). `alpha-0.30-screen-3shifts.json` contains all 114 jobs/342 conserved shifts. `alpha-0.30-rig-navigation.json` preserves the quiet investigation demonstrating a route-clearance defect on seed 42. The defect is retained in these baselines and is not hidden by dropping its zero-income observations.
 
+The [Rig repair follow-up](../docs/balance-lab-rig-repair.md) pairs the same 12 Rig jobs/36 shifts against the original screen in `alpha-0.30-rig-repair-screen.json`. `alpha-0.30-rig-navigation-repaired.json` retains the matching quiet state traces. Keep both original and repaired data: seed 42's zero shifts disappear, while seed 17's Bulk/Cart transport becomes slower.
+
 These JSON files retain their original run metadata, including the pre-commit revision and dirty flag. The engine fingerprint identifies the actual source under test; it is the same engine committed in alpha 0.30. Later report and statistics presentation changes do not alter these numerical observations.
 
 `alpha-0.30-nickel-3slot.json` is a complete 57-job screen: 19 relevant fleet/build cases, three seeds, one 45-second Nickel shift with patrols. Basic costs 0 Tech; the other builds cost 3. This is a short controlled fixture, not proof of campaign affordability or settled long-term income.
@@ -20,7 +22,7 @@ npm run balance:lab -- --profile smoke --only-builds bulk-cart --only-fleet rig 
 
 Mean Credits per shift changed from 38.5 to 41.5 (+7.8%); the paired seed bootstrap interval for the absolute change is 0 to 5.5 Credits. Seed 42 delivered zero in both versions and must remain in the sample. The repaired Cart physically delivered 69 fragments across all six shifts, versus zero before. This validates useful transport in this scenario; three seeds are not enough to establish general balance.
 
-Recommended next step: finish the persistent three-shift screen, then widen seeds and four-to-six-slot compositions before judging long-term earnings. Use the paid campaign policies separately to check when each fleet can actually be bought. See [the full protocol](../docs/balance-lab.md).
+Recommended next step: investigate the repaired Rig's seed 17 servicing regression, then widen seeds and four-to-six-slot compositions before judging long-term earnings. Use the paid campaign policies separately to check when each fleet can actually be bought. See [the full protocol](../docs/balance-lab.md).
 
 `alpha-0.30-paid-24shifts.json` adds a complete 15-job campaign baseline: five purchase/research policies, three seeds, 24 persistent shifts starting from zero. The initial bounded attempt hit its global deadline; resuming with the same fingerprints retried censored jobs and completed all 15. No incomplete observations enter this baseline. These policies validate early B1/B2 progression, not optimal player behavior or a bought B3–B5 fleet.
 

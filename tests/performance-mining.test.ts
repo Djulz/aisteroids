@@ -20,6 +20,20 @@ test('route masks survive alternating mining targets and invalidate on depletion
  assert.equal(navigationStats(rocks).maskBuilds,3);
  rocks[1].hp=0;assert.deepEqual(route(start,goal,rocks,10,400,620),[goal]);
 });
+test('large-unit routes and cached masks respect their physical clearance',()=>{
+ const rocks:Obstacle[]=[{id:1,x:145,y:300,r:35,hp:3},{id:2,x:250,y:300,r:35,hp:3}];
+ const start={x:50,y:300},goal={x:350,y:300};
+ for(const clearance of [11,17.2,11,17.2]){
+  const path=route(start,goal,rocks,-1,400,620,clearance);
+  assert.ok(path.length);
+  let previous=start;
+  for(const point of path){
+   assert.ok(clearSegment(previous,point,rocks,-1,clearance>11?clearance:8.1),`segment crossed ${clearance}-unit clearance`);
+   previous=point;
+  }
+ }
+ assert.equal(navigationStats(rocks).maskBuilds,2);
+});
 test('local patch and station distance can outweigh a distant top-grade temptation',()=>{
  const common={pieces:2,actionSeconds:4,risk:0};
  const local=workRate({...common,credits:3,travel:50,returnDistance:150,areaDistance:30});

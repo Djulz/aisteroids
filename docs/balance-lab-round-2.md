@@ -50,3 +50,5 @@ The income baseline retains every per-shift metric but omits the dense traces to
 4. Then widen to eight seeds, four-to-six slots, complete research paths and more shift budgets. Check paid campaign reachability separately.
 
 This round deliberately leaves game rules and prices unchanged so the baseline records the published alpha 0.30 behavior. The report now filters by both shift duration and number of persistent shifts, and displays zero-income shift counts beside the income median.
+
+The first functional repair and its 12-case paired rerun are documented in [the Rig follow-up](balance-lab-rig-repair.md). The original zero-income data above remains the reference.

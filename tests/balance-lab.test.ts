@@ -40,6 +40,13 @@ test('fixture worker uses the real simulation and preserves the resource ledger'
  assert.equal(result.status,'ok',result.reason);assert.equal(result.shifts.length,1);assert.equal(result.shifts[0].ledgerError,0);assert.ok(result.trace.length>1);
  assert.ok(result.grants[0].startsWith('CONTROLLED FIXTURE'));
 });
+test('a large Rig reaches work and delivers on the previously blocked Nickel seed',async()=>{
+ const job=plan({...options,seeds:[42],duration:45,shifts:3,combat:'quiet',buildIds:['bulk-cart'],fleetFamily:'rig'}).jobs[0];
+ const result=await execute(job,fileURLToPath(new URL('..',import.meta.url)));
+ assert.equal(result.status,'ok',result.reason);
+ assert.equal(result.shifts.length,3);
+ for(const shift of result.shifts){assert.ok(shift.credits>0,`shift ${shift.round} still had zero income`);assert.equal(shift.ledgerError,0);}
+});
 
 test('hard wall limit writes censored results and a usable report instead of hanging',()=>{
  const out=mkdtempSync(join(tmpdir(),'rbr-lab-deadline-'));
