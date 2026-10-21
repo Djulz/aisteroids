@@ -19,7 +19,8 @@ export function loadFreight(w:World,h:Hauler,source:CargoItem[],limit=source.len
 }
 export function cartReady(w:World,c:Cart){
  if(c.destroyed||c.attached||!c.cargo)return false;
- if(w.phase!=='mining'||c.cargo>=Math.min(8,c.capacity))return true;
+ // Retrieve a partial field load before the worker stops producing at recall.
+ if(w.phase!=='mining'||c.cargo>=Math.min(8,c.capacity)||w.missionDuration-w.time<=5)return true;
  // Do not keep collecting the first fragment from a working field buffer.
  return ![...w.rigs.filter(r=>r.state==='drill'||r.state==='blocked'),...w.drones.filter(d=>d.state==='mine')]
   .some(unit=>Math.hypot(unit.x-c.x,unit.y-c.y)<90);

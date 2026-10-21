@@ -25,3 +25,5 @@ node --experimental-strip-types scripts/balance-lab/diagnose-rig.ts --out balanc
 ```
 
 The versioned files `balance-baselines/alpha-0.30-rig-repair-screen.json` and `balance-baselines/alpha-0.30-rig-navigation-repaired.json` hold the paired results and detailed quiet state traces. The former drops dense trace points, as does the original screen baseline; the latter preserves the original diagnostic's resolution. Use the original `alpha-0.30-screen-3shifts.json` and `alpha-0.30-rig-navigation.json` as the before data. A further full 114-job screen and wider seed sample are needed before general balance changes.
+
+The subsequent [Hauler service repair](balance-lab-hauler-service.md) resolves the blocked standby and meeting destinations behind the seed 17 loss. This document remains the historical comparison immediately after body clearance.

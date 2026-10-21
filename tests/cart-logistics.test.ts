@@ -18,6 +18,7 @@ test('attached cart holds real overflow cargo and accepts passing Miner handoffs
 test('a partially loaded working field cart waits for useful collection or recall',()=>{
  const w=createWorld(company()),cart=w.carts[0];cart.attached=false;cart.cargoItems.push({mineral:'nickel'});
  Object.assign(w.drones[0],{x:cart.x,y:cart.y,state:'mine'});assert.equal(cartReady(w,cart),false);
+ w.time=w.missionDuration-4;assert.equal(cartReady(w,cart),true,'retrieve the partial load before the shift ends');
  w.phase='recall';assert.equal(cartReady(w,cart),true);
 });
 

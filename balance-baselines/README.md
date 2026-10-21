@@ -4,6 +4,10 @@ Round 2 is complete: [findings and reproduction commands](../docs/balance-lab-ro
 
 The [Rig repair follow-up](../docs/balance-lab-rig-repair.md) pairs the same 12 Rig jobs/36 shifts against the original screen in `alpha-0.30-rig-repair-screen.json`. `alpha-0.30-rig-navigation-repaired.json` retains the matching quiet state traces. Keep both original and repaired data: seed 42's zero shifts disappear, while seed 17's Bulk/Cart transport becomes slower.
 
+The [Hauler service follow-up](../docs/balance-lab-hauler-service.md) fixes the two blocked Hauler destinations and records the same 12 jobs in `alpha-0.30-rig-service-screen.json`. Nickel Bulk/Cart improves from 36.3 to 43.7 mean Credits/shift relative to the body-clearance repair; the old baselines remain unchanged for paired comparisons.
+
+`alpha-0.30-hauler-service-full-screen.json` holds the complete 114-job rerun after the Hauler service repair, all 342 conserved shifts. It uses the same scenario IDs as the original three-shift screen so every fleet/build and seed can be compared directly; dense timeline samples are omitted in both compact baselines.
+
 These JSON files retain their original run metadata, including the pre-commit revision and dirty flag. The engine fingerprint identifies the actual source under test; it is the same engine committed in alpha 0.30. Later report and statistics presentation changes do not alter these numerical observations.
 
 `alpha-0.30-nickel-3slot.json` is a complete 57-job screen: 19 relevant fleet/build cases, three seeds, one 45-second Nickel shift with patrols. Basic costs 0 Tech; the other builds cost 3. This is a short controlled fixture, not proof of campaign affordability or settled long-term income.

@@ -547,6 +547,31 @@ function flightRisk(w:World,from:Point,to:Point,threats:Enemy[]){
 }
 type HaulDecision={world:World;until:number;room:number;job:HaulerJob|undefined};
 const haulDecisions=new WeakMap<Hauler,HaulDecision>();
+const rigMeetingPoints=new WeakMap<Hauler,{rig:Rig;point?:Point;until:number}>();
+function rigMeetingPoint(w:World,h:Hauler,rig:Rig):Point|undefined{
+ const saved=rigMeetingPoints.get(h);
+ if(saved?.rig===rig){
+  if(saved.point&&distance(saved.point,rig)<36&&clearSegment(saved.point,saved.point,w.rocks,-1,11.2))return saved.point;
+  if(!saved.point&&w.time<saved.until)return undefined;
+ }
+ const angle=Math.atan2(h.y-rig.y,h.x-rig.x);
+ // The old fixed southeast offset can be embedded in the very rock being drilled.
+ // Try the near side first, then turn around the Rig until a Hauler can reach it.
+ for(const turn of [0,-1,1,-2,2,-3,3,-4,4,-5,5,-6,6,-7,7,8]){
+  const a=angle+turn*Math.PI/8,point={x:rig.x+Math.cos(a)*27,y:rig.y+Math.sin(a)*27};
+  if(!clearSegment(point,point,w.rocks,-1,11.2)||!route(h,point,w.rocks,-1,W,H).length)continue;
+  rigMeetingPoints.set(h,{rig,point,until:Infinity});return point;
+ }
+ rigMeetingPoints.set(h,{rig,until:w.time+.5});
+ return undefined;
+}
+function idleHaulerPoint(w:World,h:Hauler):Point{
+ const preferred={x:w.base.x+65+(h.id%3)*24,y:w.base.y+85};
+ if(clearSegment(preferred,preferred,w.rocks,-1,11.2))return preferred;
+ for(const candidate of [{x:w.base.x,y:w.base.y+65},...dockingSpots(w.base)])
+  if(clearSegment(candidate,candidate,w.rocks,-1,11.2)&&clearSegment(h,candidate,w.rocks,-1,11.2))return candidate;
+ return {x:w.base.x,y:w.base.y};
+}
 function haulerWork(w:World,h:Hauler):HaulerJob|undefined{
  const cached=haulDecisions.get(h),job=cached?.job,room=freightRoom(w,h);
  const valid=!job||job.kind==='ore'&&w.ores.includes(job.ore)&&availableTo(w,job.ore.id,'hauler',h.id)&&!(h.blockedOre===job.ore.id&&h.blockedUntil>w.time)||
@@ -620,14 +645,14 @@ function updateHaulers(w:World,dt:number){
      else{releaseHaulerClaim(w,h);h.blockedOre=job.ore.id;h.blockedUntil=w.time+7;}
     }else{
      releaseHaulerClaim(w,h);
-     if(job?.kind==='rig'){target={x:job.rig.x+(t(w.company,'dualLoadingArms')&&h.id%2?-24:24),y:job.rig.y+15};h.task='Rendezvous';}
+     if(job?.kind==='rig'){target=rigMeetingPoint(w,h,job.rig);if(target)h.task='Rendezvous';}
      else if(job?.kind==='depot'){target=job.point;h.task='Collecting';}
     }
     const loadingCart=carts.find(cart=>!cart.attached&&cart.cargo>0&&cart.cargo<8&&distance(cart,h)<65&&w.rigs.some(r=>(r.state==='drill'||r.state==='blocked')&&distance(r,cart)<24));
     if(!target&&loadingCart){target=loadingCart;h.task='Waiting';}
     if(!target){
      if(freightCargo(w,h)>0)h.state='return';
-     else{target={x:w.base.x+65+(h.id%3)*24,y:w.base.y+85};h.task='Waiting';}
+     else{target=idleHaulerPoint(w,h);h.task='Waiting';}
     }
    }
   }

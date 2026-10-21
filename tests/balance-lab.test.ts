@@ -47,6 +47,18 @@ test('a large Rig reaches work and delivers on the previously blocked Nickel see
  assert.equal(result.shifts.length,3);
  for(const shift of result.shifts){assert.ok(shift.credits>0,`shift ${shift.round} still had zero income`);assert.equal(shift.ledgerError,0);}
 });
+test('Hauler reaches a loaded Rig on Nickel seed 17 and retrieves its field cart',async()=>{
+ const job=plan({profile:'screen',seeds:[17],duration:45,shifts:3,maxJobs:100,shard:[0,1],campaign:false,buildIds:['bulk-cart'],fleetFamily:'rig'}).jobs.find(j=>j.terrain==='nickel')!;
+ const result=await execute(job,fileURLToPath(new URL('..',import.meta.url)));
+ assert.equal(result.status,'ok',result.reason);
+ assert.equal(result.shifts.length,3);
+ assert.ok(result.shifts.reduce((total,shift)=>total+shift.credits,0)>=90);
+ for(const shift of result.shifts){
+  assert.ok(shift.haulerDelivered>0,`Hauler did not retrieve Rig cargo in shift ${shift.shift}`);
+  assert.ok(shift.cartDelivered>0,`field cart was not collected in shift ${shift.shift}`);
+  assert.equal(shift.ledgerError,0);
+ }
+});
 
 test('hard wall limit writes censored results and a usable report instead of hanging',()=>{
  const out=mkdtempSync(join(tmpdir(),'rbr-lab-deadline-'));

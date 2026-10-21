@@ -104,6 +104,8 @@ The full three-shift screen is now complete; see [round 2](balance-lab-round-2.m
 
 The [paired Rig repair](balance-lab-rig-repair.md) reruns the two Rig builds across both regions after the route/working-position fix. It removes Nickel's zero-income seeds while exposing a Bulk/Cart servicing loss on seed 17. Use its versioned before/after data before changing prices.
 
+The [Hauler service follow-up](balance-lab-hauler-service.md) fixes that seed 17 pickup failure and compares the same 12 jobs again, including real field Cart retrieval. The first repair's lower-income result remains part of the published history.
+
 ## Recommended investigation order
 
 1. Complete the smoke checks, including the Cart lifecycle, against the current code.
