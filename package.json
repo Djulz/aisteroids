@@ -1,6 +1,6 @@
 {
   "name": "aisteroid-mining",
-  "version": "0.29.0",
+  "version": "0.30.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,7 +23,12 @@
     "legacy:explore": "node --experimental-strip-types scripts/pass-e-benchmark.ts",
     "legacy:frontier": "node --experimental-strip-types scripts/pass-f-frontier.ts",
     "legacy:biomes": "node --experimental-strip-types scripts/pass-i-biomes.ts",
-    "legacy:progression": "node --experimental-strip-types scripts/pass-k-progression.ts"
+    "legacy:progression": "node --experimental-strip-types scripts/pass-k-progression.ts",
+    "balance:lab": "node --experimental-strip-types scripts/balance-lab/run.ts",
+    "balance:smoke": "node --experimental-strip-types scripts/balance-lab/run.ts --profile smoke --assert",
+    "balance:plan": "node --experimental-strip-types scripts/balance-lab/run.ts --plan-only --summary-only --profile exhaustive",
+    "balance:report": "node --experimental-strip-types scripts/balance-lab/render.ts",
+    "balance:campaign": "node --experimental-strip-types scripts/balance-lab/run.ts --campaign-only"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

@@ -1,0 +1,11 @@
+import type {FleetComposition} from '../../src/fleet.ts';
+import type {TalentId} from '../../src/research.ts';
+export const SCHEMA=1;
+export type Terrain='home_dense'|'home_sparse'|'nickel'|'aurite'|'storm'|'void';
+export type Build={id:string;label:string;talents:TalentId[];cost:number};
+export type Job={id:string;caseKey:string;kind:'fixture'|'campaign';seed:number;phase:number;terrain:Terrain;duration:number;shifts:number;fleet:FleetComposition;build:Build;combat:'patrols'|'quiet';policy?:string};
+export type Trace={shift:number;seconds:number;gross:number;cash:number;delivered:number;mineral:Record<string,number>;extracted:number;cartLoaded:number;cartDelivered:number;losses:number};
+export type Shift={shift:number;credits:number;fragments:number;budgetSeconds:number;activeSeconds:number;seconds:number;losses:number;extracted:number;cartLoaded:number;cartDelivered:number;cartDeployments:number;cartCollections:number;haulerDelivered:number;ledgerError:number;remaining:number;loose:number;duty:Record<string,number>;milestones:string[];spending:number};
+export type Result={job:Job;status:'ok'|'timeout'|'error'|'stalled';reason?:string;shifts:Shift[];trace:Trace[];wallMs:number;grants:string[];purchases:{shift:number;item:string;cost:number}[];milestones:Record<string,number>};
+export type Meta={schema:number;profile:string;created:string;revision:string;engineRoot:string;engineHash:string;harnessHash:string;dirty:boolean;config:Record<string,unknown>;configHash:string;planned:number};
+export type Dataset={meta:Meta;results:Result[]};

@@ -1,4 +1,4 @@
-# Rock Bottom Robotics · Alpha 0.29.0
+# Rock Bottom Robotics · Alpha 0.30.0
 
 A mobile-first autonomous mining game. [Play the current release](https://djulz.github.io/aisteroids/). Continue a saved company or start a seeded one, prepare a fleet in Mission Control, and deploy into a timed shift with physical recall. Drag and pinch the full-screen asteroid field, set Mining or Scout focus by tapping, and use Follow Fleet when detached. Only delivered cargo earns Credits. The persistent 6000 × 5200 world remembers explored space, exhausted rocks, salvage, discoveries, infrastructure and focus pins.
 
@@ -62,3 +62,9 @@ See [patrol rules, checks and the following passes](docs/territorial-patrols.md)
 ## Company guidance · Alpha 0.29
 
 Mission Control now has one expandable NEXT objective shared with Workshop help and the mission report. Seventeen event-driven Company AI lines comment on real purchases, discoveries, contact and cargo deliveries. Unlock commentary uses the existing discovery cards; other mission lines are brief and non-blocking. Display history persists without resetting valid companies. Text works without audio. The current Voidite endpoint explains that Silent Core is not yet available. See [guidance, dialogue and save behavior](docs/guidance-director.md).
+
+## Balance Lab and Cart logistics · Alpha 0.30
+
+The reusable headless Balance Lab compares real delivered income across seeds, fleets, research paths, regions and shift durations. Controlled fixtures and zero-balance paid campaigns are separate. Bounded child workers, resumable JSONL, conservation checks, paired baseline comparisons and a self-contained HTML/CSV/JSON report support future balance changes. Start with `npm run balance:plan`, `npm run balance:smoke` or `npm run balance:lab`. See [the full experiment protocol](docs/balance-lab.md).
+
+Hauler Carts now accept physical overflow cargo, deploy within loading range, wait for useful loads and are retrieved for real station delivery. [Cart repair and validation](docs/cart-logistics.md) describes the changes. Existing v17 companies remain compatible; prices and research costs are unchanged.

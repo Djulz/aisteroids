@@ -1,0 +1,10 @@
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {writeReport} from './report.ts';
+import {pairedComparison} from './statistics.ts';
+import type {Dataset} from './types.ts';
+const [input,output,baseline]=process.argv.slice(2);
+if(!input||!output)throw Error('Usage: npm run balance:report -- RESULTS.json REPORT.html [BASELINE.json]');
+const read=(path:string):Dataset=>{const data=JSON.parse(readFileSync(resolve(path),'utf8'));return data.dataset??data;};
+const data=read(input);writeReport(data,resolve(output),baseline?pairedComparison(data,read(baseline)):undefined);
+console.log(resolve(output));
