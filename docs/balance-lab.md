@@ -100,6 +100,8 @@ JSON data records the source revision, dirty state, engine hash, harness hash, c
 
 The first complete Nickel screen and the paired old/new Cart measurements are committed in [balance-baselines](../balance-baselines/README.md), with exact reproduction commands and sample limitations.
 
+The full three-shift screen is now complete; see [round 2](balance-lab-round-2.md) for all counts, selected results and the isolated Rig navigation defect. `scripts/balance-lab/diagnose-rig.ts` records bounded geometric and state diagnostics without steering or modifying the simulated engine.
+
 ## Recommended investigation order
 
 1. Complete the smoke checks, including the Cart lifecycle, against the current code.

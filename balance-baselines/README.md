@@ -1,5 +1,7 @@
 # Alpha 0.30 pilot baselines
 
+Round 2 is complete: [findings and reproduction commands](../docs/balance-lab-round-2.md). `alpha-0.30-screen-3shifts.json` contains all 114 jobs/342 conserved shifts. `alpha-0.30-rig-navigation.json` preserves the quiet investigation demonstrating a route-clearance defect on seed 42. The defect is retained in these baselines and is not hidden by dropping its zero-income observations.
+
 These JSON files retain their original run metadata, including the pre-commit revision and dirty flag. The engine fingerprint identifies the actual source under test; it is the same engine committed in alpha 0.30. Later report and statistics presentation changes do not alter these numerical observations.
 
 `alpha-0.30-nickel-3slot.json` is a complete 57-job screen: 19 relevant fleet/build cases, three seeds, one 45-second Nickel shift with patrols. Basic costs 0 Tech; the other builds cost 3. This is a short controlled fixture, not proof of campaign affordability or settled long-term income.
