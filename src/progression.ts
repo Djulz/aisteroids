@@ -29,10 +29,11 @@ export function currentObjective(c:Company):Objective{
  if(has('first_aurite_delivery')){
   if(!c.outpost){
    if(!c.deflectorShields)return purchase('deflectorShields','Install Deflector Shields',180,'Reduce hostile weapon damage before establishing the frontier base.');
-   if(!c.progress.protectedAuriteDelivery)return goal('protected_aurite','Deliver Aurite with Deflector Shields','Deploy with Deflectors installed and return a real Aurite cargo. This prepares the Outer Outpost purchase.');
+   if(!c.progress.protectedAuriteDelivery)return goal('protected_aurite','Deliver shielded Aurite','Deploy with Deflectors installed. Aurite must physically reach HQ; mining it or losing the cargo does not count.');
    if(!c.progress.outpostSurveyed)return goal('outpost_survey','Survey the Outer Outpost site','Explore beyond the Aurite frontier with a Scout. Reach the Outpost site physically to survey it.');
-   return purchase('outpost','Build the Outer Outpost',600,'A frontier launch base shortens later journeys.');
+   return purchase('outpost','Build the Outer Outpost',600,'A protected frontier harbor shortens Aurite delivery routes. Your next shift launches there.');
   }
+  if(!c.progress.outpostOperated)return goal('outpost_operation','Deliver Aurite from the Outpost','Launch from the Outpost, mine Aurite and bring it back to its harbor. Check the report to see the frontier operation pay off.');
   if(!has('experimental_probe_salvaged'))return goal('probe','Investigate the Experimental Probe','Find and physically investigate the Probe for the Navigation Stabilizers blueprint.');
   if(!c.environmentUpgrades.includes('navigationStabilizers'))return purchase('navigationStabilizers','Install Navigation Stabilizers',600,'Reduce Ion Storm interference during the Cryonite expedition.');
   if(c.enduranceLevel<3)return purchase('endurance','Extend the storm expedition',c.enduranceLevel===0?32:c.enduranceLevel===1?120:400,'Longer shifts leave more working time after travel.');
@@ -43,7 +44,7 @@ export function currentObjective(c:Company):Objective{
   if(!has('abandoned_research_station'))return goal('research_station','Investigate the Research Station','Physically investigate the Derelict Research Station in Scrap Fields for protection and extraction blueprints.');
   if(!c.deflectorShields)return purchase('deflectorShields','Install Deflector Shields',180,'Protect the working fleet against hostile weapons.');
   if(!c.extractionUpgrades.includes('highPowerOptics'))return purchase('highPowerOptics','Install Extraction Class II',240,'Let either Miner path and the Rig extract Aurite and Cryonite.');
-  return goal('aurite','Deliver Aurite','Scout into Contested Territory, then focus a protected mining group on identified Aurite. Return the cargo to HQ.');
+  return goal('aurite','Deliver Aurite','Scout into Contested Territory. Identify an accessible Aurite pocket, escort the workers past its defenders and return the cargo to HQ.');
  }
  if(c.fleetCapacity<2)return purchase('fleetSlot','Expand to two fleet slots',24,'A second slot lets you try a Scout or another Miner. Assign roles in Hangar.');
  if(!c.progress.rivalSeen)return goal('first_contact','Make contact in Scrap Fields','Send a Scout toward the Scrap Fields. Actual friendly sensor contact unlocks the Fighter for the next expedition.');

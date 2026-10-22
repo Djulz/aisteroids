@@ -47,7 +47,7 @@ function decodeSave(raw:string|null):Company|null{
    !Number.isInteger(c.enduranceLevel)||c.enduranceLevel<0||c.enduranceLevel>3||
    !Number.isInteger(c.capacityReminder)||c.capacityReminder<1||c.capacityReminder>c.fleetCapacity||
    typeof c.turret!=='boolean'||typeof c.outpost!=='boolean'||!['home','far'].includes(c.launchSite)||c.launchSite==='far'&&!c.outpost||
-   !c.progress||['farSurveyed','richSampled','rivalSeen','outpostSurveyed','hqIntrusion','protectedAuriteDelivery'].some(k=>typeof c.progress[k as keyof typeof c.progress]!=='boolean')||
+   !c.progress||['farSurveyed','richSampled','rivalSeen','outpostSurveyed','hqIntrusion','protectedAuriteDelivery'].some(k=>typeof c.progress[k as keyof typeof c.progress]!=='boolean')||c.progress.outpostOperated!==undefined&&typeof c.progress.outpostOperated!=='boolean'||
    !decodeMap(c.explored)||!c.rockHp||typeof c.rockHp!=='object'||!c.poiProgress||typeof c.poiProgress!=='object'||
    !validTalents(c)||c.uniqueTechDiscoveries.some(id=>!discoveryIds.includes(id))||
    c.discoveredPois.some(id=>!POIS.some(p=>p.id===id))||
@@ -60,7 +60,7 @@ function decodeSave(raw:string|null):Company|null{
    c.techPointsAvailable!==c.techPointsEarned-talentSpent(c.talents)||
    !Array.isArray(c.ores)||c.ores.length>20000||c.ores.some((o:StoredOre)=>!o||!Number.isFinite(o.x)||o.x<0||o.x>W||!Number.isFinite(o.y)||o.y<0||o.y>H||o.value!==1||!mineralIds.includes(o.mineral))||
    fleetError(c))return null;
-  return validWorld(c)?{...c,contentVersion:2,...(c.aiSeen===undefined?{}:{aiSeen:normalizeDialogueHistory(c.aiSeen)})}:null;
+  return validWorld(c)?{...c,contentVersion:2,progress:{...c.progress,outpostOperated:c.progress.outpostOperated??false},...(c.aiSeen===undefined?{}:{aiSeen:normalizeDialogueHistory(c.aiSeen)})}:null;
  }catch{return null;}
 }
 // Validate the old economy before crediting a one-time refund. No world is

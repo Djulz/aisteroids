@@ -12,16 +12,17 @@ export function fixture(engine:Engine,job:Job):Company{
  let c=engine.research.awardTech({...s.freshCompany(job.seed),rounds:3+job.phase,total:0,basicUpgrades:['cargoAwareness','navigationAssist','workPlanner'],fleetCapacity:engine.fleet.usedSlots(job.fleet),fleetComposition:{...job.fleet},progress:{...s.freshProgress(),rivalSeen:true,outpostSurveyed:true,protectedAuriteDelivery:true}},engine.research.discoveryIds);
  c.enduranceLevel=([30,45,60,90] as number[]).indexOf(job.duration);
  if(c.enduranceLevel<0)throw Error('Unsupported fixed-step shift duration');
- c.deflectorShields=['aurite','storm','void'].includes(job.terrain);
- c.extractionUpgrades=job.terrain==='void'?['highPowerOptics','resonanceMining']:['aurite','storm'].includes(job.terrain)?['highPowerOptics']:[];
+ c.deflectorShields=['aurite','aurite_hq','storm','void'].includes(job.terrain);
+ c.extractionUpgrades=job.terrain==='void'?['highPowerOptics','resonanceMining']:['aurite','aurite_hq','storm'].includes(job.terrain)?['highPowerOptics']:[];
  c.environmentUpgrades=job.terrain==='void'?['navigationStabilizers','radiationShielding']:job.terrain==='storm'?['navigationStabilizers']:[];
- c.outpost=['aurite','storm','void'].includes(job.terrain);c.launchSite=c.outpost?'far':'home';
+ c.outpost=['aurite','aurite_hq','storm','void'].includes(job.terrain);c.launchSite=c.outpost&&job.terrain!=='aurite_hq'?'far':'home';
  for(const id of job.build.talents){const next=engine.research.research(c,id);if(!next)throw Error('Illegal fixture research: '+id);c=next;}
  const w=s.createWorld(c);w.explored.fill(255);
- const mineral=job.terrain==='nickel'?'nickel':job.terrain==='aurite'?'aurite':job.terrain==='storm'?'cryonite':job.terrain==='void'?'voidite':'ferrite';
+ const mineral=job.terrain==='nickel'?'nickel':job.terrain==='aurite'||job.terrain==='aurite_hq'?'aurite':job.terrain==='storm'?'cryonite':job.terrain==='void'?'voidite':'ferrite';
  const candidates=w.rocks.filter(r=>r.mineral===mineral&&r.hp>0&&(mineral!=='ferrite'||engine.universe.regionAt(job.seed,r.x,r.y)==='home_belt'));
  const density=(r:World['rocks'][number])=>w.rocks.filter(p=>p.hp>0&&Math.hypot(r.x-p.x,r.y-p.y)<180).length;
- const score=(r:World['rocks'][number])=>Math.hypot(r.x-w.base.x,r.y-w.base.y)*.02+(job.terrain==='home_sparse'?density(r): -density(r));
+ const anchor=job.terrain==='aurite_hq'?w.definition.outpost:w.base;
+ const score=(r:World['rocks'][number])=>Math.hypot(r.x-anchor.x,r.y-anchor.y)*.02+(job.terrain==='home_sparse'?density(r): -density(r));
  candidates.sort((a,b)=>score(a)-score(b)||a.id-b.id);
  if(!candidates.length)throw Error('No target mineral for '+job.terrain);
  c.focuses={mining:{x:candidates[0].x,y:candidates[0].y},scout:null};

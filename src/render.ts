@@ -16,7 +16,7 @@ function activeTrails(w:World):TrailSource[]{
  for(const h of w.haulers)if(h.state==='work'||h.state==='return')sources.push({id:`hauler:${h.id}`,kind:'hauler',x:h.x,y:h.y,angle:h.angle});
  for(const g of w.guards)if(g.hp>0)sources.push({id:`escort:${g.id}`,kind:'escort',x:g.x,y:g.y,angle:g.angle});
  for(const s of w.scouts)if(s.state==='exploring'||s.state==='avoiding'||s.state==='return')sources.push({id:`scout:${s.id}`,kind:'scout',x:s.x,y:s.y,angle:s.angle});
- for(const e of w.enemies)if(e.hp>0&&visibleAt(w,e))sources.push({id:`enemy:${e.id}`,kind:ENEMY_TYPES[e.kind??'patrol'].art,x:e.x,y:e.y,angle:Math.hypot(e.vx,e.vy)>.01?Math.atan2(e.vy,e.vx):-Math.PI/2});
+ for(const e of w.enemies)if(e.hp>0&&e.kind!=='sentry'&&visibleAt(w,e))sources.push({id:`enemy:${e.id}`,kind:ENEMY_TYPES[e.kind??'patrol'].art,x:e.x,y:e.y,angle:Math.hypot(e.vx,e.vy)>.01?Math.atan2(e.vy,e.vx):-Math.PI/2});
  return sources;
 }
 let biomeCanvas:HTMLCanvasElement|undefined,biomeSeed=-1;

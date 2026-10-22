@@ -10,8 +10,8 @@ const slate='#34434e',edge='#81909b',crater='#23323d',coral='#f06468';
 type C=CanvasRenderingContext2D;
 type Point=[number,number];
 export type RockArtTier=1|2|3|4|5;
-export type ShipArt='impactMiner'|'laserMiner'|'escort'|'scout'|'hauler'|'enemyScout'|'enemyFighter';
-export const shipArt:readonly ShipArt[]=['impactMiner','laserMiner','escort','scout','hauler','enemyScout','enemyFighter'];
+export type ShipArt='impactMiner'|'laserMiner'|'escort'|'scout'|'hauler'|'enemyScout'|'enemyFighter'|'enemyEnforcer'|'enemySentry';
+export const shipArt:readonly ShipArt[]=['impactMiner','laserMiner','escort','scout','hauler','enemyScout','enemyFighter','enemyEnforcer','enemySentry'];
 export const rockArtTiers:readonly RockArtTier[]=[1,2,3,4,5];
 export const poiArt:readonly PoiId[]=['abandoned_research_station','experimental_probe_salvaged','abandoned_cargo_relay','derelict_freight_shuttle','automated_sorting_archive','derelict_excavation_platform'];
 
@@ -44,7 +44,7 @@ function thruster(c:C,time:number,size=4){poly(c,[[-size,11],[0,17+Math.sin(time
 export function drawShip(c:C,kind:ShipArt,x:number,y:number,angle:number,options:{time?:number;thrust?:boolean;cargo?:number;capacity?:number}={}){
  c.save();c.translate(x,y);c.rotate(angle+Math.PI/2);
  const time=options.time??0;
- if(options.thrust&&kind!=='enemyScout'&&kind!=='enemyFighter')thruster(c,time,kind==='hauler'?5:kind==='scout'?2:4);
+ if(options.thrust&&!kind.startsWith('enemy'))thruster(c,time,kind==='hauler'?5:kind==='scout'?2:4);
  switch(kind){
   case 'impactMiner':case 'laserMiner':{
    // Compact impact body and separate rectangular braces from the approved sheet.
@@ -85,6 +85,17 @@ export function drawShip(c:C,kind:ShipArt,x:number,y:number,angle:number,options
    poly(c,[[-15,12],[-8,-3],[-3,-8],[0,-19],[3,-8],[8,-3],[15,12],[8,8],[3,-1],[3,10],[-3,10],[-3,-1],[-8,8]],coral);
    rect(c,-2,-9,4,10,'#402630');rect(c,-3,7,6,3,'#f19b95');
    break;
+  }
+  case 'enemyEnforcer':{
+   poly(c,[[-15,-11],[-8,-17],[8,-17],[15,-11],[18,7],[10,15],[-10,15],[-18,7]],'#b94f5a');
+   rect(c,-13,-10,26,17,'#492b38','#f1a295',2);
+   rect(c,-5,-21,10,16,'#703744','#ffd18a',2);
+   rect(c,-3,-6,6,10,'#ffd18a');break;
+  }
+  case 'enemySentry':{
+   poly(c,[[0,-18],[14,-11],[18,0],[14,11],[0,18],[-14,11],[-18,0],[-14,-11]],'#a95c67');
+   rect(c,-12,-7,24,14,'#432d3b','#f3b193',2);
+   rect(c,-4,-14,8,28,'#ffd18a');rect(c,-14,-3,28,6,'#ffd18a');break;
   }
  }
  c.restore();

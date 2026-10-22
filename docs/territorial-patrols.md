@@ -63,12 +63,14 @@ With Home Belt safe, the former HQ Turret becomes Station Turret: offered after
 the Outpost is built, still 24 Credits, 260 range, defending the current launch
 station. Existing turret purchases remain owned; no balance, save or talent reset.
 
-## Next pass: fortified territories
+## Following release: fortified territories
 
 Add an Enforcer and a stationary Sentry, each with a distinct silhouette and
 combat behavior. Place guarded POI/mineral pockets and readable approach gaps.
 Tune group composition against bought Fighter branches and transport builds.
 Use a fixed regional population rather than hidden scaling or timer waves.
+
+This work is now implemented in the [Aurite chapter](aurite-chapter.md). The paragraph above records the original alpha 0.28 scope; the current Enforcer/Sentry placement and Outpost route are specified there.
 
 ## Following pass: Dead Zone conclusion
 

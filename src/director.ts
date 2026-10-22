@@ -12,7 +12,8 @@ export const DIRECTOR_LINES={
  rig_unlocked:{priority:85,text:'Mining Rig blueprint recovered. Industrial output. Industrial dependence on a Hauler.'},
  nickel_delivered:{priority:75,text:'Nickel delivered. The frontier is officially a source of revenue. Further expansion and research are available.'},
  aurite_delivered:{priority:80,text:'Aurite delivered. Our working area has become considerably more valuable. Remarkable.'},
- outpost_built:{priority:70,text:'Outer Outpost operational. Select OUTPOST beside Deploy to begin closer to the work.'},
+ outpost_built:{priority:70,text:'Outer Outpost built. The next launch starts from its harbor. Bring Aurite back there to make the investment work.'},
+ outpost_operational:{priority:82,text:'Aurite received at the Outpost. The frontier now has a working supply line. Apparently, distance was an expense.'},
  storm_entered:{priority:50,text:'Ion Storm entered. Interference affects movement and sensors. Navigation Stabilizers improve both.'},
  cryonite_delivered:{priority:80,text:'Cryonite delivered. Dead Zone preparation is now our next investment.'},
  dead_zone_entered:{priority:65,text:'Dead Zone entered. Radiation affects the entire fleet. Shielding reduces exposure; it does not remove it.'},
@@ -62,6 +63,7 @@ export function completedDialogue(c:Company):DialogueId[]{
  if(has('first_nickel_delivery'))ids.push('nickel_delivered');
  if(has('first_aurite_delivery'))ids.push('aurite_delivered');
  if(c.outpost)ids.push('outpost_built');
+ if(c.progress.outpostOperated)ids.push('outpost_operational');
  if(has('first_cryonite_delivery'))ids.push('storm_entered','cryonite_delivered');
  if(has('first_voidite_delivery'))ids.push('dead_zone_entered','voidite_delivered');
  return ids;
@@ -79,6 +81,7 @@ export function missionDialogue(w:World):DialogueId[]{
  }
  if(w.deliveredByMineral.nickel>0)ids.push('nickel_delivered');
  if(w.deliveredByMineral.aurite>0)ids.push('aurite_delivered');
+ if(w.deliveredByMineral.aurite>0&&w.company.outpost&&w.company.launchSite==='far'&&!w.company.progress.outpostOperated)ids.push('outpost_operational');
  if(w.deliveredByMineral.cryonite>0)ids.push('cryonite_delivered');
  if(w.deliveredByMineral.voidite>0)ids.push('voidite_delivered');
  if(w.newRegions.includes('ion_storm'))ids.push('storm_entered');

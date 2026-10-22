@@ -1,5 +1,19 @@
 # Alpha 0.30 pilot baselines
 
+## Alpha 0.31 Aurite frontier
+
+`alpha-0.31-aurite-frontier.json` records 18 complete paired HQ/Outpost cases (three fleet compositions × three seeds × two launch sites), each with two 90-second shifts. Both sides already own an Outpost; only launch and unloading differ. See [chapter design and observed income](../docs/aurite-chapter.md) and the [interactive report](../docs/aurite-balance-report.html). The release engine fingerprint is `c0794778d185fa6eb75820f4b5d02008ec4045d703cec97556a9c0b34ae524dd`; harness fingerprint is `8b7af4c27194b3104a9f71275e0e582910deb9492bdc51166ef61e97654b717e`.
+
+`alpha-0.31-aurite-paid-seed7.json` records the independent purchased campaign from zero Credits and Tech through the first real Outpost Aurite delivery on shift 48. This is a single-seed deterministic policy, kept separate from the controlled paired income cases.
+
+Repeat after a change, preserving the original baseline for an actual comparison:
+
+```sh
+npm run balance:lab -- --profile screen --terrains aurite_hq,aurite --only-builds basic --only-fleet miner --seeds 7,17,42 --duration 90 --shifts 2 --out balance-results/aurite-changed --compare balance-baselines/alpha-0.31-aurite-frontier.json --assert
+```
+
+## Earlier baselines
+
 Round 2 is complete: [findings and reproduction commands](../docs/balance-lab-round-2.md). `alpha-0.30-screen-3shifts.json` contains all 114 jobs/342 conserved shifts. `alpha-0.30-rig-navigation.json` preserves the quiet investigation demonstrating a route-clearance defect on seed 42. The defect is retained in these baselines and is not hidden by dropping its zero-income observations.
 
 The [Rig repair follow-up](../docs/balance-lab-rig-repair.md) pairs the same 12 Rig jobs/36 shifts against the original screen in `alpha-0.30-rig-repair-screen.json`. `alpha-0.30-rig-navigation-repaired.json` retains the matching quiet state traces. Keep both original and repaired data: seed 42's zero shifts disappear, while seed 17's Bulk/Cart transport becomes slower.

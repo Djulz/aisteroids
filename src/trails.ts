@@ -10,7 +10,7 @@ export const TRAIL_LIFE=.46;
 export const TRAIL_CAP=220;
 const PER_SHIP_CAP=4;
 export function newTrailState():TrailState{return {time:-1,tracks:new Map(),puffs:[]};}
-const exhaust=(kind:ShipArt)=>kind==='enemyScout'||kind==='enemyFighter'?
+const exhaust=(kind:ShipArt)=>kind==='enemyScout'||kind==='enemyFighter'||kind==='enemyEnforcer'?
  {spacing:9,rear:16,size:2.5,color:'#df8581'}:kind==='hauler'?
  {spacing:9,rear:21,size:3.4,color:'#b6cfcb'}:kind==='scout'?
  {spacing:10,rear:17,size:2.3,color:'#adcbce'}:kind==='escort'?

@@ -55,6 +55,9 @@ npm run balance:campaign -- --shifts 32 --out balance-results/campaign --workers
 # Reproduce the same matrix after a balance change and compare the old JSON.
 npm run balance:lab -- --profile screen --out balance-results/changed --compare balance-results/current/results.json --assert
 
+# Same Aurite pocket, equipment and fleet from HQ versus the owned Outpost.
+npm run balance:lab -- --profile screen --terrains aurite_hq,aurite --only-builds basic --only-fleet miner --duration 90 --shifts 2 --seeds 7,17,42 --out balance-results/aurite-frontier --assert
+
 # Continue the same fingerprint/config; retry bounded failures explicitly.
 npm run balance:lab -- --profile screen --out balance-results/current --resume --retry-failed --job-timeout 120 --wall-limit 900
 

@@ -9,7 +9,7 @@ import {renderLobby} from '../src/lobby.ts';
 
 const ready=():Company=>({...freshCompany(),rounds:5,total:30,credits:9,basicUpgrades:['cargoAwareness','navigationAssist','workPlanner'],fleetCapacity:2});
 const late=():Company=>awardTech({...ready(),fleetCapacity:6,enduranceLevel:3,outpost:true,launchSite:'far',deflectorShields:true,
- progress:{...freshCompany().progress,rivalSeen:true,farSurveyed:true,outpostSurveyed:true,protectedAuriteDelivery:true},
+ progress:{...freshCompany().progress,rivalSeen:true,farSurveyed:true,outpostSurveyed:true,protectedAuriteDelivery:true,outpostOperated:true},
  environmentUpgrades:['advancedSensors','navigationStabilizers','radiationShielding'],extractionUpgrades:['highPowerOptics','resonanceMining']},
  ['abandoned_cargo_relay','abandoned_research_station','experimental_probe_salvaged','first_nickel_delivery','first_aurite_delivery','first_cryonite_delivery','automated_sorting_archive']);
 
@@ -35,6 +35,7 @@ test('Aurite progression guides protected delivery, survey, construction and act
  const delivered={...c,progress:{...c.progress,protectedAuriteDelivery:true}};
  assert.equal(currentObjective(delivered).id,'outpost_survey');
  assert.equal(currentObjective({...delivered,progress:{...delivered.progress,outpostSurveyed:true}}).id,'outpost');
+ assert.equal(currentObjective({...delivered,outpost:true}).id,'outpost_operation');
  const prepared=late();assert.equal(currentObjective({...prepared,uniqueTechDiscoveries:prepared.uniqueTechDiscoveries.filter(id=>id!=='first_cryonite_delivery'),launchSite:'home'}).id,'frontier_launch');
 });
 
@@ -73,6 +74,8 @@ test('mission dialogue requires physical delivery or real contact events, not ch
  w.pendingTech.push({id:'first_rival_contact',time:1});assert.ok(missionDialogue(w).includes('first_contact'));
  w.deliveredByMineral.nickel=1;assert.ok(missionDialogue(w).includes('nickel_delivered'));
  assert.ok(!missionDialogue(w).includes('aurite_delivered'));
+ w.company.outpost=true;w.company.launchSite='far';w.deliveredByMineral.aurite=1;
+ assert.ok(missionDialogue(w).includes('outpost_operational'));
  w.drones[0].cargo=3;w.drones[0].state='return';assert.ok(missionDialogue(w).includes('cargo_full'),'full cargo is recognized during physical recall too');
 });
 
@@ -98,7 +101,7 @@ test('AI content has stable voice-ready IDs and renders English text without an 
  const html=directorMessage('first_contact');
  assert.match(html,/data-dialogue="first_contact"/);assert.match(html,/Fighter blueprint available/);
  assert.doesNotMatch(html,/<audio|autoplay/);
- assert.equal(new Set(Object.keys(DIRECTOR_LINES)).size,17);
+ assert.equal(new Set(Object.keys(DIRECTOR_LINES)).size,18);
 });
 
 test('report commentary defers pending blueprint lines until their acknowledged discovery card',()=>{

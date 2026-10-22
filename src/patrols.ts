@@ -1,13 +1,16 @@
 import {HOME,W,H} from './geometry.ts';
 import {regionAt,type Universe} from './universe.ts';
 import {clearSegment,type Point} from './navigation.ts';
+import {mineralForRock} from './minerals.ts';
 import type {BiomeId} from './biomes.ts';
 
-export type EnemyKind='patrol'|'interceptor';
+export type EnemyKind='patrol'|'interceptor'|'enforcer'|'sentry';
 export type EnemyMode='patrol'|'alert'|'pursue'|'search'|'return';
 export const ENEMY_TYPES={
  patrol:{name:'Patrol Drone',art:'enemyScout',hp:3,speed:64,sensors:150,range:125,damage:2,cooldown:2.1,warning:1.5},
  interceptor:{name:'Interceptor',art:'enemyFighter',hp:6,speed:94,sensors:190,range:135,damage:2.5,cooldown:1.8,warning:1.2},
+ enforcer:{name:'Enforcer',art:'enemyEnforcer',hp:12,speed:48,sensors:205,range:155,damage:3.2,cooldown:2.4,warning:1.8},
+ sentry:{name:'Sentry',art:'enemySentry',hp:9,speed:0,sensors:180,range:175,damage:2.4,cooldown:2.6,warning:2.0},
 } as const;
 export type PatrolSite={id:number;biome:BiomeId;home:Point;route:readonly Point[];radius:number;kinds:readonly EnemyKind[]};
 const cache=new WeakMap<Universe,readonly PatrolSite[]>();
@@ -21,9 +24,9 @@ export function patrolSites(u:Universe):readonly PatrolSite[]{
   ['scrap_fields',{x:2130,y:2980},['patrol']],
   ['scrap_fields',{x:1500,y:1900},['patrol']],
   ['scrap_fields',{x:480,y:2450},['patrol']],
-  ['contested',{x:3100,y:2180},['patrol','interceptor']],
+  ['contested',{x:3100,y:2180},['patrol','enforcer']],
   ['contested',{x:2300,y:1100},['patrol','interceptor']],
-  ['contested',{x:2780,y:4050},['patrol','interceptor']],
+  ['contested',{x:2780,y:4050},['patrol','enforcer']],
   ['contested',{x:3350,y:3000},['interceptor','interceptor']],
   ['ion_storm',{x:4540,y:2700},['patrol','interceptor','interceptor']],
   ['ion_storm',{x:3910,y:1100},['patrol','interceptor','interceptor']],
@@ -46,6 +49,22 @@ export function patrolSites(u:Universe):readonly PatrolSite[]{
   if(!found)throw Error(`No clear ${biome} patrol site for seed ${u.seed}`);
   sites.push(found);
  }
+ // Fortifications are generated after the old routes, preserving their IDs and
+ // asteroid ledgers. Each guards a real Aurite pocket, with room for an approach.
+ const aurite=u.deposits.filter(r=>mineralForRock(r.id,r.x,r.y,u.seed)==='aurite'&&regionAt(u.seed,r.x,r.y)==='contested')
+  .sort((a,b)=>distance(a,u.outpost)-distance(b,u.outpost)||a.id-b.id);
+ const approach=aurite.slice(0,2);
+ for(const rock of aurite.slice(2)){
+  if(sites.filter(site=>site.kinds.includes('sentry')).length===2)break;
+  if(approach.some(open=>distance(open,rock)<260))continue;
+  if(sites.some(site=>site.kinds.includes('sentry')&&distance(site.home,rock)<550))continue;
+  for(let side=0;side<16;side++){
+   const angle=side*Math.PI/8,p={x:rock.x+Math.cos(angle)*105,y:rock.y+Math.sin(angle)*105};
+   if(!allowed(p,'contested')||distance(p,u.outpost)<300||approach.some(open=>distance(open,p)<260)||sites.some(site=>distance(site.home,p)<130)||!clearSegment(p,rock,rocks,rock.id,12))continue;
+   sites.push({id:sites.length,biome:'contested',home:p,route:[p],radius:220,kinds:['sentry']});break;
+  }
+ }
+ if(sites.filter(site=>site.kinds.includes('sentry')).length!==2)throw Error(`No guarded Aurite pockets for seed ${u.seed}`);
  cache.set(u,sites);return sites;
 }
 

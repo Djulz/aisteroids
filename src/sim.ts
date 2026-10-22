@@ -17,8 +17,8 @@ export {W,H,HOME,FAR};
 export const ROUND_TIME=30,TRIAL_TIME=22,STEP=1/60,CAPACITY=3,OUTPOST_COST=600;
 export const ENDURANCE_DURATIONS=[30,45,60,90] as const,ENDURANCE_PRICES=[32,120,400] as const;
 export type LaunchSite='home'|'far';
-export type Progress={farSurveyed:boolean;richSampled:boolean;rivalSeen:boolean;outpostSurveyed:boolean;hqIntrusion:boolean;protectedAuriteDelivery:boolean};
-export const freshProgress=():Progress=>({farSurveyed:false,richSampled:false,rivalSeen:false,outpostSurveyed:false,hqIntrusion:false,protectedAuriteDelivery:false});
+export type Progress={farSurveyed:boolean;richSampled:boolean;rivalSeen:boolean;outpostSurveyed:boolean;hqIntrusion:boolean;protectedAuriteDelivery:boolean;outpostOperated:boolean};
+export const freshProgress=():Progress=>({farSurveyed:false,richSampled:false,rivalSeen:false,outpostSurveyed:false,hqIntrusion:false,protectedAuriteDelivery:false,outpostOperated:false});
 export type BasicUpgrade='cargoAwareness'|'navigationAssist'|'workPlanner';
 export const BASIC_UPGRADES:Record<BasicUpgrade,{name:string;price:number;effect:string}>={cargoAwareness:{name:'Cargo Awareness',price:3,effect:'Full cargo returns, unloads and resumes work.'},navigationAssist:{name:'Navigation Assist',price:6,effect:'Smoother turns, approaches and braking.'},workPlanner:{name:'Work Planner',price:12,effect:'Holds a productive mining pocket longer.'}};
 export type StoredOre={x:number;y:number;value:1;rich:boolean;mineral:MineralId};
@@ -77,7 +77,10 @@ export function progressionHint(c:Company):string{return currentObjective(c).det
 
 export function buy(c:Company,item:Purchase):Company|null{
  if(!['cargoAwareness','navigationAssist','workPlanner','fleetSlot','turret','outpost','endurance','deflectorShields','highPowerOptics','resonanceMining'].includes(item)||!c.shopOffers.includes(item)||c.shopPurchases.includes(item)||!unlocked(c,item)||c.credits<cost(c,item)||(item==='fleetSlot'?c.fleetCapacity>=MAX_FLEET_CAPACITY:item==='endurance'?c.enduranceLevel>=3:item==='highPowerOptics'||item==='resonanceMining'?c.extractionUpgrades.includes(item):item in BASIC_UPGRADES?c.basicUpgrades.includes(item as BasicUpgrade):c[item as 'turret'|'outpost'|'deflectorShields']))return null;
- return {...c,credits:c.credits-cost(c,item),shopPurchases:[...c.shopPurchases,item],...(item in BASIC_UPGRADES?{basicUpgrades:[...c.basicUpgrades,item as BasicUpgrade]}:item==='fleetSlot'?{fleetCapacity:c.fleetCapacity+1}:item==='endurance'?{enduranceLevel:c.enduranceLevel+1}:item==='highPowerOptics'||item==='resonanceMining'?{extractionUpgrades:[...c.extractionUpgrades,item]}:{[item]:true})};
+ const remote=item==='outpost'?generateUniverse(c.worldSeed):undefined;
+ const identifiedAurite=remote?.deposits.filter(r=>c.identifiedRocks.includes(r.id)&&mineralForRock(r.id,r.x,r.y,c.worldSeed)==='aurite'&&c.rockHp[r.id]!==0&&distance(r,remote.outpost)<900)
+  .sort((a,b)=>distance(a,remote.outpost)-distance(b,remote.outpost))[0];
+ return {...c,credits:c.credits-cost(c,item),shopPurchases:[...c.shopPurchases,item],...(item in BASIC_UPGRADES?{basicUpgrades:[...c.basicUpgrades,item as BasicUpgrade]}:item==='fleetSlot'?{fleetCapacity:c.fleetCapacity+1}:item==='endurance'?{enduranceLevel:c.enduranceLevel+1}:item==='highPowerOptics'||item==='resonanceMining'?{extractionUpgrades:[...c.extractionUpgrades,item]}:item==='outpost'?{outpost:true,launchSite:'far' as const,focuses:{...c.focuses,mining:identifiedAurite?{x:identifiedAurite.x,y:identifiedAurite.y}:null}}:{[item]:true})};
 }
 export function buyEnvironment(c:Company,id:EnvironmentUpgrade):Company|null{
  if(!environmentIds.includes(id)||c.environmentUpgrades.includes(id))return null;
@@ -748,7 +751,7 @@ export function planMinerWork(w:World,d:Drone,room=d.gear.cargo-d.cargo):MinerJo
  for(const rock of w.rocks){
   if(d.kind==='impactMiner'&&d.hp<=1)break;
   if(rock.hp<=0||!exploredAt(w,rock))continue;
-  if(threats.some(e=>distance(e,rock)<150)&&!w.guards.some(g=>g.hp>0&&distance(g,rock)<180))continue;
+  if(threats.some(e=>distance(e,rock)<150)&&!w.guards.some(g=>g.hp>0&&(distance(g,rock)<180||biomeAt(rock.x,rock.y,w.company.worldSeed)==='contested'&&distance(g,d)<160)))continue;
   const identified=w.identifiedRocks.has(rock.id);
   // Unknown deposits are assumed ordinary. Their hidden tool requirement is
   // neither used to filter nor to score; sensor identification resolves it.
@@ -768,19 +771,21 @@ export function planMinerWork(w:World,d:Drone,room=d.gear.cargo-d.cargo):MinerJo
   const focusDistance=focus?distance(focus,rock):Infinity;
   // A deliberate forward mining pin is an expedition order. The normal
   // locality preference remains for autonomous work and pins elsewhere.
-  const expedition=identified&&focusDistance<300&&biomeAt(rock.x,rock.y,w.company.worldSeed)==='scrap_fields'?25:1;
+  const region=biomeAt(rock.x,rock.y,w.company.worldSeed);
+  const expedition=identified&&focusDistance<300?region==='scrap_fields'?25:region==='home_belt'?1:50:1;
   const rate=expedition*tidying*workRate({credits:price,pieces,travel,returnDistance,actionSeconds,risk:risk(rock),focusDistance:focus?focusDistance:undefined,peers:nearPeers+loose/Math.max(1,room),areaDistance:area?distance(area,rock):undefined});
   jobs.push({kind:'rock',rock,rate});
  }
  for(const ore of available){
   if((ore.age??1)<ORE_PICKUP_DELAY)continue;
-  if(threats.some(e=>distance(e,ore)<145)&&!w.guards.some(g=>g.hp>0&&distance(g,ore)<180))continue;
+  if(threats.some(e=>distance(e,ore)<145)&&!w.guards.some(g=>g.hp>0&&(distance(g,ore)<180||knownBiomeAt(w,ore)==='contested'&&distance(g,d)<160)))continue;
   const travel=distance(d,ore),returnDistance=distance(ore,w.base);
   if(d.kind==='impactMiner'&&d.hp<=1&&travel>=130)continue;
   if(travel/(66*movementFactor(d,w.company.environmentUpgrades,w.company.outpost,w.company.worldSeed))+.55>remaining)continue;
   const pieces=nearbyCount(ore,65,ore.mineral),price=MINERALS[ore.mineral??'ferrite'].credits;
   // The focus is an order to deliver from this patch, not merely shoot it.
-  const expedition=focus&&distance(focus,ore)<300&&knownBiomeAt(w,ore)==='scrap_fields'?25:1;
+  const region=knownBiomeAt(w,ore);
+  const expedition=focus&&distance(focus,ore)<300?region==='scrap_fields'?25:region==='home_belt'?1:50:1;
   const rate=expedition*workRate({credits:price,pieces,travel,returnDistance,actionSeconds:.55*pieces+.2,risk:risk(ore),focusDistance:focus?distance(focus,ore):undefined,areaDistance:area?distance(area,ore):undefined});
   jobs.push({kind:'ore',ore,rate});
  }
@@ -841,7 +846,7 @@ function updateRivals(w:World,dt:number){
    const signature='targetUntil' in unit?(t(w.company,'lowSignature')&&(!investigating||t(w.company,'ghostSurvey'))?57:95):stats.sensors;
    return distance(e,unit)<signature&&clearSegment(e,unit,w.rocks,-1,0);
   });
-  const score=(unit:typeof units[number])=>distance(e,unit)+(guards.includes(unit as Guard)?-65:e.kind==='interceptor'&&'cargoItems' in unit?-(unit.cargo>0?70:30):0);
+  const score=(unit:typeof units[number])=>distance(e,unit)+(guards.includes(unit as Guard)?-65:(e.kind==='interceptor'||e.kind==='enforcer')&&'cargoItems' in unit?-(unit.cargo>0?70:30):0);
   const held=candidates.find(unit=>unitKey(unit)===e.targetKey);
   let target:typeof units[number]|Beacon|undefined=held??candidates.sort((a,b)=>score(a)-score(b))[0];
   const decoy=w.decoys.find(d=>distance(e,d)<105&&permitted(d)&&clearSegment(e,d,w.rocks,-1,0));
@@ -870,7 +875,7 @@ function updateRivals(w:World,dt:number){
   const disabled=w.time<(e.disabledUntil??0),motor=disabled?0:w.time<(e.suppressedUntil??0)?.7:1;
   e.vx+=(dx*desired*motor-e.vx)*Math.min(1,dt*3);e.vy+=(dy*desired*motor-e.vy)*Math.min(1,dt*3);
   const before={x:e.x,y:e.y};
-  e.x=Math.max(12,Math.min(W-12,e.x+e.vx*dt));e.y=Math.max(12,Math.min(H-12,e.y+e.vy*dt));separateRock(w,e);
+  e.x=Math.max(12,Math.min(W-12,e.x+e.vx*dt));e.y=Math.max(12,Math.min(H-12,e.y+e.vy*dt));if(e.kind!=='sentry')separateRock(w,e);
   if(site&&(biomeAt(e.x,e.y,w.company.worldSeed)==='home_belt'||biomeAt(e.x,e.y,w.company.worldSeed)==='dead_zone'||w.company.outpost&&distance(e,w.definition.outpost)<180)){
    e.x=before.x;e.y=before.y;e.vx=e.vy=0;e.mode='return';e.targetKey=undefined;target=undefined;
   }
@@ -880,7 +885,7 @@ function updateRivals(w:World,dt:number){
    if('expires' in target){target.expires=w.time;target=undefined;}
    if(target){
     const productive='cargoItems' in target;
-    let damage='kind' in target?stats.damage:productive?stats.damage*.75:e.kind==='interceptor'?1.5:1;
+    let damage='kind' in target?stats.damage:productive?stats.damage*.75:e.kind==='enforcer'?2:e.kind==='sentry'?1.8:e.kind==='interceptor'?1.5:1;
     if(w.company.deflectorShields)damage*=.6;
     if('attached' in target&&target.attached&&t(w.company,'armoredFreight'))damage*=.6;
     if(overclockActive(w)&&t(w.company,'protectedOverdrive'))damage*=.6;
@@ -1208,6 +1213,7 @@ export function settle(c:Company,w:World):Company{
  const ores=[...w.ores.map(o=>({x:o.x,y:o.y,value:1 as const,rich:!!o.rich,mineral:o.mineral})),...abandoned,...stranded];
  const progress={...w.progress};
  if(w.deliveredByMineral.aurite>0&&w.company.deflectorShields)progress.protectedAuriteDelivery=true;
+ if(w.deliveredByMineral.aurite>0&&w.company.outpost&&w.company.launchSite==='far')progress.outpostOperated=true;
  const milestone:DiscoveryId[]=[];
  if(w.delivered>0)milestone.push('first_shift_delivered');
  if(c.fleetCapacity>=2)milestone.push('first_fleet_expansion');
