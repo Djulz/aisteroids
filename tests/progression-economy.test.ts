@@ -74,7 +74,8 @@ test('chapter prices, real unlocks and at most two offers remain gated',()=>{
  const prepared={...aurite,deflectorShields:true,outpost:true,progress:{...aurite.progress,protectedAuriteDelivery:true}};
  assert.equal(nextOffers(prepared)[0],'navigationStabilizers');
  const cryonite=awardTech({...prepared,environmentUpgrades:['navigationStabilizers'] as Company['environmentUpgrades'],extractionUpgrades:['highPowerOptics'],fleetCapacity:5},['first_cryonite_delivery','automated_sorting_archive']);
- assert.deepEqual(nextOffers(cryonite),['radiationShielding','resonanceMining']);
+ assert.deepEqual(nextOffers(cryonite),['endurance','radiationShielding']);
+ assert.deepEqual(nextOffers({...cryonite,enduranceLevel:3}),['radiationShielding','resonanceMining']);
 });
 
 test('Tech is permanent; tier two requires Nickel and tier three Probe plus Aurite',()=>{

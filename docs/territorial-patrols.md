@@ -80,6 +80,8 @@ The encounter must require the final environment equipment and a prepared fleet.
 Boss rewards, persistent defeat and campaign ending belong to that pass; none
 are silently granted by this release.
 
+The native-life portion is now implemented in the [Dead Zone chapter](ion-dead-frontier.md). The Silent Core boss and ending remain future work.
+
 ## Verification
 
 Bounded behavioral checks cover launch population, stable territories, varying

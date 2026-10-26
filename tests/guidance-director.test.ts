@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {freshCompany,createWorld,progressionHint,type Company} from '../src/sim.ts';
+import {freshCompany,createWorld,progressionHint,nextOffers,buy,type Company} from '../src/sim.ts';
 import {awardTech} from '../src/research.ts';
 import {currentObjective} from '../src/progression.ts';
 import {DirectorQueue,DIRECTOR_LINES,completedDialogue,preparationDialogue,missionDialogue,normalizeDialogueHistory,directorMessage} from '../src/director.ts';
@@ -41,7 +41,9 @@ test('Aurite progression guides protected delivery, survey, construction and act
 
 test('late objectives skip completed and optional discoveries and do not invent a playable boss',()=>{
  const c=late();assert.equal(currentObjective(c).id,'voidite');
- assert.equal(currentObjective({...c,environmentUpgrades:[]}).id,'radiationShielding');
+ assert.equal(currentObjective({...c,environmentUpgrades:[]}).id,'navigationStabilizers');
+ assert.equal(nextOffers({...c,environmentUpgrades:[]})[0],'navigationStabilizers','late delivery must not hide stabilizers behind the two-offer cap');
+ assert.equal(currentObjective({...c,environmentUpgrades:['navigationStabilizers']}).id,'radiationShielding');
  assert.equal(currentObjective({...c,extractionUpgrades:['highPowerOptics']}).id,'resonanceMining');
  const finished=awardTech(c,['first_voidite_delivery']);
  assert.equal(currentObjective(finished).id,'frontier_complete');assert.match(currentObjective(finished).detail,/not available/);
@@ -101,7 +103,7 @@ test('AI content has stable voice-ready IDs and renders English text without an 
  const html=directorMessage('first_contact');
  assert.match(html,/data-dialogue="first_contact"/);assert.match(html,/Fighter blueprint available/);
  assert.doesNotMatch(html,/<audio|autoplay/);
- assert.equal(new Set(Object.keys(DIRECTOR_LINES)).size,18);
+ assert.equal(new Set(Object.keys(DIRECTOR_LINES)).size,19);
 });
 
 test('report commentary defers pending blueprint lines until their acknowledged discovery card',()=>{
@@ -109,4 +111,15 @@ test('report commentary defers pending blueprint lines until their acknowledged 
  assert.equal(q.take(['first_contact']),'nickel_delivered');
  assert.equal(q.take(['first_contact']),undefined);
  q.remember('first_contact');assert.equal(q.take(),undefined);
+});
+
+// A lucky early Cryonite delivery must not force purchase of 2,400-Credit gear
+// or a sixth slot just to reveal the 400-Credit duration upgrade.
+test('early Cryonite keeps the advised duration purchase visible and affordable',()=>{
+ const c={...late(),credits:400,fleetCapacity:5,enduranceLevel:2,environmentUpgrades:['navigationStabilizers'] as Company['environmentUpgrades'],extractionUpgrades:['highPowerOptics'] as Company['extractionUpgrades']};
+ assert.equal(currentObjective(c).id,'endurance');
+ const offers=nextOffers(c);assert.ok(offers.length<=2);assert.equal(offers[0],'endurance');
+ const upgraded=buy({...c,shopOffers:offers,shopPurchases:[]},'endurance');
+ assert.ok(upgraded);assert.equal(upgraded.enduranceLevel,3);assert.equal(upgraded.credits,0);
+ assert.equal(currentObjective(upgraded).id,'radiationShielding');
 });

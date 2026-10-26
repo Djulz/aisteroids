@@ -17,7 +17,7 @@ const seeds=arg('seeds',profile==='smoke'?'7':profile==='exhaustive'?'7,17,42,99
 if(!seeds.length||new Set(seeds).size!==seeds.length||seeds.some(n=>!Number.isSafeInteger(n)||n<0||n>4294967295))throw Error('Seeds must be distinct uint32 integers');
 const shard=arg('shard','0/1').split('/').map(Number) as [number,number];if(shard.length!==2||!shard.every(Number.isSafeInteger)||shard[0]<0||shard[1]<1||shard[0]>=shard[1])throw Error('Invalid --shard index/count');
 const terrainText=arg('terrains',''),terrains=terrainText?terrainText.split(','):undefined;
-if(terrains?.some(t=>!['home_dense','home_sparse','nickel','aurite','aurite_hq','storm','void'].includes(t)))throw Error('Unknown terrain');
+if(terrains?.some(t=>!['home_dense','home_sparse','nickel','aurite','aurite_hq','storm','storm_raw','void','void_raw'].includes(t)))throw Error('Unknown terrain');
 const combat=arg('combat','');if(combat&&!['quiet','patrols'].includes(combat))throw Error('Unknown combat mode');
 if(flag('summary-only')&&(!flag('plan-only')||shard[1]!==1))throw Error('--summary-only requires --plan-only and no sharding');
 const buildIds=args.includes('--only-builds')?arg('only-builds','').split(','):undefined,fleetFamily=arg('only-fleet','');

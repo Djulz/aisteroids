@@ -33,10 +33,10 @@ Five policies cover Ram, Laser, Bulk/Cart, Express/Jump and Rig logistics. These
 |---|---|---|
 | smoke | Short correctness/regression check | Two three-slot logistics fleets, Basic/Cart/Jump, Nickel, one seed, one shift. |
 | screen | First income comparison | Four three-slot fleets; relevant curated builds; dense Home Belt and Nickel; three seeds; three persistent 45-second shifts. |
-| standard | Role-path and regional coverage | Thirteen representative fleets through six slots, all 48 complete single-role paths plus curated mixed builds, all six terrain fixtures. |
-| exhaustive | Full cross-product of the defined dimensions | All 376 legal compositions at 2–6 slots, the 48 role paths and curated builds, six terrain fixtures, eight seeds, three patrol phases, 30/60/90-second shifts, with/without patrols. |
+| standard | Role-path and regional coverage | Thirteen representative fleets through six slots, all 48 complete single-role paths plus curated mixed builds, and all configured terrain fixtures. |
+| exhaustive | Full cross-product of the defined dimensions | All 376 legal compositions at 2–6 slots, the 48 role paths and curated builds, configured terrain fixtures, eight seeds, three patrol phases, 30/60/90-second shifts, with/without patrols. |
 
-The exhaustive plan currently contains 11,725,344 jobs. That is a **plan count**, not a completed simulation count. It is deliberately not launched by the default command. Plan and narrow it first. The full grid covers the listed single-role paths and curated mixed builds; it is not an enumeration of every possible multi-category permanent talent combination.
+The exhaustive grid has millions of possible jobs. That is a **plan**, not a completed simulation. It is deliberately not launched by the default command. Run `balance:plan` for the current exact count before narrowing the grid. The full grid covers the listed single-role paths and curated mixed builds; it is not an enumeration of every possible multi-category permanent talent combination.
 
 Build definitions live in `scripts/balance-lab/catalog.ts`. Add a real mixed path there to study a particular interaction; its actual cost is calculated from the game talent registry. Relevant builds are selected only for fleets containing the affected role. Every proposed path is checked by the live research rules before simulation.
 
@@ -57,6 +57,12 @@ npm run balance:lab -- --profile screen --out balance-results/changed --compare 
 
 # Same Aurite pocket, equipment and fleet from HQ versus the owned Outpost.
 npm run balance:lab -- --profile screen --terrains aurite_hq,aurite --only-builds basic --only-fleet miner --duration 90 --shifts 2 --seeds 7,17,42 --out balance-results/aurite-frontier --assert
+
+# Paired Ion Storm stabilizers and Dead Zone shielding, holding the rest fixed.
+npm run balance:lab -- --profile screen --terrains storm_raw,storm,void_raw,void --only-builds basic --only-fleet miner --seeds 7,17,42 --duration 90 --shifts 2 --out balance-results/ion-dead-frontier --assert
+
+# Purchased reference route from zero resources through Voidite; checkpointable.
+npm run campaign:outer -- 7 85
 
 # Continue the same fingerprint/config; retry bounded failures explicitly.
 npm run balance:lab -- --profile screen --out balance-results/current --resume --retry-failed --job-timeout 120 --wall-limit 900

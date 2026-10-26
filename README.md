@@ -1,4 +1,4 @@
-# Rock Bottom Robotics · Alpha 0.31.0
+# Rock Bottom Robotics · Alpha 0.32.0
 
 A mobile-first autonomous mining game. [Play the current release](https://djulz.github.io/aisteroids/). Continue a saved company or start a seeded one, prepare a fleet in Mission Control, and deploy into a timed shift with physical recall. Drag and pinch the full-screen asteroid field, set Mining or Scout focus by tapping, and use Follow Fleet when detached. Only delivered cargo earns Credits. The persistent 6000 × 5200 world remembers explored space, exhausted rocks, salvage, discoveries, infrastructure and focus pins.
 
@@ -68,5 +68,7 @@ Mission Control now has one expandable NEXT objective shared with Workshop help 
 The reusable headless Balance Lab compares real delivered income across seeds, fleets, research paths, regions and shift durations. Controlled fixtures and zero-balance paid campaigns are separate. Bounded child workers, resumable JSONL, conservation checks, paired baseline comparisons and a self-contained HTML/CSV/JSON report support future balance changes. Start with `npm run balance:plan`, `npm run balance:smoke` or `npm run balance:lab`. See [the full experiment protocol](docs/balance-lab.md).
 
 [Aurite and the Outer Outpost](docs/aurite-chapter.md) now have a complete protected-delivery and frontier-operation route, fixed Enforcer/Sentry territories, and a matched HQ/Outpost income fixture.
+
+[Ion Storm and Dead Zone](docs/ion-dead-frontier.md) continue the frontier through a stronger stabilizer effect, sustainable finite Cryonite reserves, native territorial lifeforms, shielded Voidite extraction and paired income fixtures. The Silent Core ending remains future work.
 
 Hauler Carts now accept physical overflow cargo, deploy within loading range, wait for useful loads and are retrieved for real station delivery. [Cart repair and validation](docs/cart-logistics.md) describes the changes. Existing v17 companies remain compatible; prices and research costs are unchanged.

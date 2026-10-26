@@ -1,0 +1,860 @@
+{
+  "seed": 7,
+  "startingShifts": 19,
+  "auriteShift": 48,
+  "endingShifts": 98,
+  "credits": 469,
+  "objective": "frontier_complete",
+  "progress": {
+    "farSurveyed": true,
+    "richSampled": true,
+    "rivalSeen": true,
+    "outpostSurveyed": true,
+    "hqIntrusion": false,
+    "protectedAuriteDelivery": true,
+    "outpostOperated": true
+  },
+  "discoveries": [
+    "home_belt_surveyed",
+    "first_shift_delivered",
+    "far_belt_charted",
+    "first_fleet_expansion",
+    "first_rival_contact",
+    "derelict_excavation_platform",
+    "abandoned_cargo_relay",
+    "first_rich_sample",
+    "first_nickel_delivery",
+    "abandoned_research_station",
+    "experimental_probe_salvaged",
+    "derelict_freight_shuttle",
+    "outpost_site_surveyed",
+    "first_aurite_delivery",
+    "first_cryonite_delivery",
+    "automated_sorting_archive",
+    "first_voidite_delivery"
+  ],
+  "records": [
+    {
+      "shift": 49,
+      "objective": "navigationStabilizers",
+      "credits": 363,
+      "delivered": 240,
+      "cryonite": 12,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 0,
+      "focus": "cryonite",
+      "slots": 4,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 50,
+      "objective": "navigationStabilizers",
+      "credits": 567,
+      "delivered": 204,
+      "cryonite": 9,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 0,
+      "focus": "cryonite",
+      "slots": 4,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 51,
+      "objective": "navigationStabilizers",
+      "purchase": "endurance",
+      "credits": 191,
+      "delivered": 24,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "aurite",
+      "slots": 4,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 52,
+      "objective": "navigationStabilizers",
+      "credits": 215,
+      "delivered": 24,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "aurite",
+      "slots": 4,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 53,
+      "objective": "navigationStabilizers",
+      "credits": 321,
+      "delivered": 106,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "aurite",
+      "slots": 4,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 54,
+      "objective": "navigationStabilizers",
+      "purchase": "fleetSlot",
+      "credits": 49,
+      "delivered": 48,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "aurite",
+      "slots": 5,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 55,
+      "objective": "navigationStabilizers",
+      "credits": 161,
+      "delivered": 112,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "aurite",
+      "slots": 5,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 56,
+      "objective": "navigationStabilizers",
+      "credits": 293,
+      "delivered": 132,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "aurite",
+      "slots": 5,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 57,
+      "objective": "navigationStabilizers",
+      "credits": 502,
+      "delivered": 209,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 0,
+      "focus": "aurite",
+      "slots": 5,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 58,
+      "objective": "navigationStabilizers",
+      "credits": 693,
+      "delivered": 191,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 0,
+      "focus": "aurite",
+      "slots": 5,
+      "gear": [
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 59,
+      "objective": "radiationShielding",
+      "purchase": "navigationStabilizers",
+      "credits": 138,
+      "delivered": 45,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "aurite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 60,
+      "objective": "radiationShielding",
+      "credits": 299,
+      "delivered": 161,
+      "cryonite": 8,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 61,
+      "objective": "radiationShielding",
+      "credits": 390,
+      "delivered": 91,
+      "cryonite": 4,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 62,
+      "objective": "radiationShielding",
+      "credits": 450,
+      "delivered": 60,
+      "cryonite": 3,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 63,
+      "objective": "radiationShielding",
+      "credits": 450,
+      "delivered": 0,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 64,
+      "objective": "radiationShielding",
+      "credits": 570,
+      "delivered": 120,
+      "cryonite": 6,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 65,
+      "objective": "radiationShielding",
+      "credits": 570,
+      "delivered": 0,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 3,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 66,
+      "objective": "radiationShielding",
+      "credits": 570,
+      "delivered": 0,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 67,
+      "objective": "radiationShielding",
+      "credits": 630,
+      "delivered": 60,
+      "cryonite": 3,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 68,
+      "objective": "radiationShielding",
+      "credits": 673,
+      "delivered": 43,
+      "cryonite": 2,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 69,
+      "objective": "radiationShielding",
+      "credits": 1062,
+      "delivered": 389,
+      "cryonite": 19,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 70,
+      "objective": "radiationShielding",
+      "credits": 1293,
+      "delivered": 231,
+      "cryonite": 11,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 71,
+      "objective": "radiationShielding",
+      "credits": 1514,
+      "delivered": 221,
+      "cryonite": 11,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 72,
+      "objective": "radiationShielding",
+      "credits": 1738,
+      "delivered": 224,
+      "cryonite": 11,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 73,
+      "objective": "resonanceMining",
+      "purchase": "radiationShielding",
+      "credits": 338,
+      "delivered": 200,
+      "cryonite": 10,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 74,
+      "objective": "resonanceMining",
+      "credits": 518,
+      "delivered": 180,
+      "cryonite": 9,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 75,
+      "objective": "resonanceMining",
+      "credits": 518,
+      "delivered": 0,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 76,
+      "objective": "resonanceMining",
+      "credits": 578,
+      "delivered": 60,
+      "cryonite": 3,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 77,
+      "objective": "resonanceMining",
+      "credits": 638,
+      "delivered": 60,
+      "cryonite": 3,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 78,
+      "objective": "resonanceMining",
+      "credits": 718,
+      "delivered": 80,
+      "cryonite": 4,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 3,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 79,
+      "objective": "resonanceMining",
+      "credits": 858,
+      "delivered": 140,
+      "cryonite": 7,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 80,
+      "objective": "resonanceMining",
+      "credits": 938,
+      "delivered": 80,
+      "cryonite": 4,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 81,
+      "objective": "resonanceMining",
+      "credits": 998,
+      "delivered": 60,
+      "cryonite": 3,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 82,
+      "objective": "resonanceMining",
+      "credits": 1118,
+      "delivered": 120,
+      "cryonite": 6,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 83,
+      "objective": "resonanceMining",
+      "credits": 1181,
+      "delivered": 63,
+      "cryonite": 3,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 84,
+      "objective": "resonanceMining",
+      "credits": 1181,
+      "delivered": 0,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 85,
+      "objective": "resonanceMining",
+      "credits": 1321,
+      "delivered": 140,
+      "cryonite": 7,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 86,
+      "objective": "resonanceMining",
+      "credits": 1441,
+      "delivered": 120,
+      "cryonite": 6,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 87,
+      "objective": "resonanceMining",
+      "credits": 1621,
+      "delivered": 180,
+      "cryonite": 9,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 88,
+      "objective": "resonanceMining",
+      "credits": 1664,
+      "delivered": 43,
+      "cryonite": 2,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 3,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 89,
+      "objective": "resonanceMining",
+      "credits": 1664,
+      "delivered": 0,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 90,
+      "objective": "resonanceMining",
+      "credits": 1664,
+      "delivered": 0,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 3,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 91,
+      "objective": "resonanceMining",
+      "credits": 1864,
+      "delivered": 200,
+      "cryonite": 10,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 3,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 92,
+      "objective": "resonanceMining",
+      "credits": 1867,
+      "delivered": 3,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 93,
+      "objective": "resonanceMining",
+      "credits": 2047,
+      "delivered": 180,
+      "cryonite": 9,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 2,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 94,
+      "objective": "resonanceMining",
+      "credits": 2190,
+      "delivered": 143,
+      "cryonite": 7,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 95,
+      "objective": "resonanceMining",
+      "credits": 2190,
+      "delivered": 0,
+      "cryonite": 0,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 96,
+      "objective": "resonanceMining",
+      "credits": 2393,
+      "delivered": 203,
+      "cryonite": 10,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 97,
+      "objective": "resonanceMining",
+      "credits": 2506,
+      "delivered": 113,
+      "cryonite": 4,
+      "voidite": 0,
+      "extractedVoidite": 0,
+      "losses": 1,
+      "focus": "cryonite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics"
+      ]
+    },
+    {
+      "shift": 98,
+      "objective": "voidite",
+      "purchase": "resonanceMining",
+      "credits": 469,
+      "delivered": 363,
+      "cryonite": 2,
+      "voidite": 5,
+      "extractedVoidite": 5,
+      "losses": 0,
+      "focus": "voidite",
+      "slots": 5,
+      "gear": [
+        "navigationStabilizers",
+        "radiationShielding",
+        "highPowerOptics",
+        "resonanceMining"
+      ]
+    }
+  ]
+}

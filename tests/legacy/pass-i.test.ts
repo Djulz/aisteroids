@@ -24,8 +24,8 @@ test('Fog gates region identification and temporary focus cannot select deep unk
 });
 test('Ion interference derives from unchanged base movement and installed equipment',()=>{
  const ion={x:1200,y:1900};assert.equal(biomeAt(ion.x,ion.y),'ion_storm');
- assert.equal(sensorFactor(ion,[],false),.6);assert.equal(sensorFactor(ion,['navigationStabilizers'],false),.9);
- assert.equal(movementFactor(ion,[],false),.82);assert.equal(movementFactor(ion,['navigationStabilizers'],false),.95);
+ assert.equal(sensorFactor(ion,[],false),.45);assert.equal(sensorFactor(ion,['navigationStabilizers'],false),.95);
+ assert.equal(movementFactor(ion,[],false),.7);assert.equal(movementFactor(ion,['navigationStabilizers'],false),.98);
  assert.equal(movementFactor(HOME,['navigationStabilizers'],false),1);
  const c=freshCompany(),w=createWorld(c);w.scouts=[];assert.equal(w.company.environmentUpgrades.length,0);
 });

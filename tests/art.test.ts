@@ -7,7 +7,7 @@ import {createWorld,freshCompany} from '../src/sim.ts';
 test('art gallery covers the canonical discoveries and all current/future silhouettes',()=>{
  assert.deepEqual([...poiArt].sort(),POIS.map(p=>p.id).sort());
  assert.deepEqual(rockArtTiers,[1,2,3,4,5]);
- for(const type of ['impactMiner','laserMiner','escort','scout','hauler','enemyScout','enemyFighter','enemyEnforcer','enemySentry'])assert.ok(shipArt.includes(type as typeof shipArt[number]));
+ for(const type of ['impactMiner','laserMiner','escort','scout','hauler','enemyScout','enemyFighter','enemyEnforcer','enemySentry','enemyLurker','enemySpore'])assert.ok(shipArt.includes(type as typeof shipArt[number]));
 });
 test('rock art follows identified physical mineral families',()=>{
  const world=createWorld(freshCompany());

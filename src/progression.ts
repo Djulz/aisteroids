@@ -20,11 +20,14 @@ export function currentObjective(c:Company):Objective{
  // A late company must not be sent back for optional early discoveries.
  if(has('first_voidite_delivery'))return goal('frontier_complete','Frontier milestone reached','Voidite delivered. Improve your fleet or try another build with New Game. The Silent Core encounter is not available in this build.');
  if(has('first_cryonite_delivery')){
+  if(!has('experimental_probe_salvaged'))return goal('probe','Investigate the Experimental Probe','Recover the Navigation Stabilizers blueprint before establishing the storm supply route.');
+  if(!c.environmentUpgrades.includes('navigationStabilizers'))return purchase('navigationStabilizers','Install Navigation Stabilizers',600,'Maintain movement and sensor coverage in Ion Storm; Cryonite can finance this upgrade.');
+  if(c.enduranceLevel<3)return purchase('endurance','Extend the storm operation',c.enduranceLevel===0?32:c.enduranceLevel===1?120:400,'A 90-second shift gives more time to work and return from Cryonite deposits.');
   if(!has('automated_sorting_archive'))return goal('archive','Investigate the Sorting Archive','Use a Scout, or lock the discovered Archive for a Fighter, to investigate it physically in Ion Storm.');
-  if(!c.environmentUpgrades.includes('radiationShielding'))return purchase('radiationShielding','Install Radiation Shielding',1600,'Prepare the fleet for Dead Zone exposure.');
+  if(!c.environmentUpgrades.includes('radiationShielding'))return purchase('radiationShielding','Install Radiation Shielding',1600,'Fund protective hulls from Cryonite deliveries. Unshielded ships cannot harvest Voidite.');
   if(!c.extractionUpgrades.includes('highPowerOptics'))return purchase('highPowerOptics','Install Extraction Class II',240,'This shared extraction class is required before Resonance Extraction.');
   if(!c.extractionUpgrades.includes('resonanceMining'))return purchase('resonanceMining','Install Resonance Extraction',2400,'Unlock Voidite extraction for both Miner paths and the Mining Rig.');
-  return goal('voidite','Deliver Voidite','Explore the Dead Zone with shielding, then focus mining on identified Voidite. Only cargo returned to a station counts.');
+  return goal('voidite','Deliver Voidite','Scout the Dead Zone. Equip shielded resonance workers, clear or avoid native habitats, and return real Voidite cargo to a station.');
  }
  if(has('first_aurite_delivery')){
   if(!c.outpost){
@@ -35,10 +38,10 @@ export function currentObjective(c:Company):Objective{
   }
   if(!c.progress.outpostOperated)return goal('outpost_operation','Deliver Aurite from the Outpost','Launch from the Outpost, mine Aurite and bring it back to its harbor. Check the report to see the frontier operation pay off.');
   if(!has('experimental_probe_salvaged'))return goal('probe','Investigate the Experimental Probe','Find and physically investigate the Probe for the Navigation Stabilizers blueprint.');
-  if(!c.environmentUpgrades.includes('navigationStabilizers'))return purchase('navigationStabilizers','Install Navigation Stabilizers',600,'Reduce Ion Storm interference during the Cryonite expedition.');
+  if(!c.environmentUpgrades.includes('navigationStabilizers'))return purchase('navigationStabilizers','Install Navigation Stabilizers',600,'Recover most movement and sensor range inside Ion Storm before hauling Cryonite.');
   if(c.enduranceLevel<3)return purchase('endurance','Extend the storm expedition',c.enduranceLevel===0?32:c.enduranceLevel===1?120:400,'Longer shifts leave more working time after travel.');
   if(c.launchSite!=='far')return goal('frontier_launch','Launch from the Outer Outpost','Change the launch site beside Deploy to OUTPOST for the next expedition.');
-  return goal('cryonite','Deliver Cryonite','Scout into Ion Storm, identify a Cryonite deposit and focus mining there. Bring the cargo back to your launch station.');
+  return goal('cryonite','Deliver Cryonite','Scout into Ion Storm, identify Cryonite and send a stabilised mining and transport group. Dock real cargo at the Outpost.');
  }
  if(has('first_nickel_delivery')){
   if(!has('abandoned_research_station'))return goal('research_station','Investigate the Research Station','Physically investigate the Derelict Research Station in Scrap Fields for protection and extraction blueprints.');

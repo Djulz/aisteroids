@@ -6,7 +6,7 @@ import {BIOMES,biomeAt} from './biomes.ts';
 import {newTrailState,updateTrails,drawTrails,type TrailSource,type TrailState} from './trails.ts';
 import {MINERALS} from './minerals.ts';
 import {focusRoles,markerOffset,type FocusRole} from './focus.ts';
-import {ENEMY_TYPES} from './patrols.ts';
+import {ENEMY_TYPES,isLifeform} from './patrols.ts';
 const gold='#f5b743';
 const rockPalettes=new WeakMap<object,RockPalette>();
 const trailStates=new WeakMap<World,TrailState>();
@@ -16,7 +16,7 @@ function activeTrails(w:World):TrailSource[]{
  for(const h of w.haulers)if(h.state==='work'||h.state==='return')sources.push({id:`hauler:${h.id}`,kind:'hauler',x:h.x,y:h.y,angle:h.angle});
  for(const g of w.guards)if(g.hp>0)sources.push({id:`escort:${g.id}`,kind:'escort',x:g.x,y:g.y,angle:g.angle});
  for(const s of w.scouts)if(s.state==='exploring'||s.state==='avoiding'||s.state==='return')sources.push({id:`scout:${s.id}`,kind:'scout',x:s.x,y:s.y,angle:s.angle});
- for(const e of w.enemies)if(e.hp>0&&e.kind!=='sentry'&&visibleAt(w,e))sources.push({id:`enemy:${e.id}`,kind:ENEMY_TYPES[e.kind??'patrol'].art,x:e.x,y:e.y,angle:Math.hypot(e.vx,e.vy)>.01?Math.atan2(e.vy,e.vx):-Math.PI/2});
+ for(const e of w.enemies)if(e.hp>0&&e.kind!=='sentry'&&e.kind!=='spore'&&visibleAt(w,e))sources.push({id:`enemy:${e.id}`,kind:ENEMY_TYPES[e.kind??'patrol'].art,x:e.x,y:e.y,angle:Math.hypot(e.vx,e.vy)>.01?Math.atan2(e.vy,e.vx):-Math.PI/2});
  return sources;
 }
 let biomeCanvas:HTMLCanvasElement|undefined,biomeSeed=-1;
@@ -147,7 +147,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
   }
   drawShip(c,stats.art,foe.x,foe.y,Math.hypot(foe.vx,foe.vy)>.01?Math.atan2(foe.vy,foe.vx):-Math.PI/2);
   if(foe.mode==='alert'){c.font='bold 19px Barlow Condensed';c.textAlign='center';c.fillStyle='#ffc363';c.fillText('!',foe.x,foe.y-25);}
-  if(foe.hp<stats.hp){c.fillStyle='#261d28';c.fillRect(foe.x-10,foe.y+20,20,2);c.fillStyle='#ee8590';c.fillRect(foe.x-10,foe.y+20,20*Math.max(0,foe.hp/stats.hp),2);}
+  if(foe.hp<stats.hp){c.fillStyle='#261d28';c.fillRect(foe.x-10,foe.y+20,20,2);c.fillStyle=isLifeform(foe.kind)?'#b6d780':'#ee8590';c.fillRect(foe.x-10,foe.y+20,20*Math.max(0,foe.hp/stats.hp),2);}
  }
  for(const e of w.effects){if(!visibleAt(w,e)&&e.type!=='transfer'&&e.type!=='handoff')continue;const a=e.life/e.max;c.globalAlpha=a;
    if(e.type==='transfer'||e.type==='handoff'){
@@ -158,7 +158,7 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
     samples.forEach((item,i)=>{const shift=(i-(samples.length-1)/2)*7;c.save();c.translate(x+shift,y+shift*.35);c.rotate(t*3);drawMineral(c,item.mineral,0,0,4);c.restore();});
     if(travel===1){c.strokeStyle='#a4e0cc';c.beginPath();c.arc(e.tx!,e.ty!,4+(t-.78)*70,0,7);c.stroke();}
    }
-   else if(e.type==='enemyShot'||e.type==='guardShot'||e.type==='turretShot'){c.strokeStyle=e.type==='enemyShot'?'#f5848d':e.type==='turretShot'?'#f5b743':'#8af0dc';c.lineWidth=3*a+1;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.fillStyle=c.strokeStyle;c.beginPath();c.arc(e.tx!,e.ty!,3+(1-a)*8,0,7);c.fill();}
+   else if(e.type==='enemyShot'||e.type==='creatureStrike'||e.type==='guardShot'||e.type==='turretShot'){c.strokeStyle=e.type==='creatureStrike'?'#b6d780':e.type==='enemyShot'?'#f5848d':e.type==='turretShot'?'#f5b743':'#8af0dc';c.lineWidth=3*a+1;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.fillStyle=c.strokeStyle;c.beginPath();c.arc(e.tx!,e.ty!,3+(1-a)*8,0,7);c.fill();}
    else if(e.type==='laser'){c.strokeStyle='#67d9ce';c.lineWidth=4;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.strokeStyle='#eaffec';c.lineWidth=1.2;c.stroke();}
    else if(e.type==='phase'){c.strokeStyle='#f5b743';c.lineWidth=2;c.setLineDash([6,5]);c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.tx!,e.ty!);c.stroke();c.setLineDash([]);}
    else if(e.type==='ore'&&e.max-e.life<.25&&e.tx!==undefined){

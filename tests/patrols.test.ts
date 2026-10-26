@@ -16,14 +16,14 @@ function arena(kind:EnemyKind='patrol'){
 
 test('all patrols exist at launch, scale by territory, and retain seed routes across shifts',()=>{
  const a=createWorld(freshCompany(7)),b=createWorld({...freshCompany(7),fleetCapacity:6,rounds:8});
- assert.equal(a.enemies.length,23);assert.equal(b.enemies.length,a.enemies.length);
+ assert.equal(a.enemies.length,26);assert.equal(b.enemies.length,a.enemies.length);
  assert.deepEqual(a.enemies.map(e=>[e.id,e.kind,e.patrol]),b.enemies.map(e=>[e.id,e.kind,e.patrol]));
  assert.notDeepEqual(a.enemies.map(e=>[e.x,e.y]),b.enemies.map(e=>[e.x,e.y]));
  const ids=a.enemies.map(e=>e.id),start=a.enemies.map(e=>({x:e.x,y:e.y}));
  a.drones[0].state='full';a.company.rounds=1;run(a,20);
  assert.deepEqual(a.enemies.map(e=>e.id),ids,'no timed replacements or reinforcements');
  assert.ok(a.enemies.every(e=>e.hp>0));assert.ok(a.enemies.some((e,i)=>distance(e,start[i])>25),'off-screen patrols move');
- a.enemies[0].hp=0;run(a,4);assert.equal(a.enemies[0].hp,0);assert.equal(a.enemies.length,23);
+ a.enemies[0].hp=0;run(a,4);assert.equal(a.enemies[0].hp,0);assert.equal(a.enemies.length,26);
  assert.equal(createWorld(freshCompany(7)).enemies[0].hp,ENEMY_TYPES.patrol.hp,'next shift restores its population');
  assert.ok(navigationStats(a.rocks).calls<30,'idle patrol triangles do not trigger distant global pathfinding');
 });
@@ -31,7 +31,8 @@ test('all patrols exist at launch, scale by territory, and retain seed routes ac
 test('patrol geometry is clear and biome-specific across seeds, with no Home Belt or Dead Zone ships',()=>{
  for(const seed of [0,1,7,17,42,99,300,4294967295]){
   const u=generateUniverse(seed),sites=patrolSites(u),rocks=u.deposits.map(r=>({...r,hp:1}));
-  assert.equal(sites.length,13);assert.equal(sites.filter(s=>s.biome==='scrap_fields').length,4);
+  assert.equal(sites.length,16);assert.equal(sites.filter(s=>s.biome==='scrap_fields').length,4);
+  assert.deepEqual(sites.filter(s=>s.biome==='dead_zone').map(s=>s.kinds[0]),['lurker','spore','lurker']);
   for(const site of sites)for(let i=0;i<site.route.length;i++){
    const p=site.route[i],q=site.route[(i+1)%site.route.length];
    assert.equal(regionAt(seed,p.x,p.y),site.biome);assert.ok(clearSegment(p,q,rocks,-1,18));

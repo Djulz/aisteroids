@@ -1,4 +1,14 @@
-# Alpha 0.30 pilot baselines
+# Balance Lab baselines
+
+## Alpha 0.32 Ion Storm and Dead Zone
+
+`alpha-0.32-ion-dead-frontier.json` retains all 36 complete paired cases: three three-slot fleets × three seeds × raw/equipped Ion Storm and Dead Zone, with two persistent 90-second shifts. The Storm pair changes only Navigation Stabilizers; the Dead Zone pair changes only Radiation Shielding. Both Voidite cases already own Resonance Extraction. See [chapter findings](../docs/ion-dead-frontier.md) and [interactive income curves](../docs/ion-dead-balance-report.html). The final engine fingerprint is `527c7c955cc832f43123839c79e2ed2790faac02b1e217878c6e9f9fd4904c90`; harness fingerprint is `1596c7be2b0b29ad09bd3421df938f511470553e22a9aca3107371fd13f2b62e`.
+
+`alpha-0.32-outer-paid-seed7.json` records the final run from a fresh zero-Credit, zero-Tech company to a physical Voidite delivery on shift 98, with the Outpost operational at shift 48. It is a single-seed deterministic purchase and focus policy, separate from the controlled entitlement fixtures.
+
+```sh
+npm run balance:lab -- --profile screen --terrains storm_raw,storm,void_raw,void --only-builds basic --only-fleet miner --seeds 7,17,42 --duration 90 --shifts 2 --out balance-results/ion-dead-changed --compare balance-baselines/alpha-0.32-ion-dead-frontier.json --assert
+```
 
 ## Alpha 0.31 Aurite frontier
 

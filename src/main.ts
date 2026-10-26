@@ -6,7 +6,7 @@ import '@fontsource/barlow-condensed/500.css';
 import '@fontsource/barlow-condensed/600.css';
 import '@fontsource/barlow-condensed/700.css';
 import './style.css';
-import {visibleAt,buy,buyEnvironment,createWorld,freshCompany,introComplete,settle,step,STEP,lockTarget,clearTarget,canTarget,investigated,setFocus,type Company,type Purchase,type World} from './sim.ts';
+import {visibleAt,buy,buyEnvironment,createWorld,freshCompany,introComplete,settle,step,STEP,lockTarget,clearTarget,canTarget,investigated,setFocus,canWorkMineral,type Company,type Purchase,type World} from './sim.ts';
 import {render} from './render.ts';
 import {readCompany,SAVE_KEY} from './storage.ts';
 import {renderLobby,type LobbyTab} from './lobby.ts';
@@ -15,7 +15,7 @@ import {POIS,type PoiId} from './knowledge.ts';
 import {TECH_DISCOVERIES,TALENTS,talentOptions,research,categoryName,type TalentId,type Category} from './research.ts';
 import {mountArtGallery} from './art-gallery.ts';
 import {BIOMES,type EnvironmentUpgrade} from './biomes.ts';
-import {MINERALS,canExtract} from './minerals.ts';
+import {MINERALS} from './minerals.ts';
 import {withFocus,hitFocus,validFocusPoint,type FocusRole} from './focus.ts';
 import {parseSeed,nextSeed} from './seed.ts';
 import {finishRecall} from './recall.ts';
@@ -53,7 +53,7 @@ function saveCompany(next:Company){try{localStorage.setItem(SAVE_KEY,JSON.string
 function save(){saveCompany(company);}
 function showMenu(){
  menuCleanup?.();menuCleanup=null;screen='menu';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':bootIssue==='migrated'?(company?.migrationNotice?'Previous research Tech was returned for the new fleet choices. Your world and company were preserved.':'Your company and research choices were preserved for the new progression.'):'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.31.0</small></main>`;
+ app.innerHTML=`<main class="title-screen"><canvas id="menu-scene" aria-hidden="true"></canvas><div class="title-content"><h1>ROCK BOTTOM <span>ROBOTICS</span></h1><div class="title-actions">${hasCompany?'<button id="menu-continue" class="menu-button solid">CONTINUE</button>':''}<button id="menu-new" class="menu-button ${hasCompany?'outline':'solid'}">NEW GAME</button><button id="menu-settings" class="menu-button quiet">SETTINGS</button>${bootIssue?`<p class="menu-warning" role="status">${bootIssue==='corrupt'?'Your company save could not be read. Starting a new game will replace it.':bootIssue==='reset'?'New universe: your previous company was reset once. Your settings are preserved.':bootIssue==='migrated'?(company?.migrationNotice?'Previous research Tech was returned for the new fleet choices. Your world and company were preserved.':'Your company and research choices were preserved for the new progression.'):'Storage is unavailable. Your saved company cannot be loaded or changed right now.'}</p>`:''}</div></div><small class="title-version">Alpha 0.32.0</small></main>`;
  menuCleanup=mountMenuScene(app.querySelector<HTMLCanvasElement>('#menu-scene')!,isReduced());
  app.querySelector('#menu-continue')?.addEventListener('click',()=>{if(hasCompany)showWorkshop();});
  app.querySelector('#menu-new')?.addEventListener('click',openNewGame);
@@ -69,7 +69,7 @@ function showWorkshop(){
  if(directorLine){company={...company,aiSeen:director.history()};save();}
  if(activeTab==='research'&&!introComplete(company))activeTab='workshop';
  menuCleanup?.();menuCleanup=null;screen='workshop';observer?.disconnect();observer=null;canvas=null;
- app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK,directorLine})}<footer class="legal">Rock Bottom Robotics · Alpha 0.31.0</footer></main>`;
+ app.innerHTML=`<main class="shell"><header class="brand"><div class="brand-mark">RB<span>↗</span></div><h1>Rock Bottom <em>Robotics</em></h1></header>${renderLobby(company,{tab:activeTab,researchOpen,error:'',storageOK,directorLine})}<footer class="legal">Rock Bottom Robotics · Alpha 0.32.0</footer></main>`;
  for(const tab of ['workshop','hangar','research'] as const)document.querySelector(`#tab-${tab}`)?.addEventListener('click',()=>{
   activeTab=tab;researchOpen=false;try{localStorage.setItem('aisteroids-lobby-tab',tab);}catch{}showWorkshop();
  });
@@ -269,8 +269,8 @@ function updateHUD(){if(screen!=='mission')return;
  }else poiSheetKey='';
  const rockSheet=document.querySelector<HTMLElement>('#rock-sheet')!,rock=world.rocks.find(r=>r.id===selectedRock&&r.hp>0);
  rockSheet.hidden=!rock||!!selectedPoi;
- if(rock){const spec=MINERALS[rock.mineral],available=world.drones.some(d=>d.state!=='dead'&&canExtract(d.kind,rock.mineral,world.company.extractionUpgrades))||world.rigs.some(r=>r.state!=='dead'&&canExtract('miningRig',rock.mineral,world.company.extractionUpgrades));
-  const requirement=spec.tool==='highPowerOptics'||spec.tool==='laser'?'High-Power Optics':spec.tool==='resonanceMining'?'Resonance Mining':'compatible Miner';
+ if(rock){const spec=MINERALS[rock.mineral],available=world.drones.some(d=>d.state!=='dead'&&canWorkMineral(world.company,d.kind,rock.mineral))||world.rigs.some(r=>r.state!=='dead'&&canWorkMineral(world.company,'miningRig',rock.mineral));
+  const requirement=rock.mineral==='voidite'?'Resonance Extraction + Radiation Shielding':spec.tool==='highPowerOptics'||spec.tool==='laser'?'High-Power Optics':'compatible Miner';
   const key=`${rock.id}:${rock.hp}:${available}`;
   if(key!==rockSheetKey){rockSheetKey=key;rockSheet.innerHTML=`<div><b>${spec.name} deposit</b><button id="close-rock" aria-label="Close deposit details">×</button></div><small>${rock.hp} fragments · ${spec.credits} Credits each${available?'':` · Requires ${requirement}`}</small>`;
    rockSheet.querySelector('#close-rock')?.addEventListener('click',()=>{selectedRock=null;updateHUD();});
@@ -279,7 +279,7 @@ function updateHUD(){if(screen!=='mission')return;
  const enemy=world.enemies.find(e=>e.id===selectedEnemy&&e.hp>0&&visibleAt(world,e));
  if(enemy){const stats=ENEMY_TYPES[enemy.kind??'patrol'];rockSheet.hidden=false;
   const key=`enemy:${enemy.id}:${enemy.mode}:${Math.ceil(enemy.hp)}`;
-  if(key!==rockSheetKey){rockSheetKey=key;rockSheet.innerHTML=`<div><b>${stats.name}</b><button id="close-enemy" aria-label="Close enemy details">×</button></div><small>${(enemy.mode??'patrol').toUpperCase()} · ${Math.ceil(enemy.hp)}/${stats.hp} hull</small><p>${enemy.kind==='sentry'?'Fixed Aurite defense. Approach outside its range or let a Fighter suppress it.':enemy.kind==='enforcer'?'Heavy territorial escort. Slow to turn, but punishes unprotected cargo.':enemy.kind==='interceptor'?'Fast cargo hunter. Keep transport ships protected.':'Territorial patrol. A Fighter can protect nearby workers.'}</p><small>Sensors ${stats.sensors} · Range ${stats.range} · Territory ${enemy.patrol?.radius??235} · ${enemy.kind==='sentry'?'Fixed guard':'Solid line: charted patrol route'}</small>`;
+  if(key!==rockSheetKey){rockSheetKey=key;rockSheet.innerHTML=`<div><b>${stats.name}</b><button id="close-enemy" aria-label="Close enemy details">×</button></div><small>${(enemy.mode??'patrol').toUpperCase()} · ${Math.ceil(enemy.hp)}/${stats.hp} hull</small><p>${enemy.kind==='spore'?'Fixed radiation-fed lifeform. Shielding reduces its pulses; a Fighter can clear it.':enemy.kind==='lurker'?'Territorial lifeform. Warns before striking nearby ships; use an escort or avoid its habitat.':enemy.kind==='sentry'?'Fixed Aurite defense. Approach outside its range or let a Fighter suppress it.':enemy.kind==='enforcer'?'Heavy territorial escort. Slow to turn, but punishes unprotected cargo.':enemy.kind==='interceptor'?'Fast cargo hunter. Keep transport ships protected.':'Territorial patrol. A Fighter can protect nearby workers.'}</p><small>Sensors ${stats.sensors} · Range ${stats.range} · Territory ${enemy.patrol?.radius??235} · ${enemy.kind==='sentry'||enemy.kind==='spore'?'Fixed habitat':'Solid line: charted route'}</small>`;
    rockSheet.querySelector('#close-enemy')?.addEventListener('click',()=>{selectedEnemy=null;updateHUD();});
   }
  }else if(selectedEnemy!==null){selectedEnemy=null;}

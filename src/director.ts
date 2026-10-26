@@ -1,4 +1,4 @@
-import type {Company,World} from './sim.ts';
+import {sensedAt,type Company,type World} from './sim.ts';
 
 export const DIRECTOR_LINES={
  welcome:{priority:20,text:'Welcome to Rock Bottom Robotics. We have one Miner and a generous interpretation of a business plan. Deploy when ready.'},
@@ -17,6 +17,7 @@ export const DIRECTOR_LINES={
  storm_entered:{priority:50,text:'Ion Storm entered. Interference affects movement and sensors. Navigation Stabilizers improve both.'},
  cryonite_delivered:{priority:80,text:'Cryonite delivered. Dead Zone preparation is now our next investment.'},
  dead_zone_entered:{priority:65,text:'Dead Zone entered. Radiation affects the entire fleet. Shielding reduces exposure; it does not remove it.'},
+ native_contact:{priority:75,text:'Movement in the radiation field. Native lifeforms, apparently. They warn before striking; a Fighter can clear a route.'},
  voidite_delivered:{priority:90,text:'Voidite delivered. We have reached the current frontier milestone. Silent Core operations are not yet available.'},
  failed_shift:{priority:60,text:'No cargo delivered and ships lost. Check your next objective and prepare a safer route before redeploying.'},
 } as const;
@@ -65,7 +66,7 @@ export function completedDialogue(c:Company):DialogueId[]{
  if(c.outpost)ids.push('outpost_built');
  if(c.progress.outpostOperated)ids.push('outpost_operational');
  if(has('first_cryonite_delivery'))ids.push('storm_entered','cryonite_delivered');
- if(has('first_voidite_delivery'))ids.push('dead_zone_entered','voidite_delivered');
+ if(has('first_voidite_delivery'))ids.push('dead_zone_entered','native_contact','voidite_delivered');
  return ids;
 }
 export function preparationDialogue(before:Company,after:Company):DialogueId[]{
@@ -86,6 +87,7 @@ export function missionDialogue(w:World):DialogueId[]{
  if(w.deliveredByMineral.voidite>0)ids.push('voidite_delivered');
  if(w.newRegions.includes('ion_storm'))ids.push('storm_entered');
  if(w.newRegions.includes('dead_zone'))ids.push('dead_zone_entered');
+ if(w.enemies.some(e=>e.hp>0&&(e.kind==='lurker'||e.kind==='spore')&&sensedAt(w,e)))ids.push('native_contact');
  if(w.phase==='done'&&w.delivered===0&&(
   [...w.drones,...w.haulers,...w.rigs,...w.scouts].some(unit=>unit.state==='dead')||w.guards.some(unit=>unit.hp<=0)))ids.push('failed_shift');
  return ids;

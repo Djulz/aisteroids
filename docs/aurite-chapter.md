@@ -43,4 +43,4 @@ npm run campaign:aurite -- 7 70
 
 ## Compatibility and limits
 
-Existing v17 companies retain Credits, Tech, world geometry and built Outposts. Saves without `outpostOperated` load with that flag false. Previous Outposts keep the grandfathered protected-delivery milestone. A new milestone is awarded only by real Aurite cargo returned from the Outpost. The Outpost cost and ore payouts are unchanged. The next Ion Storm and Dead Zone chapters remain separate work.
+Existing v17 companies retain Credits, Tech, world geometry and built Outposts. Saves without `outpostOperated` load with that flag false. Previous Outposts keep the grandfathered protected-delivery milestone. A new milestone is awarded only by real Aurite cargo returned from the Outpost. The Outpost cost and ore payouts are unchanged. The following [Ion Storm and Dead Zone chapters](ion-dead-frontier.md) extend this route.

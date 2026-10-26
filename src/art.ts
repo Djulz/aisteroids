@@ -10,8 +10,8 @@ const slate='#34434e',edge='#81909b',crater='#23323d',coral='#f06468';
 type C=CanvasRenderingContext2D;
 type Point=[number,number];
 export type RockArtTier=1|2|3|4|5;
-export type ShipArt='impactMiner'|'laserMiner'|'escort'|'scout'|'hauler'|'enemyScout'|'enemyFighter'|'enemyEnforcer'|'enemySentry';
-export const shipArt:readonly ShipArt[]=['impactMiner','laserMiner','escort','scout','hauler','enemyScout','enemyFighter','enemyEnforcer','enemySentry'];
+export type ShipArt='impactMiner'|'laserMiner'|'escort'|'scout'|'hauler'|'enemyScout'|'enemyFighter'|'enemyEnforcer'|'enemySentry'|'enemyLurker'|'enemySpore';
+export const shipArt:readonly ShipArt[]=['impactMiner','laserMiner','escort','scout','hauler','enemyScout','enemyFighter','enemyEnforcer','enemySentry','enemyLurker','enemySpore'];
 export const rockArtTiers:readonly RockArtTier[]=[1,2,3,4,5];
 export const poiArt:readonly PoiId[]=['abandoned_research_station','experimental_probe_salvaged','abandoned_cargo_relay','derelict_freight_shuttle','automated_sorting_archive','derelict_excavation_platform'];
 
@@ -96,6 +96,16 @@ export function drawShip(c:C,kind:ShipArt,x:number,y:number,angle:number,options
    poly(c,[[0,-18],[14,-11],[18,0],[14,11],[0,18],[-14,11],[-18,0],[-14,-11]],'#a95c67');
    rect(c,-12,-7,24,14,'#432d3b','#f3b193',2);
    rect(c,-4,-14,8,28,'#ffd18a');rect(c,-14,-3,28,6,'#ffd18a');break;
+  }
+  case 'enemyLurker':{
+   poly(c,[[0,-19],[10,-9],[16,5],[7,14],[0,10],[-7,14],[-16,5],[-10,-9]],'#667d6b','#accdaa');
+   poly(c,[[-11,1],[-20,14],[-8,9]],'#7fae91');poly(c,[[11,1],[20,14],[8,9]],'#7fae91');
+   rect(c,-4,-8,8,7,'#e7ecb0');break;
+  }
+  case 'enemySpore':{
+   poly(c,[[0,-18],[10,-13],[18,0],[11,13],[0,18],[-11,13],[-18,0],[-10,-13]],'#819b73','#d5de9a');
+   poly(c,[[0,-10],[9,0],[0,10],[-9,0]],'#dce8a5');
+   rect(c,-2,-2,4,4,'#405743');break;
   }
  }
  c.restore();

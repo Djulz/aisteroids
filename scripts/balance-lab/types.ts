@@ -1,7 +1,7 @@
 import type {FleetComposition} from '../../src/fleet.ts';
 import type {TalentId} from '../../src/research.ts';
 export const SCHEMA=1;
-export type Terrain='home_dense'|'home_sparse'|'nickel'|'aurite'|'aurite_hq'|'storm'|'void';
+export type Terrain='home_dense'|'home_sparse'|'nickel'|'aurite'|'aurite_hq'|'storm'|'storm_raw'|'void'|'void_raw';
 export type Build={id:string;label:string;talents:TalentId[];cost:number};
 export type Job={id:string;caseKey:string;kind:'fixture'|'campaign';seed:number;phase:number;terrain:Terrain;duration:number;shifts:number;fleet:FleetComposition;build:Build;combat:'patrols'|'quiet';policy?:string};
 export type Trace={shift:number;seconds:number;gross:number;cash:number;delivered:number;mineral:Record<string,number>;extracted:number;cartLoaded:number;cartDelivered:number;losses:number};
