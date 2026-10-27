@@ -99,6 +99,14 @@
 .director-toast{position:absolute;z-index:3;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(84px,calc(env(safe-area-inset-bottom) + 72px));max-width:410px;pointer-events:none}
 .director-toast .director-briefing{margin:0;background:#0c222eea;box-shadow:0 3px 16px #0005}
 .director-toast[hidden]{display:none}
+.shift-over{position:absolute;z-index:5;inset:0;display:grid;place-items:center;pointer-events:none;background:radial-gradient(circle,#091c28c9,#06131ce8);animation:shift-curtain 2.2s ease-out both;text-align:center}
+.shift-over>div{width:100%;padding:30px 12px;border-block:1px solid #e6b65a9c;background:#102934d9;box-shadow:0 0 60px #000a;animation:shift-title .45s cubic-bezier(.17,.85,.25,1.12) both}
+.shift-over small,.shift-over span{display:block;font:11px Barlow,sans-serif;letter-spacing:.23em;color:#9ec2c2}.shift-over strong{display:block;margin:7px 0;color:#f6c365;font:800 clamp(54px,14vw,104px)/.95 'Barlow Condensed',sans-serif;letter-spacing:.055em;text-shadow:0 5px 20px #000b}.shift-over span{letter-spacing:.08em}
+@keyframes shift-curtain{0%{opacity:0}12%,72%{opacity:1}100%{opacity:0}}@keyframes shift-title{from{opacity:0;transform:translateY(28px) scale(.86)}to{opacity:1;transform:translateY(0) scale(1)}}
+.debrief-backdrop{animation:debrief-shade .5s ease-out both}.debrief{animation:debrief-rise .65s cubic-bezier(.16,.82,.2,1) both}.debrief-grid>div{animation:debrief-rise .6s cubic-bezier(.16,.82,.2,1) both;animation-delay:.15s}.debrief-grid>div:nth-child(2){animation-delay:.23s}.debrief-grid>div:nth-child(3){animation-delay:.3s}
+@keyframes debrief-shade{from{background:#07121b00}to{background:#07121bf5}}@keyframes debrief-rise{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.shift-over,.shift-over>div,.debrief-backdrop,.debrief,.debrief-grid>div{animation:none}}
+.shift-over.reduced-motion,.shift-over.reduced-motion>div,.debrief-backdrop.reduced-motion,.debrief-backdrop.reduced-motion .debrief,.debrief-backdrop.reduced-motion .debrief-grid>div{animation:none}
 .blueprint-dialog{max-height:calc(100dvh - 24px);overflow-y:auto}
 .blueprint-dialog .director-briefing{margin-block:12px}
 .debrief .director-briefing{margin-block:14px}

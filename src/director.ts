@@ -3,6 +3,7 @@ import {sensedAt,type Company,type World} from './sim.ts';
 export const DIRECTOR_LINES={
  welcome:{priority:20,text:'Welcome to Rock Bottom Robotics. We have one Miner and a generous interpretation of a business plan. Deploy when ready.'},
  cargo_full:{priority:30,text:'Cargo hold full. It has elected to remain full. Cargo Awareness will improve this arrangement.'},
+ cargo_waiting:{priority:25,text:'Operations confirms the Miner is still there. We have asked it to enjoy the view until the shift ends.'},
  cargo_awareness:{priority:40,text:'Returning cargo is now part of the business model.'},
  navigation_assist:{priority:35,text:'We have distinguished mining from most other collisions.'},
  work_planner:{priority:45,text:'A working Miner. Research is now available. Please note that our technical decisions are permanent.'},
@@ -53,7 +54,7 @@ export const blueprintDialogue={hauler:'hauler_unlocked',escort:'first_contact',
 export function completedDialogue(c:Company):DialogueId[]{
  const ids:DialogueId[]=[];
  const has=(id:string)=>c.uniqueTechDiscoveries.some(value=>value===id);
- if(c.rounds>0)ids.push('welcome','cargo_full');
+ if(c.rounds>0)ids.push('welcome','cargo_full','cargo_waiting');
  if(c.basicUpgrades.includes('cargoAwareness'))ids.push('cargo_awareness');
  if(c.basicUpgrades.includes('navigationAssist'))ids.push('navigation_assist');
  if(c.basicUpgrades.includes('workPlanner'))ids.push('work_planner');
@@ -76,6 +77,7 @@ export function preparationDialogue(before:Company,after:Company):DialogueId[]{
 export function missionDialogue(w:World):DialogueId[]{
  const ids:DialogueId[]=[];
  if(!w.company.basicUpgrades.includes('cargoAwareness')&&w.drones.some(d=>d.state!=='dead'&&d.cargo>=d.gear.cargo))ids.push('cargo_full');
+ if(w.company.rounds===0&&w.time>=12&&w.phase==='mining'&&w.drones.some(d=>d.state==='full'))ids.push('cargo_waiting');
  for(const b of ['hauler','escort','miningRig'] as const){
   const event=b==='hauler'?'abandoned_cargo_relay':b==='escort'?'first_rival_contact':'derelict_excavation_platform';
   if(w.pendingTech.some(item=>item.id===event))ids.push(blueprintDialogue[b]);

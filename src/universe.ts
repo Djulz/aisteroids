@@ -5,7 +5,8 @@ export const GENERATOR_VERSION=1;
 export type Place={x:number;y:number};
 export type WorldPoiId='abandoned_research_station'|'experimental_probe_salvaged'|'abandoned_cargo_relay'|'derelict_freight_shuttle'|'automated_sorting_archive'|'derelict_excavation_platform';
 export type Deposit={id:number;x:number;y:number;r:number;shape:number[];rich:boolean};
-export type Universe={seed:number;generatorVersion:number;width:number;height:number;hq:Place;outpost:Place;silentCore:Place;pois:readonly (Place&{id:WorldPoiId;name:string})[];deposits:readonly Deposit[];rivalHomes:readonly Place[]};
+export type Scenery=Place&{kind:'wreck'|'debris';angle:number};
+export type Universe={seed:number;generatorVersion:number;width:number;height:number;hq:Place;outpost:Place;silentCore:Place;pois:readonly (Place&{id:WorldPoiId;name:string})[];deposits:readonly Deposit[];scenery:readonly Scenery[];rivalHomes:readonly Place[]};
 const cache=new Map<number,Universe>();
 function random(seed:number){let s=seed>>>0;return()=>((s=(Math.imul(s,1664525)+1013904223)>>>0)/4294967296);}
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
@@ -63,7 +64,24 @@ export function generateUniverse(seed:number):Universe{
  })();
  Object.assign(relay,nearHome);
  pois.push({id:'derelict_excavation_platform',name:'Derelict Excavation Platform',...site('scrap_fields',[{x:HOME.x+470,y:HOME.y+730},{x:HOME.x-450,y:HOME.y+780}])});
- const definition:Universe={seed,generatorVersion:GENERATOR_VERSION,width:W,height:H,hq:HOME,outpost,silentCore:{x:5630,y:770},pois,deposits,rivalHomes};
+ // Separate random stream keeps every established deposit ID and position fixed.
+ // Small, isolated rocks break up travel corridors without creating new fields.
+ const sparse=random(seed^0x7ba4162),scenery:Scenery[]=[];
+ for(let row=0;row<7;row++)for(let col=0;col<9;col++){
+  for(let attempt=0;attempt<3;attempt++){
+   const x=130+(col+.2+sparse()*.6)*(W-260)/9,y=130+(row+.2+sparse()*.6)*(H-260)/7;
+   if(Math.hypot(x-HOME.x,y-HOME.y)<140||Math.hypot(x-outpost.x,y-outpost.y)<145||pois.some(p=>Math.hypot(x-p.x,y-p.y)<120)||deposits.some(p=>Math.hypot(x-p.x,y-p.y)<p.r+160))continue;
+   const r=12+sparse()*5,id=deposits.length;
+   deposits.push({id,x,y,r,rich:false,shape:Array.from({length:11},()=>.77+sparse()*.23)});break;
+  }
+ }
+ for(let row=0;row<5;row++)for(let col=0;col<7;col++){
+  if(sparse()<.38)continue;
+  const x=130+(col+.2+sparse()*.6)*(W-260)/7,y=130+(row+.2+sparse()*.6)*(H-260)/5;
+  if(pois.some(p=>Math.hypot(x-p.x,y-p.y)<95)||deposits.some(p=>Math.hypot(x-p.x,y-p.y)<p.r+85))continue;
+  scenery.push({x,y,kind:sparse()<.65?'wreck':'debris',angle:sparse()*Math.PI*2});
+ }
+ const definition:Universe={seed,generatorVersion:GENERATOR_VERSION,width:W,height:H,hq:HOME,outpost,silentCore:{x:5630,y:770},pois,deposits,scenery,rivalHomes};
  if(cache.size>=8)cache.delete(cache.keys().next().value!);
  cache.set(seed,definition);return definition;
 }

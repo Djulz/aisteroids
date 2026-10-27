@@ -8,12 +8,12 @@ export type EnemyKind='patrol'|'interceptor'|'enforcer'|'sentry'|'lurker'|'spore
 export const isLifeform=(kind:EnemyKind|undefined)=>kind==='lurker'||kind==='spore';
 export type EnemyMode='patrol'|'alert'|'pursue'|'search'|'return';
 export const ENEMY_TYPES={
- patrol:{name:'Patrol Drone',art:'enemyScout',hp:3,speed:64,sensors:150,range:125,damage:2,cooldown:2.1,warning:1.5},
- interceptor:{name:'Interceptor',art:'enemyFighter',hp:6,speed:94,sensors:190,range:135,damage:2.5,cooldown:1.8,warning:1.2},
- enforcer:{name:'Enforcer',art:'enemyEnforcer',hp:12,speed:48,sensors:205,range:155,damage:3.2,cooldown:2.4,warning:1.8},
- sentry:{name:'Sentry',art:'enemySentry',hp:9,speed:0,sensors:180,range:175,damage:2.4,cooldown:2.6,warning:2.0},
- lurker:{name:'Rift Lurker',art:'enemyLurker',hp:7,speed:68,sensors:175,range:75,damage:2.6,cooldown:2.7,warning:1.8},
- spore:{name:'Radiant Spore',art:'enemySpore',hp:6,speed:0,sensors:155,range:150,damage:1.8,cooldown:3.2,warning:2.2},
+ patrol:{name:'Patrol Drone',art:'enemyScout',hp:3,speed:64,sensors:225,range:125,damage:2,cooldown:2.1,warning:1.5},
+ interceptor:{name:'Interceptor',art:'enemyFighter',hp:6,speed:94,sensors:260,range:135,damage:2.5,cooldown:1.8,warning:1.2},
+ enforcer:{name:'Enforcer',art:'enemyEnforcer',hp:12,speed:48,sensors:275,range:155,damage:3.2,cooldown:2.4,warning:1.8},
+ sentry:{name:'Sentry',art:'enemySentry',hp:9,speed:0,sensors:225,range:175,damage:2.4,cooldown:2.6,warning:2.0},
+ lurker:{name:'Rift Lurker',art:'enemyLurker',hp:7,speed:68,sensors:215,range:75,damage:2.6,cooldown:2.7,warning:1.8},
+ spore:{name:'Radiant Spore',art:'enemySpore',hp:6,speed:0,sensors:205,range:150,damage:1.8,cooldown:3.2,warning:2.2},
 } as const;
 export type PatrolSite={id:number;biome:BiomeId;home:Point;route:readonly Point[];radius:number;kinds:readonly EnemyKind[]};
 const cache=new WeakMap<Universe,readonly PatrolSite[]>();

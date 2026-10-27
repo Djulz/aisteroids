@@ -1,11 +1,11 @@
 import {biomeAt,safeHarbor,type BiomeId} from './biomes.ts';
 
 export const MINERALS={
- ferrite:{name:'Ferrite',credits:1,tier:1,color:'#a8adb2',description:'Ordinary impact ore',density:12,tool:'impact'},
- nickel:{name:'Nickel',credits:3,tier:2,color:'#b4b29a',description:'Dense, plentiful metal',density:18,tool:'impact'},
- aurite:{name:'Aurite',credits:8,tier:3,color:'#e9b34a',description:'Hard crust; high-power laser',density:12,tool:'highPowerOptics'},
- cryonite:{name:'Cryonite',credits:20,tier:4,color:'#a2c9e3',description:'Brittle ice crystal; laser',density:26,tool:'laser'},
- voidite:{name:'Voidite',credits:60,tier:5,color:'#b39bd4',description:'Resistant crystal; resonance laser',density:6,tool:'resonanceMining'},
+ ferrite:{name:'Ferrite',credits:1,tier:1,color:'#a8adb2',description:'Ordinary impact ore',density:7,tool:'impact'},
+ nickel:{name:'Nickel',credits:3,tier:2,color:'#b4b29a',description:'Dense, plentiful metal',density:13,tool:'impact'},
+ aurite:{name:'Aurite',credits:8,tier:3,color:'#e9b34a',description:'Hard crust; high-power laser',density:9,tool:'highPowerOptics'},
+ cryonite:{name:'Cryonite',credits:20,tier:4,color:'#a2c9e3',description:'Brittle ice crystal; laser',density:20,tool:'laser'},
+ voidite:{name:'Voidite',credits:60,tier:5,color:'#b39bd4',description:'Resistant crystal; resonance laser',density:5,tool:'resonanceMining'},
 } as const;
 export type MineralId=keyof typeof MINERALS;
 export const mineralIds=Object.keys(MINERALS) as MineralId[];
@@ -36,4 +36,9 @@ export function canExtract(kind:'impactMiner'|'laserMiner'|'miningRig',mineral:M
 }
 export function depositReserve(mineral:MineralId,radius:number):number{
  return Math.max(3,Math.round(MINERALS[mineral].density*radius/29));
+}
+/** Upper bound for saved 0.32 deposits, so an existing company's depletion remains valid. */
+export function legacyDepositReserve(mineral:MineralId,radius:number):number{
+ const density={ferrite:12,nickel:18,aurite:12,cryonite:26,voidite:6}[mineral];
+ return Math.max(3,Math.round(density*radius/29));
 }

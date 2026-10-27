@@ -1,4 +1,4 @@
-# Rock Bottom Robotics · Alpha 0.32.0
+# Rock Bottom Robotics · Alpha 0.33.0
 
 A mobile-first autonomous mining game. [Play the current release](https://djulz.github.io/aisteroids/). Continue a saved company or start a seeded one, prepare a fleet in Mission Control, and deploy into a timed shift with physical recall. Drag and pinch the full-screen asteroid field, set Mining or Scout focus by tapping, and use Follow Fleet when detached. Only delivered cargo earns Credits. The persistent 6000 × 5200 world remembers explored space, exhausted rocks, salvage, discoveries, infrastructure and focus pins.
 
@@ -17,6 +17,12 @@ npm run dev
 ```
 
 The GitHub Pages workflow tests and builds each commit to `main` before publishing.
+
+## Alpha 0.33 polish
+
+The first Miner stays at its full hold until the shift timer expires. Company AI comments during the wait. Shift end now has a full-screen return announcement and the report enters with eased panels and a counting Credits total; reduced motion settings skip those transitions. Scouts and mobile enemies steer through wider arcs, and enemy sensors acquire approaching ships earlier. A drilling Rig shows a pulsing beam on its active rock.
+
+Fresh deposits have smaller finite reserves, especially Ferrite in the starting belt. Existing saved depletion entries remain valid, including reserves larger than the new default. Isolated small asteroids and inert wreckage now fill some of the open travel corridors. Existing asteroid IDs, positions and remaining saved cargo are retained.
 
 ## Fleet and research
 

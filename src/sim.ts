@@ -120,7 +120,7 @@ function hold<T extends {cargoItems:CargoItem[]}>(entity:T):T&CargoHold{
   richCargo:{get(){return entity.cargoItems.filter(item=>item.legacyRich).length;},set(n:number){entity.cargoItems.forEach((item,i)=>{item.legacyRich=i<n;});},enumerable:false},
  });return entity as T&CargoHold;
 }
-export type Enemy={id:number;x:number;y:number;vx:number;vy:number;hp:number;cooldown:number;suppressedUntil:number;disabledUntil:number;path:Point[];pathKey:string;pathAge:number;home?:Point;kind?:EnemyKind;mode?:EnemyMode;patrol?:PatrolSite;routeIndex?:number;targetKey?:string;lastSeen?:Point;searchUntil?:number;alertUntil?:number};
+export type Enemy={id:number;x:number;y:number;vx:number;vy:number;angle?:number;hp:number;cooldown:number;suppressedUntil:number;disabledUntil:number;path:Point[];pathKey:string;pathAge:number;home?:Point;kind?:EnemyKind;mode?:EnemyMode;patrol?:PatrolSite;routeIndex?:number;targetKey?:string;lastSeen?:Point;searchUntil?:number;alertUntil?:number};
 export type Guard={id:number;name:string;gear:GuardCapabilities;maxHp:number;x:number;y:number;vx:number;vy:number;angle:number;hp:number;cooldown:number;abilityReady:number;path:Point[];pathKey:string;pathAge:number};
 export type Scout={id:number;name:string;x:number;y:number;vx:number;vy:number;angle:number;hp:number;maxHp:number;targetX:number;targetY:number;targetUntil:number;beaconReady:number;decoyReady:number;path:Point[];pathKey:string;pathAge:number;state:'exploring'|'avoiding'|'return'|'docked'|'dead'};
 export type Beacon={id:number;ownerId:number;x:number;y:number;expires:number};
@@ -144,7 +144,7 @@ export function createWorld(company:Company,seed=company.worldSeed):World{
  for(const deposit of definition.deposits){
   const mineral=mineralForRock(deposit.id,deposit.x,deposit.y,seed);
   const max=depositReserve(mineral,deposit.r),saved=company.rockHp[deposit.id];
-  w.rocks.push({...deposit,mineral,max,hp:saved??max});
+  w.rocks.push({...deposit,mineral,max:Math.max(max,saved??0),hp:saved??max});
  }
  const types:MinerType[]=Array.from({length:composition.impactMiner},()=>t(company,'laserCutter')?'laserMiner':'impactMiner');
  for(let i=0;i<types.length;i++){
@@ -163,7 +163,7 @@ export function createWorld(company:Company,seed=company.worldSeed):World{
  for(const site of patrolSites(definition))for(let member=0;member<site.kinds.length;member++){
   const kind=site.kinds[member],stats=ENEMY_TYPES[kind],index=(company.rounds+site.id+member)%site.route.length,p=site.route[index];
   const next=site.route[(index+1)%site.route.length],mix=member*.2;
-  w.enemies.push({id:10000+site.id*4+member,x:p.x+(next.x-p.x)*mix,y:p.y+(next.y-p.y)*mix,vx:0,vy:0,hp:stats.hp,cooldown:0,suppressedUntil:0,disabledUntil:0,path:[],pathKey:'',pathAge:0,home:site.home,kind,mode:'patrol',patrol:site,routeIndex:(index+1)%site.route.length});
+  w.enemies.push({id:10000+site.id*4+member,x:p.x+(next.x-p.x)*mix,y:p.y+(next.y-p.y)*mix,vx:0,vy:0,angle:Math.atan2(next.y-p.y,next.x-p.x),hp:stats.hp,cooldown:0,suppressedUntil:0,disabledUntil:0,path:[],pathKey:'',pathAge:0,home:site.home,kind,mode:'patrol',patrol:site,routeIndex:(index+1)%site.route.length});
  }
  updateKnowledge(w);
  w.newRegions.length=0; // Home is known at launch, not an interrupting alert.
@@ -300,14 +300,17 @@ function updateScouts(w:World,dt:number){
   if(s.state==='exploring'&&!site&&w.time>=s.targetUntil){
    const peers=w.scouts.filter(p=>p!==s&&p.state==='exploring').map(p=>({x:p.targetX,y:p.targetY}));
    const radius=scoutScanRadius(w.company.environmentUpgrades);
-   const target=frontier(w,s,radius,peers,85)??w.base;s.targetX=target.x;s.targetY=target.y;s.targetUntil=w.time+Math.max(2,distance(s,target)/82+2);s.pathKey='';
+   const target=frontier(w,s,radius,peers,85)??{x:Math.max(30,Math.min(W-30,s.x+Math.cos(s.angle+.7)*260)),y:Math.max(30,Math.min(H-30,s.y+Math.sin(s.angle+.7)*260))};s.targetX=target.x;s.targetY=target.y;s.targetUntil=w.time+Math.max(3,distance(s,target)/82+2);s.pathKey='';
   }
   const target=s.state==='return'||s.state==='avoiding'&&!foe?w.base:s.state==='avoiding'&&foe?{x:Math.max(20,Math.min(W-20,s.x+(s.x-foe.x)*2)),y:Math.max(20,Math.min(H-20,s.y+(s.y-foe.y)*2))}:{x:s.targetX,y:s.targetY};
   const point=clearSegment(s,target,w.rocks,-1,9)?target:waypoint(w,s,target,`${s.state}:${Math.round(target.x)}:${Math.round(target.y)}`);
   const dx=point.x-s.x,dy=point.y-s.y,len=Math.hypot(dx,dy),speed=(s.state==='avoiding'?105:85)*speedBonus(w.company)*(t(w.company,'pathfinderEngines')?1.6:1)*movementFactor(s,w.company.environmentUpgrades,w.company.outpost,w.company.worldSeed);
-  s.vx+=(dx/Math.max(1,len)*Math.min(speed,len*3)-s.vx)*Math.min(1,dt*5);s.vy+=(dy/Math.max(1,len)*Math.min(speed,len*3)-s.vy)*Math.min(1,dt*5);
+  const desired=Math.atan2(dy,dx),turn=Math.atan2(Math.sin(desired-s.angle),Math.cos(desired-s.angle));
+  s.angle+=Math.max(-dt*1.9,Math.min(dt*1.9,turn));
+  const investigating=!!site&&distance(s,site)<65;
+  const cruise=investigating?Math.min(speed,len*1.4):s.state==='return'&&distance(s,w.base)<70?Math.min(speed,len*2):speed*Math.max(.64,Math.cos(turn)*.5+.5);
+  s.vx+=(Math.cos(s.angle)*cruise-s.vx)*Math.min(1,dt*1.8);s.vy+=(Math.sin(s.angle)*cruise-s.vy)*Math.min(1,dt*1.8);
   s.x=Math.max(10,Math.min(W-10,s.x+s.vx*dt));s.y=Math.max(10,Math.min(H-10,s.y+s.vy*dt));separateRock(w,s);
-  if(Math.hypot(s.vx,s.vy)>2)s.angle=Math.atan2(s.vy,s.vx);
   if(site&&s.state==='exploring'&&distance(s,site)<28&&Math.hypot(s.vx,s.vy)<35){
    w.activeInvestigations.add(site.id);
    w.poiProgress[site.id]=Math.min(INVESTIGATION_DURATION,(w.poiProgress[site.id]??0)+dt);
@@ -852,7 +855,7 @@ function updateRivals(w:World,dt:number){
   const candidates=e.mode==='return'?[]:units.filter(unit=>{
    if(!permitted(unit))return false;
    const investigating='targetUntil' in unit&&w.definition.pois.some(p=>w.investigatorClaims.get(p.id)===unit.id&&distance(unit,p)<35);
-   const signature='targetUntil' in unit?(t(w.company,'lowSignature')&&(!investigating||t(w.company,'ghostSurvey'))?57:95):stats.sensors;
+   const signature='targetUntil' in unit?(t(w.company,'lowSignature')&&(!investigating||t(w.company,'ghostSurvey'))?100:Math.max(165,stats.sensors-25)):stats.sensors;
    return distance(e,unit)<signature&&clearSegment(e,unit,w.rocks,-1,0);
   });
   const score=(unit:typeof units[number])=>distance(e,unit)+(guards.includes(unit as Guard)?-65:(e.kind==='interceptor'||e.kind==='enforcer')&&'cargoItems' in unit?-(unit.cargo>0?70:30):0);
@@ -873,16 +876,18 @@ function updateRivals(w:World,dt:number){
   }
   let goal:Point|undefined=target??(e.mode==='search'?e.lastSeen:undefined);
   if(!goal&&site&&e.mode==='patrol'){
-   let index=e.routeIndex??0;if(distance(e,site.route[index])<14){index=(index+1)%site.route.length;e.routeIndex=index;}
+   let index=e.routeIndex??0;if(distance(e,site.route[index])<42){index=(index+1)%site.route.length;e.routeIndex=index;}
    goal=site.route[index];
   }
   goal??=e.home;
   if(!goal){e.vx*=.96;e.vy*=.96;continue;}
   const dist=distance(e,goal),point=clearSegment(e,goal,w.rocks,-1,12)?goal:waypoint(w,e,goal,e.mode+':'+(e.targetKey??e.routeIndex??''));
   const len=distance(e,point),dx=(point.x-e.x)/Math.max(1,len),dy=(point.y-e.y)/Math.max(1,len);
-  const desired=e.mode==='alert'?stats.speed*.25:target?(dist>100?stats.speed:dist<65?-24:0):Math.min(stats.speed*.7,dist*2);
+  const desired=e.mode==='alert'?stats.speed*.45:target?Math.max(stats.speed*.55,Math.min(stats.speed,dist*.65)):e.mode==='patrol'?stats.speed*.72:Math.min(stats.speed*.75,Math.max(stats.speed*.38,dist*1.1));
   const disabled=w.time<(e.disabledUntil??0),motor=disabled?0:w.time<(e.suppressedUntil??0)?.7:1;
-  e.vx+=(dx*desired*motor-e.vx)*Math.min(1,dt*3);e.vy+=(dy*desired*motor-e.vy)*Math.min(1,dt*3);
+  const heading=Math.atan2(dy,dx),angle=e.angle??heading,turn=Math.atan2(Math.sin(heading-angle),Math.cos(heading-angle));
+  e.angle=angle+Math.max(-dt*1.65,Math.min(dt*1.65,turn));
+  e.vx+=(Math.cos(e.angle)*desired*motor-e.vx)*Math.min(1,dt*1.7);e.vy+=(Math.sin(e.angle)*desired*motor-e.vy)*Math.min(1,dt*1.7);
   const before={x:e.x,y:e.y};
   e.x=Math.max(12,Math.min(W-12,e.x+e.vx*dt));e.y=Math.max(12,Math.min(H-12,e.y+e.vy*dt));if(e.kind!=='sentry'&&e.kind!=='spore')separateRock(w,e);
   if(site&&(biomeAt(e.x,e.y,w.company.worldSeed)==='home_belt'||(isLifeform(e.kind)?biomeAt(e.x,e.y,w.company.worldSeed)!=='dead_zone':biomeAt(e.x,e.y,w.company.worldSeed)==='dead_zone')||w.company.outpost&&distance(e,w.definition.outpost)<180)){
@@ -980,9 +985,8 @@ export function step(w:World,dt=STEP){
  w.beacons=w.beacons.filter(b=>b.expires>w.time);w.decoys=w.decoys.filter(b=>b.expires>w.time);w.shields=w.shields.filter(s=>s.expires>w.time&&s.remaining>0);
  for(const o of w.ores)o.age=(o.age??1)+dt;
  if(w.phase==='aftermath'){w.aftermath+=dt;if(w.aftermath>=2.5&&!w.effects.some(e=>e.type==='transfer'))w.phase='done';return;}
- // The first shift ends promptly once its physical hold is full. The longer
- // upper bound accommodates seeds whose nearest safe rock takes longer to reach.
- if(w.phase==='mining'&&(w.time>=w.missionDuration||w.company.rounds===0&&w.time>=10&&w.drones.length>0&&w.drones.every(d=>d.state==='full'))){w.phase='recall';clearTarget(w);clearSurvey(w);}
+ // A full, untrained Miner waits in place until the actual shift timer ends.
+ if(w.phase==='mining'&&w.time>=w.missionDuration){w.phase='recall';clearTarget(w);clearSurvey(w);}
  if(w.phase==='recall'&&w.time>w.missionDuration+180){
   for(const d of [...w.drones,...w.haulers])if(d.state!=='dead'&&d.state!=='docked'){dropCargo(w,d);d.state='dead';w.recallFailures++;}
   for(const rig of w.rigs)if(rig.state!=='dead'&&rig.state!=='docked'){salvageItems(w,rig,rig.cargoItems);rig.state='dead';w.recallFailures++;}

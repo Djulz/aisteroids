@@ -3,7 +3,7 @@ import {fleetError,freshComposition,MAX_FLEET_CAPACITY} from './fleet.ts';
 import {validDoctrine} from './doctrines.ts';
 import {discoveryIds,oldTechSpent,OLD_TECH,TECH_REWARDS,talentSpent,validTalents} from './research.ts';
 import {POIS,decodeMap} from './knowledge.ts';
-import {mineralIds} from './minerals.ts';
+import {mineralIds,legacyDepositReserve} from './minerals.ts';
 import {ENVIRONMENT_UPGRADES,environmentIds} from './biomes.ts';
 import {validFocuses} from './focus.ts';
 import {GENERATOR_VERSION} from './universe.ts';
@@ -27,7 +27,7 @@ function upgradeV16(raw:string|null):Company|null{
 function validWorld(c:Company){
  const rocks=createWorld(freshCompany(c.worldSeed)).rocks;
  return !c.identifiedRocks.some(id=>!Number.isInteger(id)||id<0||id>=rocks.length)&&
-  !Object.entries(c.rockHp).some(([id,hp])=>!/^\d+$/.test(id)||!rocks[Number(id)]||!Number.isInteger(hp)||hp<0||hp>rocks[Number(id)].max)&&
+  !Object.entries(c.rockHp).some(([id,hp])=>!/^\d+$/.test(id)||!rocks[Number(id)]||!Number.isInteger(hp)||hp<0||hp>Math.max(rocks[Number(id)].max,legacyDepositReserve(rocks[Number(id)].mineral,rocks[Number(id)].r)))&&
   !Object.entries(c.poiProgress).some(([id,seconds])=>!POIS.some(p=>p.id===id)||typeof seconds!=='number'||!Number.isFinite(seconds)||seconds<0||seconds>4);
 }
 function decodeSave(raw:string|null):Company|null{

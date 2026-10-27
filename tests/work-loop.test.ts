@@ -6,11 +6,32 @@ import {pendingBlueprints,acknowledgeBlueprint,renderBlueprintCard} from '../src
 import {awardTech} from '../src/research.ts';
 import {parseSave,readCompany,SAVE_KEY} from '../src/storage.ts';
 import {renderLobby} from '../src/lobby.ts';
+import {missionDialogue} from '../src/director.ts';
+import {depositReserve,legacyDepositReserve} from '../src/minerals.ts';
 
 const basics:Company['basicUpgrades']=['cargoAwareness','navigationAssist','workPlanner'];
 function run(w:World,seconds:number){for(let i=0;i<seconds/STEP&&w.phase!=='done';i++)step(w);}
 function quiet(w:World){w.explored.fill(255);w.rocks.forEach(r=>w.identifiedRocks.add(r.id));w.enemies=[];}
 function laser(){return createWorld({...freshCompany(7),rounds:9,basicUpgrades:basics,talents:['laserCutter']});}
+
+test('first full Miner waits at the deposit until the real shift end, then returns',()=>{
+ const w=createWorld(freshCompany(7)),d=w.drones[0];w.enemies=[];
+ d.cargoItems.push(...Array.from({length:d.gear.cargo},()=>({mineral:'ferrite' as const})));
+ d.state='full';d.x+=120;const start={x:d.x,y:d.y};
+ run(w,12);assert.equal(w.phase,'mining');assert.equal(d.state,'full');assert.deepEqual({x:d.x,y:d.y},start);
+ assert.ok(missionDialogue(w).includes('cargo_waiting'));
+ run(w,w.missionDuration-12+STEP);assert.equal(w.phase,'recall');assert.notEqual(d.state,'full');
+});
+
+test('scattered single deposits preserve old IDs and reduced reserves accept existing saves',()=>{
+ const u=generateUniverse(7),oldCount=16+15+13+12+10+16+19+18+19+19+14+16+16+17+16+17+15+17+16;
+ assert.ok(u.deposits.length>oldCount);
+ assert.ok(u.scenery.some(p=>p.kind==='wreck'));
+ const ferrite=u.deposits.find(r=>regionAt(7,r.x,r.y)==='home_belt')!;
+ assert.ok(depositReserve('ferrite',ferrite.r)<legacyDepositReserve('ferrite',ferrite.r));
+ const c={...freshCompany(7),rockHp:{[ferrite.id]:legacyDepositReserve('ferrite',ferrite.r)}};
+ assert.ok(parseSave(JSON.stringify(c)));assert.equal(createWorld(c).rocks[ferrite.id].hp,c.rockHp[ferrite.id]);
+});
 
 test('two-slot Home Belt company can buy its next capacity and Endurance without first contact',()=>{
  const c:Company={...freshCompany(),rounds:20,basicUpgrades:basics,fleetCapacity:2,credits:350,shopOffers:[]};

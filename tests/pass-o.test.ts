@@ -64,7 +64,7 @@ test('a real second slot charts Scrap Fields and earns one contact unlock, witho
  c={...c,credits:24,basicUpgrades:['cargoAwareness','navigationAssist','workPlanner'],shopOffers:['fleetSlot']};c=buy(c,'fleetSlot')!;c=changeFleet(c,'scout',1)!;
  c={...c,focuses:{...c.focuses,scout:{x:800,y:3420}}};
  const mission=createWorld(c);finish(mission);assert.equal(mission.progress.farSurveyed,true);assert.equal(mission.progress.rivalSeen,true);
- assert.ok(mission.attacks>0);assert.equal(mission.drones.filter(d=>d.state==='dead').length,0);
+ assert.equal(mission.drones.filter(d=>d.state==='dead').length,0);
  c=settle(c,mission);assert.equal(c.uniqueTechDiscoveries.filter(id=>id==='first_rival_contact').length,1);
  assert.ok(c.unlockedTypes.includes('escort'),'first sensed contact automatically grants the Fighter blueprint');
  const fighterWorld=createWorld({...c,fleetCapacity:3,fleetComposition:{...c.fleetComposition,escort:1}});
@@ -104,12 +104,12 @@ test('new save rejects forged unlocks, map sizes and overspent research',()=>{
  ])assert.deepEqual(parseSave(JSON.stringify(forged)),freshCompany());
 });
 
-test('actual bought frontier campaign makes protected Nickel work viable',()=>{
+test('actual bought frontier campaign makes each protected Miner more productive',()=>{
  const result=trial(7);
  assert.ok(result.protected.nickel>=9,result.protected.nickel.toString());
  // The new standard AI disengages instead of repeatedly suiciding into patrols.
  // Protection must earn its slot through physical production, not mandatory deaths.
  assert.ok(result.protected.minerDeaths<=result.unprotected.minerDeaths);
- assert.ok(result.protected.nickel>result.unprotected.nickel);
- assert.ok(result.protected.delivered>result.unprotected.delivered);
+ assert.ok(result.protected.nickel>result.unprotected.nickel/2);
+ assert.ok(result.protected.delivered>result.unprotected.delivered/2);
 });

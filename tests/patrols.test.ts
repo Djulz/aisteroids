@@ -14,6 +14,16 @@ function arena(kind:EnemyKind='patrol'){
  w.enemies=[enemy];Object.assign(w.drones[0],{x:home.x+60,y:home.y,state:'full',hp:50,maxHp:50});return {w,enemy,d:w.drones[0]};
 }
 
+test('Scouts and patrollers bank through course changes; distant contacts trigger warning',()=>{
+ const c={...freshCompany(7),rounds:4,fleetCapacity:2,fleetComposition:{...freshCompany().fleetComposition,scout:1}};
+ const w=createWorld(c),scout=w.scouts[0];w.rocks=[];w.enemies=[];w.explored.fill(255);
+ scout.x=2000;scout.y=2600;scout.angle=0;scout.vx=85;scout.vy=0;scout.targetX=1850;scout.targetY=2600;scout.targetUntil=w.time+10;
+ const initial=scout.angle;step(w);assert.ok(Math.abs(scout.angle-initial)<.04,'Scout should bank instead of snapping 180°');
+ assert.ok(Math.hypot(scout.vx,scout.vy)>55,'Scout keeps moving during a turn');
+ const {w:combat,enemy,d}=arena();d.x=enemy.x+200;d.y=enemy.y;step(combat);
+ assert.equal(enemy.mode,'alert','patrol warns at a meaningful distance');
+});
+
 test('all patrols exist at launch, scale by territory, and retain seed routes across shifts',()=>{
  const a=createWorld(freshCompany(7)),b=createWorld({...freshCompany(7),fleetCapacity:6,rounds:8});
  assert.equal(a.enemies.length,26);assert.equal(b.enemies.length,a.enemies.length);

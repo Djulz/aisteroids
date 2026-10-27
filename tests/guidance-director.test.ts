@@ -103,7 +103,7 @@ test('AI content has stable voice-ready IDs and renders English text without an 
  const html=directorMessage('first_contact');
  assert.match(html,/data-dialogue="first_contact"/);assert.match(html,/Fighter blueprint available/);
  assert.doesNotMatch(html,/<audio|autoplay/);
- assert.equal(new Set(Object.keys(DIRECTOR_LINES)).size,19);
+ assert.equal(new Set(Object.keys(DIRECTOR_LINES)).size,20);
 });
 
 test('report commentary defers pending blueprint lines until their acknowledged discovery card',()=>{
