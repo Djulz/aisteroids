@@ -10,7 +10,7 @@ export const ROGUE_SAVE_KEY='aisteroids-roguelite-pass01-v1';
 // Future hulls share the same model-specific price/slot accounting; only the
 // three complete types below are purchasable in Pass 01.
 export const HULL_CATALOG={miner:{name:'Miner',price:20,slots:1},scout:{name:'Scout',price:30,slots:1},hauler:{name:'Hauler',price:40,slots:1},fighter:{name:'Fighter',price:55,slots:1},rig:{name:'Mining Rig',price:100,slots:2}} as const;
-export const ECONOMY={slots:[0,20,50,125,300,700],hulls:{miner:HULL_CATALOG.miner,scout:HULL_CATALOG.scout,fighter:HULL_CATALOG.fighter},repairPerSecond:2,firstRaid:100,bossAt:600,maxEnemies:10};
+export const ECONOMY={slots:[0,20,50,125,300,700],hulls:{miner:HULL_CATALOG.miner,scout:HULL_CATALOG.scout,fighter:HULL_CATALOG.fighter},repairPerSecond:2,firstRaid:240,bossAt:600,maxEnemies:10};
 export type Hull=keyof typeof ECONOMY.hulls;
 export const TECH={
  chain:{name:'Chain Shatter',effect:'Rams split a second nearby asteroid.',talent:'ramSplitter',hull:'miner'},
@@ -82,7 +82,11 @@ export function chooseTech(r:Run,id:Tech){
  }
  note(r,`Tech installed: ${TECH[id].name}`);return true;
 }
-export function threat(r:Run){return {budget:Math.min(ECONOMY.maxEnemies,1+Math.floor(r.world.time/100)+Math.floor(r.tech.length/2)),tier:r.tech.length>=4||r.deliveredCredits>=260?3:r.tech.length>=2||r.deliveredCredits>=90?2:1};}
+export function threat(r:Run){
+ const age=Math.max(0,r.world.time-ECONOMY.firstRaid);
+ return {budget:Math.min(ECONOMY.maxEnemies,1+Math.floor(age/85)+Math.floor(r.tech.length/3)),tier:r.deliveredCredits>=280&&age>=210?3:r.deliveredCredits>=160&&age>=90?2:1};
+}
+export function raidsReady(r:Run){return r.world.time>=ECONOMY.firstRaid&&(units(r).some(u=>alive(u)&&r.hulls[u.id]==='fighter')||r.deliveredCredits>=145||r.world.time>=480);}
 export function spawnEnemy(r:Run,kind:EnemyKind):Enemy|null{
  const w=r.world;
  if(w.enemies.filter(e=>e.hp>0).length>=ECONOMY.maxEnemies){if(kind!=='rogueBoss')return null;const withdrawing=w.enemies.find(e=>e.hp>0&&e.id!==r.bossId);if(withdrawing)w.enemies=w.enemies.filter(e=>e!==withdrawing);}
@@ -95,7 +99,10 @@ export function spawnEnemy(r:Run,kind:EnemyKind):Enemy|null{
 }
 function director(r:Run){const w=r.world,t=threat(r);
  if(w.time>=ECONOMY.bossAt&&r.bossId===null){const boss=spawnEnemy(r,'rogueBoss');if(boss){r.bossId=boss.id;r.metrics.boss=w.time;}}
- if(w.time>=r.nextRaid){
+ // Opening attacks wait for a defensible economy. A player can build a Fighter
+ // first, or invest in mining and face the raid after earning enough to fund
+ // that route. The time cap prevents waiting forever on a stalled seed.
+ if(w.time>=r.nextRaid&&raidsReady(r)){
   if(w.enemies.filter(e=>e.hp>0).length<t.budget){const mix=rng(r);spawnEnemy(r,t.tier===3&&mix<.3?'rogueBulwark':t.tier>=2&&mix<.65?'rogueTwin':'rogueRaider');}
   r.nextRaid=w.time+Math.max(18,52-w.time/25);
  }

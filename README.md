@@ -10,7 +10,7 @@ npm ci
 npm run dev -- --host 127.0.0.1
 ```
 
-For a phone playtest, open the [private Roguelite preview](https://aisteroids-roguelite-pass01-2026.etteventuppsala.chatgpt.site/?roguelite) with the same ChatGPT account. The deployed build comes from the gameplay commit `acc6715`.
+For a phone playtest, open the [private Roguelite preview](https://aisteroids-roguelite-pass01-2026.etteventuppsala.chatgpt.site/?roguelite) with the same ChatGPT account. Choose **New Run** to try the revised opening balance.
 
 For local play, open `http://127.0.0.1:5173/aisteroids/?roguelite`, or choose **ROGUELITE · PROTOTYPE**
 from the Classic menu. Start seed **7** for a reference run. Under **BUY**, purchase

@@ -11,7 +11,7 @@ npm ci
 npm run dev -- --host 127.0.0.1
 ```
 
-Open <http://127.0.0.1:5173/aisteroids/?roguelite>. Start seed **7**. There is one free Miner. Open **BUY** to buy Slots and then hulls. A useful starting fleet is two Miners followed by Fighters. Keep a replacement reserve; empty purchased capacity remains available after destruction. Collect and return Tech caches, then choose one upgrade. The Captain arrives at 10:00 active simulation time. Its destruction is Victory; losing all viable income routes without funds for a Miner is Bankruptcy.
+Open <http://127.0.0.1:5173/aisteroids/?roguelite>. Start a **new run** with seed **7**. There is one free Miner. Open **BUY** to buy Slots and then hulls. For an early defense, buy Slot 2 at 20 Credits and save 55 Credits for a Fighter; two Miners followed by Fighters is another viable route. Keep a replacement reserve; empty purchased capacity remains available after destruction. Collect and return Tech caches, then choose one upgrade. The Captain arrives at 10:00 active simulation time. Its destruction is Victory; losing all viable income routes without funds for a Miner is Bankruptcy.
 
 For the exact benchmark policy, run:
 
@@ -29,7 +29,7 @@ The balanced policy checks purchases once per simulated second, replaces the las
 - Three complete hulls: Miner 20, Scout 30, Fighter 55 Credits. Starting Miner free once. Slots 2–6 cost 20/50/125/300/700. Each model keeps its immutable specialization; there is no free hull conversion. Future Hauler (40/1 Slot) and Rig (100/2 Slots) are centrally catalogued but unavailable in this pass.
 - Tech is uncovered as a unique physical cache in an excavated asteroid area, carried by a Miner or Scout, and delivered at HQ. A destroyed carrier loses it. Ordinary mineral transfers never grant Tech. Drafts contain three upgrades eligible for the current hulls; if unique options run low, Nanite Delivery, Cargo Relay and Reactive Hull offer functional additional levels and stop the entire simulation.
 - Twelve functional upgrades: Chain Shatter, Magnetic Collection, Kinetic Ram, Nanite Delivery, Emergency Retreat, Fighter Twin Guns, Escort Drones, Cargo Relay, Scout Echo, Overdrive, Salvage Bonus and Reactive Hull. Effects include real secondary mining, collection attraction, faster repair/return, extra damaging guns/defenders, sensor coverage, a durability tradeoff, physical enemy salvage, and defensive damage. Mining lasers retain their mining-only behavior.
-- Fixed-stat Pirate Mk I (one laser), Pirate Mk II (two hardpoints and two damaging shots), visibly armored Marauder, and twin-cannon Siege Captain. Time grows a bounded active population budget; progress unlocks the stronger mixture. No enemy-stat multipliers. Spawn locations are outside HQ and at least 220 world units from living hulls; attacks use existing warning/acquisition and line of sight. Active enemies are capped at ten including the boss.
+- Fixed-stat Pirate Mk I (one laser), Pirate Mk II (two hardpoints and two damaging shots), visibly armored Marauder, and twin-cannon Siege Captain. Opening raids wait until 4:00 and either a living Fighter or 145 physically delivered Credits, with an 8:00 cap for low-income runs. The active population grows from that opening window, and stronger variants require both elapsed time and delivered income. No enemy-stat multipliers. Spawn locations are outside HQ and at least 220 world units from living hulls; attacks use existing warning/acquisition and line of sight. Active enemies are capped at ten including the boss.
 - Responsive English UI with Credits, owned/used capacity, fixed prices, trailing-minute income, time/threat, per-hull health/job, repair rings, Tech cargo markers, focus and autonomous orders, pan/pinch/zoom, pause, 1×/2×, seed copy, run menu and final statistics. Draft/result dialogs support keyboard focus trapping.
 - Save key `aisteroids-roguelite-pass01-v1` preserves full physical state, cargo, RNG, discoveries, choices, director, repairs and results. Continue starts paused; hidden tabs and closed sessions award no time, combat or income. Run saves never migrate or write Classic data.
 
@@ -39,16 +39,16 @@ Seconds are active simulation time, not time spent reading drafts. Raw summaries
 
 | Seed / policy | Result | First Tech | Second hull | First loss | Captain | End / stop | Delivered Credits | Credits/min | Hulls lost |
 | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |
-| 7 / balanced | Victory | 0:38.8 | 2:58.0 | none | 10:00 | 10:51.1 | 378 | 34.84 | 0 |
-| 42 / balanced | Bankruptcy | 0:30.9 | 2:05.0 | 7:52.3 | 10:00 | 11:42.4 | 410 | 35.03 | 6 |
-| 1337 / balanced | Bankruptcy | 0:39.0 | 4:31.0 | 4:30.4 | not reached | 4:43.2 | 34 | 7.20 | 2 |
-| 7 / unprotected mining | Still running at limit | 0:38.8 | 2:58.0 | 11:16.7 | 10:00 | 15:00 | 511 | 34.07 | 8 |
+| 7 / balanced | Victory | 0:38.8 | 2:19.0 | none | 10:00 | 10:50.5 | 404 | 37.27 | 0 |
+| 42 / balanced | Bankruptcy | 0:30.9 | 2:09.0 | 10:37.7 | 10:00 | 11:56.4 | 420 | 35.18 | 7 |
+| 1337 / balanced | Bankruptcy | 0:39.0 | 2:27.0 | 10:35.8 | 10:00 | 11:09.2 | 351 | 31.47 | 5 |
+| 7 / unprotected mining | Still running at limit | 0:38.8 | 2:19.0 | 11:53.8 | 10:00 | 15:00 | 550 | 36.67 | 2 |
 
-The same seed wins at 10:51 with combat purchases; the unprotected fleet has eight losses and has not defeated the Captain by 15:00. Seed 42 demonstrates a full 11-minute failure with paid replacements, while seed 1337 exposes a much harsher early income path. This is a balance limitation, not a guaranteed 10-minute survival promise. Enemy stats are identical across all runs.
+The same seed wins at 10:50 with combat purchases; the unprotected fleet has not defeated the Captain by 15:00. Seed 42 and 1337 still lose to the Captain in the 11th minute under this purchase policy. A separate opening test buys Slot 2 and a Fighter on seed 7 without grants or enemies preceding that purchase. The previous version spawned its first pirate at 1:40 with only 28 delivered Credits, far below the 75 needed for Slot 2 plus Fighter; this pass delays that exposure. Enemy stats are identical across all runs.
 
 ## Validation
 
-- `npm test`: 126 passing tests: original 106 regressions plus 20 new rogue regressions; no unrelated coverage removed.
+- `npm test`: 128 passing tests: original 106 regressions plus 22 rogue regressions; no unrelated coverage removed.
 - `npm run build`: strict TypeScript check and Vite production build pass.
 - `npm run balance:smoke`: all six existing nickel/Hauler scenarios pass.
 - `npm run performance`: 12 alternating routes, 93 ms total; six-ship/240-fragment fixture, 900 steps, p95 10.99 ms, p99 22.17 ms, worst 62.4 ms on this shared test environment. This is the existing stressed Classic fixture, not a phone measurement.
@@ -57,8 +57,8 @@ The same seed wins at 10:51 with combat purchases; the unprotected fleet has eig
 
 ## Preview, simplifications and next pass
 
-A [private isolated phone preview](https://aisteroids-roguelite-pass01-2026.etteventuppsala.chatgpt.site/?roguelite) was deployed from the gameplay commit `acc6715`. Open it using the same ChatGPT account. The Classic GitHub Pages deployment was not triggered. The branch also builds and runs locally using the steps above; the draft PR is the review entry point.
+A [private isolated phone preview](https://aisteroids-roguelite-pass01-2026.etteventuppsala.chatgpt.site/?roguelite) hosts this balance pass. Open it using the same ChatGPT account and choose **New Run** to test the opening from the start. The Classic GitHub Pages deployment was not triggered. The branch also builds and runs locally using the steps above; the draft PR is the review entry point.
 
 Pass 01 intentionally has one local seeded belt around HQ, three purchasable hull types, up to eight unique caches, and no outpost expansion, Hauler/Rig gameplay, meta progression or offline earnings. The local belt reuses seeded deposit geometry but tunes finite Ferrite reserves for a single continuous run. Dock repair is free in Credits and costs real time, so it does not create an unpayable repair deadlock. Existing AI decision caches are recomputed on load, so exact trajectories can vary slightly; physical ledgers, RNG, clocks and run ownership persist without catch-up.
 
-Known limitations: seed-dependent opening income is still uneven; purely defensive builds can prolong a run beyond 15 minutes; target selection is a shared mining/survey focus rather than a separate Fighter attack command. A real Android/iOS device and background/resume cycle should be playtested next. Tune income/raid timing across more seeds, make Fighter retreat and enemy telegraphs clearer in crowded fights, then evaluate Hauler/Rig before any merge decision.
+Known limitations: results remain seed-dependent; the 8:00 raid cap still challenges stalled economies, and purely defensive builds can prolong a run beyond 15 minutes. Target selection is a shared mining/survey focus rather than a separate Fighter attack command. A real Android/iOS device and background/resume cycle should be playtested next. Gather phone feedback on the revised opening, make Fighter retreat and enemy telegraphs clearer in crowded fights, then evaluate Hauler/Rig before any merge decision.

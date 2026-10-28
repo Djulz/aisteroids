@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newRun,stepRun,buySlot,buyHull,chooseTech,units,alive,usedCapacity,ECONOMY,TECH,ROGUE_SAVE_KEY,serializeRun,restoreRun,spawnEnemy,hasIncomeRoute,checkResult,eligibleTech,type Run,type Tech} from '../src/roguelite.ts';
+import {newRun,stepRun,buySlot,buyHull,chooseTech,units,alive,usedCapacity,ECONOMY,TECH,ROGUE_SAVE_KEY,serializeRun,restoreRun,spawnEnemy,hasIncomeRoute,checkResult,eligibleTech,raidsReady,threat,type Run,type Tech} from '../src/roguelite.ts';
 import {STEP,HOME,step,dockingSpots} from '../src/sim.ts';
 import {ENEMY_TYPES} from '../src/patrols.ts';
 import {SAVE_KEY} from '../src/storage.ts';
@@ -92,6 +92,27 @@ test('Chain Shatter actually mines a second asteroid and Kinetic Ram extracts fo
 });
 test('the active enemy budget stays bounded even when the Captain arrives',()=>{
  const r=newRun();r.world.rocks=[];for(let i=0;i<20;i++)spawnEnemy(r,'rogueRaider');assert.equal(r.world.enemies.filter(e=>e.hp>0).length,ECONOMY.maxEnemies);assert.ok(spawnEnemy(r,'rogueBoss'));assert.equal(r.world.enemies.filter(e=>e.hp>0).length,ECONOMY.maxEnemies);
+});
+test('seed 7 can afford and deploy its first Fighter before the opening raid',()=>{
+ const r=newRun(7);let firstEnemyAt:number|null=null,firstFighterAt:number|null=null;
+ for(let tick=0;tick<60*360&&!r.result&&firstEnemyAt===null;tick++){
+  if(r.draft.length)chooseTech(r,r.draft[0]);
+  if(r.slots===1&&r.credits>=20)buySlot(r);
+  if(r.slots===2&&!r.world.guards.some(alive)&&r.credits>=55){buyHull(r,'fighter');firstFighterAt=r.world.time;}
+  stepRun(r);
+  if(r.world.enemies.some(e=>e.hp>0))firstEnemyAt=r.world.time;
+ }
+ assert.ok(firstFighterAt!==null&&firstFighterAt>=ECONOMY.firstRaid);
+ assert.ok(firstEnemyAt!==null&&firstEnemyAt>=firstFighterAt);
+ assert.equal(r.lost,0);
+});
+test('opening grace follows delivered economy, and threat ramps from the first raid window',()=>{
+ const r=newRun(42);r.world.time=ECONOMY.firstRaid;
+ assert.equal(raidsReady(r),false);assert.equal(threat(r).tier,1);
+ r.deliveredCredits=145;assert.equal(raidsReady(r),true);
+ r.deliveredCredits=160;r.world.time+=90;assert.equal(threat(r).tier,2);
+ r.deliveredCredits=280;r.world.time+=120;assert.equal(threat(r).tier,3);
+ const slow=newRun(1337);slow.world.time=479;assert.equal(raidsReady(slow),false);slow.world.time=480;assert.equal(raidsReady(slow),true);
 });
 test('exhausted unique Tech choices offer working levels and never strand the cache carrier',()=>{
  const r=newRun(),d=r.world.drones[0];r.tech=['chain','magnetic','kinetic','nanite','emergency','relay','overdrive','salvage','reactive'];
