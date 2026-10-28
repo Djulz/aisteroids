@@ -10,7 +10,9 @@ npm ci
 npm run dev -- --host 127.0.0.1
 ```
 
-Open `http://127.0.0.1:5173/aisteroids/?roguelite`, or choose **ROGUELITE · PROTOTYPE**
+For a phone playtest, open the [private Roguelite preview](https://aisteroids-roguelite-pass01-2026.etteventuppsala.chatgpt.site/?roguelite) with the same ChatGPT account. The deployed build comes from the gameplay commit `acc6715`.
+
+For local play, open `http://127.0.0.1:5173/aisteroids/?roguelite`, or choose **ROGUELITE · PROTOTYPE**
 from the Classic menu. Start seed **7** for a reference run. Under **BUY**, purchase
 Fleet Slots, then separate fixed-price hulls; field Miners and Fighters. A revealed
 Tech cache must physically return to HQ before its three-choice draft appears.

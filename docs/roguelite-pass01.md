@@ -57,7 +57,7 @@ The same seed wins at 10:51 with combat purchases; the unprotected fleet has eig
 
 ## Preview, simplifications and next pass
 
-No hosted preview was published and no Pages deployment was triggered. The branch builds and runs locally using the steps above; the draft PR is the review entry point.
+A [private isolated phone preview](https://aisteroids-roguelite-pass01-2026.etteventuppsala.chatgpt.site/?roguelite) was deployed from the gameplay commit `acc6715`. Open it using the same ChatGPT account. The Classic GitHub Pages deployment was not triggered. The branch also builds and runs locally using the steps above; the draft PR is the review entry point.
 
 Pass 01 intentionally has one local seeded belt around HQ, three purchasable hull types, up to eight unique caches, and no outpost expansion, Hauler/Rig gameplay, meta progression or offline earnings. The local belt reuses seeded deposit geometry but tunes finite Ferrite reserves for a single continuous run. Dock repair is free in Credits and costs real time, so it does not create an unpayable repair deadlock. Existing AI decision caches are recomputed on load, so exact trajectories can vary slightly; physical ledgers, RNG, clocks and run ownership persist without catch-up.
 
