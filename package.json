@@ -30,7 +30,8 @@
     "balance:smoke": "node --experimental-strip-types scripts/balance-lab/run.ts --profile smoke --assert",
     "balance:plan": "node --experimental-strip-types scripts/balance-lab/run.ts --plan-only --summary-only --profile exhaustive",
     "balance:report": "node --experimental-strip-types scripts/balance-lab/render.ts",
-    "balance:campaign": "node --experimental-strip-types scripts/balance-lab/run.ts --campaign-only"
+    "balance:campaign": "node --experimental-strip-types scripts/balance-lab/run.ts --campaign-only",
+    "roguelite:playtest": "node --experimental-strip-types scripts/roguelite-playtest.ts"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

@@ -1,0 +1,115 @@
+[
+  {
+    "seed": 7,
+    "policy": "balanced",
+    "result": "Victory",
+    "time": 651.07,
+    "metrics": {
+      "firstTech": 38.79999999999908,
+      "secondShip": 178.0000000000338,
+      "firstLoss": null,
+      "boss": 600.0166666664496
+    },
+    "delivered": 378,
+    "effectiveCrPerMin": 34.84,
+    "credits": 53,
+    "slots": 4,
+    "tech": [
+      "magnetic",
+      "kinetic",
+      "chain",
+      "nanite",
+      "drones",
+      "reactive",
+      "twin",
+      "emergency"
+    ],
+    "losses": 0,
+    "extracted": 390,
+    "maxEnemies": 6,
+    "saveRestores": true
+  },
+  {
+    "seed": 42,
+    "policy": "balanced",
+    "result": "Bankruptcy",
+    "time": 702.35,
+    "metrics": {
+      "firstTech": 30.899999999999526,
+      "secondShip": 124.99999999999419,
+      "firstLoss": 472.3333333332324,
+      "boss": 600.0166666664496
+    },
+    "delivered": 410,
+    "effectiveCrPerMin": 35.03,
+    "credits": 10,
+    "slots": 4,
+    "tech": [
+      "magnetic",
+      "chain",
+      "reactive",
+      "nanite",
+      "drones",
+      "twin",
+      "emergency",
+      "kinetic"
+    ],
+    "losses": 6,
+    "extracted": 421,
+    "maxEnemies": 5,
+    "saveRestores": true
+  },
+  {
+    "seed": 1337,
+    "policy": "balanced",
+    "result": "Bankruptcy",
+    "time": 283.2,
+    "metrics": {
+      "firstTech": 39.0333333333324,
+      "secondShip": 271.0000000000822,
+      "firstLoss": 270.3500000000828,
+      "boss": null
+    },
+    "delivered": 34,
+    "effectiveCrPerMin": 7.2,
+    "credits": 14,
+    "slots": 1,
+    "tech": [
+      "nanite"
+    ],
+    "losses": 2,
+    "extracted": 38,
+    "maxEnemies": 3,
+    "saveRestores": true
+  },
+  {
+    "seed": 7,
+    "policy": "unprotected-mining",
+    "result": null,
+    "time": 900,
+    "metrics": {
+      "firstTech": 38.79999999999908,
+      "secondShip": 178.0000000000338,
+      "firstLoss": 676.7166666663799,
+      "boss": 600.0166666664496
+    },
+    "delivered": 511,
+    "effectiveCrPerMin": 34.07,
+    "credits": 96,
+    "slots": 4,
+    "tech": [
+      "magnetic",
+      "kinetic",
+      "chain",
+      "reactive",
+      "relay",
+      "nanite",
+      "emergency",
+      "nanite"
+    ],
+    "losses": 8,
+    "extracted": 516,
+    "maxEnemies": 10,
+    "saveRestores": true
+  }
+]

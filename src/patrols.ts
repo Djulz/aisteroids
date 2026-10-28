@@ -4,10 +4,16 @@ import {clearSegment,type Point} from './navigation.ts';
 import {mineralForRock} from './minerals.ts';
 import type {BiomeId} from './biomes.ts';
 
-export type EnemyKind='patrol'|'interceptor'|'enforcer'|'sentry'|'lurker'|'spore';
+export type EnemyKind='patrol'|'interceptor'|'enforcer'|'sentry'|'lurker'|'spore'|'rogueRaider'|'rogueTwin'|'rogueBulwark'|'rogueBoss';
 export const isLifeform=(kind:EnemyKind|undefined)=>kind==='lurker'||kind==='spore';
+const SINGLE_HARDPOINT=[0] as const,TWIN_HARDPOINTS=[-9,9] as const;
+export const enemyHardpoints=(kind:EnemyKind|undefined):readonly number[]=>kind==='rogueTwin'||kind==='rogueBoss'?TWIN_HARDPOINTS:SINGLE_HARDPOINT;
 export type EnemyMode='patrol'|'alert'|'pursue'|'search'|'return';
 export const ENEMY_TYPES={
+ rogueRaider:{name:'Pirate Mk I · one laser',art:'enemyScout',hp:4,speed:48,sensors:410,range:110,damage:1,cooldown:2.4,warning:2.5},
+ rogueTwin:{name:'Pirate Mk II · twin lasers',art:'enemyFighter',hp:8,speed:53,sensors:430,range:125,damage:1,cooldown:2.4,warning:2.5},
+ rogueBulwark:{name:'Armored Marauder',art:'enemyEnforcer',hp:18,speed:32,sensors:450,range:130,damage:2,cooldown:3,warning:3},
+ rogueBoss:{name:'Siege Captain · twin cannons',art:'enemyEnforcer',hp:100,speed:25,sensors:700,range:145,damage:2,cooldown:3,warning:5},
  patrol:{name:'Patrol Drone',art:'enemyScout',hp:3,speed:64,sensors:225,range:125,damage:2,cooldown:2.1,warning:1.5},
  interceptor:{name:'Interceptor',art:'enemyFighter',hp:6,speed:94,sensors:260,range:135,damage:2.5,cooldown:1.8,warning:1.2},
  enforcer:{name:'Enforcer',art:'enemyEnforcer',hp:12,speed:48,sensors:275,range:155,damage:3.2,cooldown:2.4,warning:1.8},

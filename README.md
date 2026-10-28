@@ -1,3 +1,27 @@
+## Experimental roguelite · Pass 01
+
+The dedicated `feature/roguelite-prototype-01` branch adds an opt-in continuous run.
+Classic Alpha remains the default mode; this experiment must not be merged or
+published over the existing Pages site before playtesting.
+
+```sh
+git switch feature/roguelite-prototype-01
+npm ci
+npm run dev -- --host 127.0.0.1
+```
+
+Open `http://127.0.0.1:5173/aisteroids/?roguelite`, or choose **ROGUELITE · PROTOTYPE**
+from the Classic menu. Start seed **7** for a reference run. Under **BUY**, purchase
+Fleet Slots, then separate fixed-price hulls; field Miners and Fighters. A revealed
+Tech cache must physically return to HQ before its three-choice draft appears.
+Pause, 1×/2×, drag/pinch/scroll, focus orders, seed copying, and Save & Menu are available.
+Continue always resumes paused. Prototype saves use their own key, with no offline
+catch-up or Classic save migration.
+
+Run `npm run roguelite:playtest -- 7 42 1337` for seeded end-to-end purchases and
+Tech choices. Compare `npm run roguelite:playtest -- --reckless 7` to test an
+unprotected mining fleet. See [the implementation and validation report](docs/roguelite-pass01.md).
+
 # Rock Bottom Robotics · Alpha 0.33.0
 
 A mobile-first autonomous mining game. [Play the current release](https://djulz.github.io/aisteroids/). Continue a saved company or start a seeded one, prepare a fleet in Mission Control, and deploy into a timed shift with physical recall. Drag and pinch the full-screen asteroid field, set Mining or Scout focus by tapping, and use Follow Fleet when detached. Only delivered cargo earns Credits. The persistent 6000 × 5200 world remembers explored space, exhausted rocks, salvage, discoveries, infrastructure and focus pins.

@@ -6,7 +6,7 @@ import {BIOMES,biomeAt} from './biomes.ts';
 import {newTrailState,updateTrails,drawTrails,type TrailSource,type TrailState} from './trails.ts';
 import {MINERALS} from './minerals.ts';
 import {focusRoles,markerOffset,type FocusRole} from './focus.ts';
-import {ENEMY_TYPES,isLifeform} from './patrols.ts';
+import {ENEMY_TYPES,enemyHardpoints,isLifeform} from './patrols.ts';
 const gold='#f5b743';
 const rockPalettes=new WeakMap<object,RockPalette>();
 const trailStates=new WeakMap<World,TrailState>();
@@ -164,6 +164,13 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    c.beginPath();c.arc(foe.x,foe.y,23,0,7);c.stroke();
   }
   drawShip(c,stats.art,foe.x,foe.y,foe.angle??(Math.hypot(foe.vx,foe.vy)>.01?Math.atan2(foe.vy,foe.vx):-Math.PI/2));
+  if(foe.kind?.startsWith('rogue')){
+   c.save();c.translate(foe.x,foe.y);c.rotate(foe.angle??0);c.fillStyle='#ffe0a4';c.strokeStyle='#ee8590';c.lineWidth=2;
+   for(const offset of enemyHardpoints(foe.kind)){c.fillRect(8,offset-2,12,4);c.strokeRect(8,offset-2,12,4);}
+   if(foe.kind==='rogueBulwark'||foe.kind==='rogueBoss'){c.strokeStyle='#dcc3a4';c.strokeRect(-19,-17,34,34);}
+   if(foe.kind==='rogueBoss'){c.lineWidth=3;c.strokeRect(-26,-23,49,46);}
+   c.restore();
+  }
   if(foe.mode==='alert'){c.font='bold 19px Barlow Condensed';c.textAlign='center';c.fillStyle='#ffc363';c.fillText('!',foe.x,foe.y-25);}
   if(foe.hp<stats.hp){c.fillStyle='#261d28';c.fillRect(foe.x-10,foe.y+20,20,2);c.fillStyle=isLifeform(foe.kind)?'#b6d780':'#ee8590';c.fillRect(foe.x-10,foe.y+20,20*Math.max(0,foe.hp/stats.hp),2);}
  }
