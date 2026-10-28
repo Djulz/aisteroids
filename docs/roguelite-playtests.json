@@ -1,0 +1,690 @@
+[
+  {
+    "seed": 7,
+    "policy": "balanced",
+    "result": "Victory",
+    "time": 650.47,
+    "metrics": {
+      "firstTech": 38.79999999999908,
+      "secondShip": 139.00000000000276,
+      "firstLoss": null,
+      "boss": 600.0166666664496
+    },
+    "delivered": 404,
+    "effectiveCrPerMin": 37.27,
+    "credits": 79,
+    "slots": 4,
+    "tech": [
+      "magnetic",
+      "nanite",
+      "emergency",
+      "kinetic",
+      "twin",
+      "drones",
+      "chain",
+      "reactive"
+    ],
+    "items": [
+      {
+        "id": 0,
+        "x": 1323.7991302292446,
+        "y": 2699.2235626332363,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 1,
+        "x": 1287.8491061743184,
+        "y": 2762.8468992228172,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 2,
+        "x": 1251.9264714891272,
+        "y": 2772.5098990587553,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 3,
+        "x": 1213.6023085667148,
+        "y": 2764.2934260648412,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 4,
+        "x": 1186.9425657685492,
+        "y": 2662.216551486019,
+        "state": "delivered",
+        "carrier": 1
+      },
+      {
+        "id": 5,
+        "x": 1250.9995598259652,
+        "y": 2626.2866000054246,
+        "state": "delivered",
+        "carrier": 1
+      },
+      {
+        "id": 6,
+        "x": 1248.1441907230983,
+        "y": 2627.3665225664645,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 7,
+        "x": 1313.2714823598178,
+        "y": 2662.246068357461,
+        "state": "delivered",
+        "carrier": 0
+      }
+    ],
+    "losses": 0,
+    "extracted": 416,
+    "maxEnemies": 3,
+    "damage": 156.87499999999997,
+    "ships": [
+      {
+        "id": 0,
+        "type": "miner",
+        "hp": 14,
+        "state": "mine",
+        "cargo": 0,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "id": 1,
+        "type": "miner",
+        "hp": 14,
+        "state": "return",
+        "cargo": 3,
+        "x": 226,
+        "y": -93
+      },
+      {
+        "id": 2,
+        "type": "fighter",
+        "hp": 4,
+        "state": "escort",
+        "cargo": 0,
+        "x": 7,
+        "y": -18
+      },
+      {
+        "id": 3,
+        "type": "fighter",
+        "hp": 5.3,
+        "state": "repair",
+        "cargo": 0,
+        "x": 5,
+        "y": -47
+      }
+    ],
+    "enemies": [
+      {
+        "kind": "rogueBoss",
+        "hp": -0.5,
+        "x": 0,
+        "y": -50
+      }
+    ],
+    "events": [
+      "10:50 Siege Captain destroyed. Operation victorious.",
+      "10:41 Cargo delivered · +1 Credits",
+      "10:41 Cargo delivered · +1 Credits",
+      "10:41 Cargo delivered · +1 Credits",
+      "10:30 Cargo delivered · +1 Credits",
+      "10:30 Cargo delivered · +1 Credits",
+      "10:30 Cargo delivered · +1 Credits",
+      "10:28 Cargo delivered · +1 Credits"
+    ],
+    "saveRestores": true
+  },
+  {
+    "seed": 42,
+    "policy": "balanced",
+    "result": "Bankruptcy",
+    "time": 716.37,
+    "metrics": {
+      "firstTech": 30.899999999999526,
+      "secondShip": 128.9999999999948,
+      "firstLoss": 637.6666666664154,
+      "boss": 600.0166666664496
+    },
+    "delivered": 420,
+    "effectiveCrPerMin": 35.18,
+    "credits": 0,
+    "slots": 4,
+    "tech": [
+      "magnetic",
+      "kinetic",
+      "nanite",
+      "reactive",
+      "drones",
+      "relay",
+      "twin",
+      "chain"
+    ],
+    "items": [
+      {
+        "id": 0,
+        "x": 1313.5826286719036,
+        "y": 2662.5013023024403,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 1,
+        "x": 1287.0672240299311,
+        "y": 2763.9513307208326,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 2,
+        "x": 1186.2935349314214,
+        "y": 2737.3630250324522,
+        "state": "delivered",
+        "carrier": 1
+      },
+      {
+        "id": 3,
+        "x": 1213.330891621586,
+        "y": 2764.1995074977194,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 4,
+        "x": 1248.5674075875786,
+        "y": 2626.6980755393975,
+        "state": "delivered",
+        "carrier": 1
+      },
+      {
+        "id": 5,
+        "x": 1313.8905631011849,
+        "y": 2662.8525584103822,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 6,
+        "x": 1313.7782151211186,
+        "y": 2662.659077260152,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 7,
+        "x": 1214.2070843302909,
+        "y": 2635.7157051003223,
+        "state": "delivered",
+        "carrier": 1
+      }
+    ],
+    "losses": 7,
+    "extracted": 423,
+    "maxEnemies": 3,
+    "damage": 268.1333333333332,
+    "ships": [
+      {
+        "id": 0,
+        "type": "miner",
+        "hp": 0,
+        "state": "dead",
+        "cargo": 0,
+        "x": 32,
+        "y": -59
+      },
+      {
+        "id": 1,
+        "type": "miner",
+        "hp": 0,
+        "state": "dead",
+        "cargo": 0,
+        "x": 57,
+        "y": 35
+      },
+      {
+        "id": 5,
+        "type": "miner",
+        "hp": 0,
+        "state": "dead",
+        "cargo": 0,
+        "x": 61,
+        "y": -35
+      },
+      {
+        "id": 6,
+        "type": "miner",
+        "hp": 0,
+        "state": "dead",
+        "cargo": 0,
+        "x": 70,
+        "y": 1
+      },
+      {
+        "id": 2,
+        "type": "fighter",
+        "hp": 0,
+        "state": "escort",
+        "cargo": 0,
+        "x": 140,
+        "y": -65
+      },
+      {
+        "id": 3,
+        "type": "fighter",
+        "hp": 0,
+        "state": "escort",
+        "cargo": 0,
+        "x": 29,
+        "y": -91
+      },
+      {
+        "id": 4,
+        "type": "fighter",
+        "hp": 0,
+        "state": "repair",
+        "cargo": 0,
+        "x": -5,
+        "y": -64
+      }
+    ],
+    "enemies": [
+      {
+        "kind": "rogueBoss",
+        "hp": 30,
+        "x": 11,
+        "y": 16
+      },
+      {
+        "kind": "rogueTwin",
+        "hp": 4,
+        "x": 16,
+        "y": 35
+      },
+      {
+        "kind": "rogueTwin",
+        "hp": 6,
+        "x": 30,
+        "y": -15
+      }
+    ],
+    "events": [
+      "11:56 No viable income route or affordable Miner.",
+      "11:56 Miner 7 destroyed · purchased slot retained",
+      "11:48 Miner purchased · 20 Credits",
+      "11:48 Cargo delivered · +1 Credits",
+      "11:47 Miner 6 destroyed · purchased slot retained",
+      "11:36 Cargo delivered · +1 Credits",
+      "11:36 Cargo delivered · +1 Credits",
+      "11:36 Cargo delivered · +1 Credits"
+    ],
+    "saveRestores": true
+  },
+  {
+    "seed": 1337,
+    "policy": "balanced",
+    "result": "Bankruptcy",
+    "time": 669.15,
+    "metrics": {
+      "firstTech": 39.0333333333324,
+      "secondShip": 147.00000000000912,
+      "firstLoss": 635.7833333330838,
+      "boss": 600.0166666664496
+    },
+    "delivered": 351,
+    "effectiveCrPerMin": 31.47,
+    "credits": 6,
+    "slots": 4,
+    "tech": [
+      "nanite",
+      "reactive",
+      "kinetic",
+      "magnetic",
+      "chain",
+      "twin",
+      "drones",
+      "emergency"
+    ],
+    "items": [
+      {
+        "id": 0,
+        "x": 1285.7554999295692,
+        "y": 2635.6924929487845,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 1,
+        "x": 1314.140047438702,
+        "y": 2663.2151935365114,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 2,
+        "x": 1187.0016934218474,
+        "y": 2662.1648414743026,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 3,
+        "x": 1185.7089435200178,
+        "y": 2663.6664399318543,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 4,
+        "x": 1176.0591208696644,
+        "y": 2700.0725482106336,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 5,
+        "x": 1212.9678802558274,
+        "y": 2763.988066351412,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 6,
+        "x": 1286.8547435564212,
+        "y": 2764.098734846331,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 7,
+        "x": 1250.511986151016,
+        "y": 2773.8723738521808,
+        "state": "delivered",
+        "carrier": 1
+      }
+    ],
+    "losses": 5,
+    "extracted": 360,
+    "maxEnemies": 4,
+    "damage": 218.65833333333333,
+    "ships": [
+      {
+        "id": 0,
+        "type": "miner",
+        "hp": 0,
+        "state": "dead",
+        "cargo": 0,
+        "x": 60,
+        "y": 36
+      },
+      {
+        "id": 1,
+        "type": "miner",
+        "hp": 0,
+        "state": "dead",
+        "cargo": 0,
+        "x": 64,
+        "y": -35
+      },
+      {
+        "id": 4,
+        "type": "miner",
+        "hp": 0,
+        "state": "dead",
+        "cargo": 0,
+        "x": -60,
+        "y": -36
+      },
+      {
+        "id": 2,
+        "type": "fighter",
+        "hp": 0,
+        "state": "repair",
+        "cargo": 0,
+        "x": 37,
+        "y": -52
+      },
+      {
+        "id": 3,
+        "type": "fighter",
+        "hp": 0,
+        "state": "repair",
+        "cargo": 0,
+        "x": 14,
+        "y": -62
+      }
+    ],
+    "enemies": [
+      {
+        "kind": "rogueBoss",
+        "hp": 49,
+        "x": 57,
+        "y": -46
+      },
+      {
+        "kind": "rogueBulwark",
+        "hp": 12,
+        "x": 57,
+        "y": -48
+      },
+      {
+        "kind": "rogueTwin",
+        "hp": 8,
+        "x": 79,
+        "y": -40
+      },
+      {
+        "kind": "rogueTwin",
+        "hp": 8,
+        "x": -109,
+        "y": -465
+      }
+    ],
+    "events": [
+      "11:09 No viable income route or affordable Miner.",
+      "11:09 Miner 2 destroyed · purchased slot retained",
+      "11:06 Pirate Mk II · twin lasers approaching",
+      "11:04 Miner 5 destroyed · purchased slot retained",
+      "10:59 Cargo delivered · +1 Credits",
+      "10:59 Cargo delivered · +1 Credits",
+      "10:59 Cargo delivered · +1 Credits",
+      "10:54 Miner purchased · 20 Credits"
+    ],
+    "saveRestores": true
+  },
+  {
+    "seed": 7,
+    "policy": "unprotected-mining",
+    "result": null,
+    "time": 900,
+    "metrics": {
+      "firstTech": 38.79999999999908,
+      "secondShip": 139.00000000000276,
+      "firstLoss": 713.8166666663461,
+      "boss": 600.0166666664496
+    },
+    "delivered": 550,
+    "effectiveCrPerMin": 36.67,
+    "credits": 255,
+    "slots": 4,
+    "tech": [
+      "magnetic",
+      "nanite",
+      "emergency",
+      "chain",
+      "reactive",
+      "kinetic",
+      "relay",
+      "nanite"
+    ],
+    "items": [
+      {
+        "id": 0,
+        "x": 1323.7991302292446,
+        "y": 2699.2235626332363,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 1,
+        "x": 1287.8491061743184,
+        "y": 2762.8468992228172,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 2,
+        "x": 1251.9264714891272,
+        "y": 2772.5098990587553,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 3,
+        "x": 1189.6065212002056,
+        "y": 2736.1031145114684,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 4,
+        "x": 1286.0975424905391,
+        "y": 2635.654377104532,
+        "state": "delivered",
+        "carrier": 2
+      },
+      {
+        "id": 5,
+        "x": 1251.1030568431154,
+        "y": 2626.392850781047,
+        "state": "delivered",
+        "carrier": 2
+      },
+      {
+        "id": 6,
+        "x": 1212.5960546932013,
+        "y": 2636.249167167252,
+        "state": "delivered",
+        "carrier": 0
+      },
+      {
+        "id": 7,
+        "x": 1186.6341651406012,
+        "y": 2662.326693931117,
+        "state": "delivered",
+        "carrier": 3
+      }
+    ],
+    "losses": 2,
+    "extracted": 566,
+    "maxEnemies": 5,
+    "damage": 985.9333333333367,
+    "ships": [
+      {
+        "id": 0,
+        "type": "miner",
+        "hp": 1,
+        "state": "unload",
+        "cargo": 2,
+        "x": 37,
+        "y": 64
+      },
+      {
+        "id": 1,
+        "type": "miner",
+        "hp": 15,
+        "state": "mine",
+        "cargo": 0,
+        "x": -159,
+        "y": -25
+      },
+      {
+        "id": 2,
+        "type": "miner",
+        "hp": 0,
+        "state": "dead",
+        "cargo": 0,
+        "x": 37,
+        "y": 64
+      },
+      {
+        "id": 3,
+        "type": "miner",
+        "hp": 0,
+        "state": "dead",
+        "cargo": 0,
+        "x": 0,
+        "y": 75
+      },
+      {
+        "id": 4,
+        "type": "miner",
+        "hp": 15,
+        "state": "return",
+        "cargo": 3,
+        "x": 179,
+        "y": -20
+      },
+      {
+        "id": 5,
+        "type": "miner",
+        "hp": 11.5,
+        "state": "docked",
+        "cargo": 0,
+        "x": -37,
+        "y": -64
+      }
+    ],
+    "enemies": [
+      {
+        "kind": "rogueBoss",
+        "hp": 40,
+        "x": 37,
+        "y": 67
+      },
+      {
+        "kind": "rogueTwin",
+        "hp": 6,
+        "x": -663,
+        "y": -1616
+      },
+      {
+        "kind": "rogueBulwark",
+        "hp": 14,
+        "x": 31,
+        "y": 73
+      },
+      {
+        "kind": "rogueRaider",
+        "hp": 4,
+        "x": 48,
+        "y": 59
+      },
+      {
+        "kind": "rogueTwin",
+        "hp": 8,
+        "x": 65,
+        "y": -160
+      }
+    ],
+    "events": [
+      "14:59 Cargo delivered · +1 Credits",
+      "14:59 Cargo delivered · +1 Credits",
+      "14:53 Cargo delivered · +1 Credits",
+      "14:53 Cargo delivered · +1 Credits",
+      "14:53 Cargo delivered · +1 Credits",
+      "14:50 Cargo delivered · +1 Credits",
+      "14:49 Cargo delivered · +1 Credits",
+      "14:49 Cargo delivered · +1 Credits"
+    ],
+    "saveRestores": true
+  }
+]

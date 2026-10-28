@@ -6,7 +6,7 @@ import {BIOMES,biomeAt} from './biomes.ts';
 import {newTrailState,updateTrails,drawTrails,type TrailSource,type TrailState} from './trails.ts';
 import {MINERALS} from './minerals.ts';
 import {focusRoles,markerOffset,type FocusRole} from './focus.ts';
-import {ENEMY_TYPES,isLifeform} from './patrols.ts';
+import {ENEMY_TYPES,enemyHardpoints,isLifeform} from './patrols.ts';
 const gold='#f5b743';
 const rockPalettes=new WeakMap<object,RockPalette>();
 const trailStates=new WeakMap<World,TrailState>();
@@ -37,6 +37,21 @@ function biomeImage(seed:number){
  biomeCanvas=image;biomeSeed=seed;return image;
 }
 const fogCache=new WeakMap<World,{revision:number;bits:Uint8Array;canvas:HTMLCanvasElement}>();
+const rogueFogCache=new WeakMap<World,{scan:number;revision:number;canvas:HTMLCanvasElement}>();
+function rogueFogImage(w:World){
+ let cached=rogueFogCache.get(w);
+ const scan=Math.floor(w.scanTicks/6);
+ if(cached?.scan===scan&&cached.revision===w.mapRevision)return cached.canvas;
+ if(!cached){const canvas=document.createElement('canvas');canvas.width=COLS;canvas.height=ROWS;cached={scan:-1,revision:-1,canvas};rogueFogCache.set(w,cached);}
+ const ctx=cached.canvas.getContext('2d')!,image=ctx.createImageData(COLS,ROWS);
+ for(let cell=0;cell<COLS*ROWS;cell++){
+  const bit=1<<(cell&7),byte=cell>>3,p=cell*4;
+  if(w.visible[byte]&bit)continue;
+  if(w.explored[byte]&bit){image.data[p]=83;image.data[p+1]=88;image.data[p+2]=94;image.data[p+3]=218;}
+  else image.data[p+3]=255; // untouched space is truly black
+ }
+ ctx.putImageData(image,0,0);cached.scan=scan;cached.revision=w.mapRevision;return cached.canvas;
+}
 function fogImage(w:World){
  let cached=fogCache.get(w);
  if(cached?.revision===w.mapRevision)return cached.canvas;
@@ -74,8 +89,8 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
  for(let i=0;i<144;i++){c.fillStyle=i%4===0?'#71929a66':'#71929a2b';c.fillRect((i*137+19)%W,(i*83+41)%H,i%4===0?1.4:1,1);}
  c.strokeStyle='#68828c3b';for(let i=0;i<9;i++){const x=35+i%3*165,y=34+Math.floor(i/3)*230;c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}
  c.font='8px monospace'; c.fillStyle='#557280'; c.fillText('HOME BELT',HOME.x-100,HOME.y-400);c.fillText('SCRAP FIELDS',HOME.x+900,HOME.y-700);c.strokeStyle='#47616b';c.strokeRect(1,1,W-2,H-2);
- // Only unexplored cells are black. Charted space always shows live activity.
- const mask=fogImage(w);if(bw&&bh){c.imageSmoothingEnabled=false;c.drawImage(mask,left/CELL,top/CELL,bw/CELL,bh/CELL,left,top,bw,bh);}
+ // Classic retains its original explored-only mask.
+ if(!w.continuous&&bw&&bh){c.imageSmoothingEnabled=false;c.drawImage(fogImage(w),left/CELL,top/CELL,bw/CELL,bh/CELL,left,top,bw,bh);}
  for(const site of w.definition.pois){if(!w.discoveredPois.has(site.id))continue;
   const done=investigated(w,site.id),locked=w.activeTarget===site.id;
   drawPoi(c,site.id,site.x,site.y,done,locked);
@@ -106,6 +121,9 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
   if(t<1){c.strokeStyle=MINERALS[o.mineral].color;c.globalAlpha=.55;c.lineWidth=1.5;c.beginPath();c.moveTo(x-dx*(1-t)*.18,y-dy*(1-t)*.18);c.lineTo(x,y);c.stroke();c.globalAlpha=1;}
   const direction=Math.atan2(dy,dx),spread=Math.sin(t*Math.PI)*(o.id%2?6:-6);
   c.save();c.translate(x-Math.sin(direction)*spread,y+Math.cos(direction)*spread);c.rotate(.4+Math.min(age,.5)*5);drawMineral(c,o.mineral,0,0,5);c.restore();}
+ // In the continuous run, cover charted terrain and rocks in gray, and
+ // uncharted terrain in pure black. Live ships are painted above the mask.
+ if(w.continuous&&bw&&bh){c.imageSmoothingEnabled=false;c.drawImage(rogueFogImage(w),left/CELL,top/CELL,bw/CELL,bh/CELL,left,top,bw,bh);}
  const arrivals=w.effects.filter(e=>e.type==='transfer');
  const bounce=Math.max(0,...arrivals.map(e=>{const t=e.max-e.life-.26;return t>0?Math.sin(t/.09*Math.PI)*.065:0;}));
  if(w.base.x===w.definition.outpost.x){drawMother(c,w.time,0,HOME.x,HOME.y);drawOutpost(c,w.definition.outpost.x,w.definition.outpost.y,true,w.time*.6,bounce);}
@@ -164,6 +182,13 @@ export function render(canvas: HTMLCanvasElement, w: World, selected = -1, camer
    c.beginPath();c.arc(foe.x,foe.y,23,0,7);c.stroke();
   }
   drawShip(c,stats.art,foe.x,foe.y,foe.angle??(Math.hypot(foe.vx,foe.vy)>.01?Math.atan2(foe.vy,foe.vx):-Math.PI/2));
+  if(foe.kind?.startsWith('rogue')){
+   c.save();c.translate(foe.x,foe.y);c.rotate(foe.angle??0);c.fillStyle='#ffe0a4';c.strokeStyle='#ee8590';c.lineWidth=2;
+   for(const offset of enemyHardpoints(foe.kind)){c.fillRect(8,offset-2,12,4);c.strokeRect(8,offset-2,12,4);}
+   if(foe.kind==='rogueBulwark'||foe.kind==='rogueBoss'){c.strokeStyle='#dcc3a4';c.strokeRect(-19,-17,34,34);}
+   if(foe.kind==='rogueBoss'){c.lineWidth=3;c.strokeRect(-26,-23,49,46);}
+   c.restore();
+  }
   if(foe.mode==='alert'){c.font='bold 19px Barlow Condensed';c.textAlign='center';c.fillStyle='#ffc363';c.fillText('!',foe.x,foe.y-25);}
   if(foe.hp<stats.hp){c.fillStyle='#261d28';c.fillRect(foe.x-10,foe.y+20,20,2);c.fillStyle=isLifeform(foe.kind)?'#b6d780':'#ee8590';c.fillRect(foe.x-10,foe.y+20,20*Math.max(0,foe.hp/stats.hp),2);}
  }

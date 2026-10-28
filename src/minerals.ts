@@ -9,7 +9,7 @@ export const MINERALS={
 } as const;
 export type MineralId=keyof typeof MINERALS;
 export const mineralIds=Object.keys(MINERALS) as MineralId[];
-export type CargoItem={mineral:MineralId;legacyRich?:boolean};
+export type CargoItem={mineral:MineralId;legacyRich?:boolean;originDistance?:number};
 export const cargoValue=(items:readonly CargoItem[])=>items.reduce((n,item)=>n+MINERALS[item.mineral].credits,0);
 const distribution:Record<BiomeId,readonly MineralId[]>={
  home_belt:['ferrite'],
