@@ -1,4 +1,4 @@
-## Experimental roguelite · Pass 01
+## Experimental roguelite · Pass 02
 
 The dedicated `feature/roguelite-prototype-01` branch adds an opt-in continuous run.
 Classic Alpha remains the default mode; this experiment must not be merged or
@@ -10,7 +10,7 @@ npm ci
 npm run dev -- --host 127.0.0.1
 ```
 
-For a phone playtest, open the [private Roguelite preview](https://aisteroids-roguelite-pass01-2026.etteventuppsala.chatgpt.site/?roguelite) with the same ChatGPT account. Choose **New Run** to try the revised opening balance.
+For a phone playtest, open the [private Roguelite preview](https://aisteroids-roguelite-pass01-2026.etteventuppsala.chatgpt.site/?roguelite) with the same ChatGPT account. Start a **New Run** for the smaller near asteroids, richer outer Nickel belt, Scout recon bay, HQ Turret and black versus gray fog. Older prototype saves remain under a separate key.
 
 For local play, open `http://127.0.0.1:5173/aisteroids/?roguelite`, or choose **ROGUELITE · PROTOTYPE**
 from the Classic menu. Start seed **7** for a reference run. Under **BUY**, purchase
@@ -21,8 +21,8 @@ Continue always resumes paused. Prototype saves use their own key, with no offli
 catch-up or Classic save migration.
 
 Run `npm run roguelite:playtest -- 7 42 1337` for seeded end-to-end purchases and
-Tech choices. Compare `npm run roguelite:playtest -- --reckless 7` to test an
-unprotected mining fleet. See [the implementation and validation report](docs/roguelite-pass01.md).
+Tech choices. See [the Pass 02 progression report](docs/roguelite-pass02.md) and
+[the original Pass 01 report](docs/roguelite-pass01.md).
 
 # Rock Bottom Robotics · Alpha 0.33.0
 

@@ -129,7 +129,7 @@ export type Effect={type:'transfer'|'handoff'|'hit'|'laser'|'phase'|'ore'|'depos
 export type TechEvent={id:DiscoveryId;time:number};
 export const RESEARCH_STATION=generateUniverse(7).pois[0], EXPERIMENTAL_PROBE=generateUniverse(7).pois[2];
 export type OreClaim={ownerKind:'miner'|'hauler';ownerId:number};
-export type World={continuous?:boolean;cartLoaded:number;cartDelivered:number;cartDeployments:number;cartCollections:number;definition:Universe;focuses:Focuses;time:number;missionDuration:number;recallFailures:number;phase:'mining'|'recall'|'aftermath'|'done';aftermath:number;company:Company;doctrine:DoctrineId;progress:Progress;poiProgress:Partial<Record<PoiId,number>>;identifiedRocks:Set<number>;investigatorClaims:Map<PoiId,number>;activeInvestigations:Set<PoiId>;scoutPriority:PoiId|null;rocks:Rock[];ores:Ore[];oreClaims:Map<number,OreClaim>;claimsAssigned:number;claimsReleased:number;drones:Drone[];haulers:Hauler[];rigs:Rig[];carts:Cart[];scouts:Scout[];beacons:Beacon[];decoys:Beacon[];shields:Shield[];service:{x:number;y:number;reserve:number;cargoItems:CargoItem[]}|null;enemies:Enemy[];guards:Guard[];effects:Effect[];pendingTech:TechEvent[];explored:Uint8Array;visible:Uint8Array;mapRevision:number;knownRegions:Set<BiomeId>;newRegions:BiomeId[];discoveredPois:Set<PoiId>;newSignals:PoiId[];activeTarget:PoiId|null;surveyFocus:Point|null;investigationTime:number;investigatorId:number;scanTicks:number;delivered:number;deliveredFragments:number;deliveredByMineral:Record<MineralId,number>;extractedByMineral:Record<MineralId,number>;lostValue:number;transferred:number;haulerPickups:number;minerPickups:number;haulerDelivered:number;minerReturnTime:number;haulerStalledTime:number;extracted:number;richExtracted:number;lost:number;collisions:number;shots:number;mined:number;attacks:number;intercepts:number;disengagements:number;idleTime:number;base:typeof HOME;rng:()=>number;nextId:number;turretCooldown:number};
+export type World={continuous?:boolean;hqHp?:number;hqMaxHp?:number;rogueOuterDelivered?:number;cartLoaded:number;cartDelivered:number;cartDeployments:number;cartCollections:number;definition:Universe;focuses:Focuses;time:number;missionDuration:number;recallFailures:number;phase:'mining'|'recall'|'aftermath'|'done';aftermath:number;company:Company;doctrine:DoctrineId;progress:Progress;poiProgress:Partial<Record<PoiId,number>>;identifiedRocks:Set<number>;investigatorClaims:Map<PoiId,number>;activeInvestigations:Set<PoiId>;scoutPriority:PoiId|null;rocks:Rock[];ores:Ore[];oreClaims:Map<number,OreClaim>;claimsAssigned:number;claimsReleased:number;drones:Drone[];haulers:Hauler[];rigs:Rig[];carts:Cart[];scouts:Scout[];beacons:Beacon[];decoys:Beacon[];shields:Shield[];service:{x:number;y:number;reserve:number;cargoItems:CargoItem[]}|null;enemies:Enemy[];guards:Guard[];effects:Effect[];pendingTech:TechEvent[];explored:Uint8Array;visible:Uint8Array;mapRevision:number;knownRegions:Set<BiomeId>;newRegions:BiomeId[];discoveredPois:Set<PoiId>;newSignals:PoiId[];activeTarget:PoiId|null;surveyFocus:Point|null;investigationTime:number;investigatorId:number;scanTicks:number;delivered:number;deliveredFragments:number;deliveredByMineral:Record<MineralId,number>;extractedByMineral:Record<MineralId,number>;lostValue:number;transferred:number;haulerPickups:number;minerPickups:number;haulerDelivered:number;minerReturnTime:number;haulerStalledTime:number;extracted:number;richExtracted:number;lost:number;collisions:number;shots:number;mined:number;attacks:number;intercepts:number;disengagements:number;idleTime:number;base:typeof HOME;rng:()=>number;nextId:number;turretCooldown:number};
 export function discover(w:World,id:DiscoveryId){if(!Object.hasOwn(TECH_DISCOVERIES,id)||w.company.uniqueTechDiscoveries.includes(id)||w.pendingTech.some(e=>e.id===id))return;w.pendingTech.push({id,time:w.time});}
 export function random(seed:number){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
 export function createWorld(company:Company,seed=company.worldSeed):World{
@@ -782,7 +782,8 @@ export function planMinerWork(w:World,d:Drone,room=d.gear.cargo-d.cargo):MinerJo
   // A deliberate forward mining pin is an expedition order. The normal
   // locality preference remains for autonomous work and pins elsewhere.
   const region=biomeAt(rock.x,rock.y,w.company.worldSeed);
-  const expedition=identified&&focusDistance<300?region==='scrap_fields'?25:region==='home_belt'?1:50:1;
+  const expedition=(identified&&focusDistance<300?region==='scrap_fields'?25:region==='home_belt'?1:50:1)*
+   (w.continuous&&identified&&rock.mineral==='nickel'&&distance(rock,HOME)>700&&w.scouts.some(s=>s.state==='exploring')?4:1);
   const rate=expedition*tidying*workRate({credits:price,pieces,travel,returnDistance,actionSeconds,risk:risk(rock),focusDistance:focus?focusDistance:undefined,peers:nearPeers+loose/Math.max(1,room),areaDistance:area?distance(area,rock):undefined});
   jobs.push({kind:'rock',rock,rate});
  }
@@ -796,7 +797,8 @@ export function planMinerWork(w:World,d:Drone,room=d.gear.cargo-d.cargo):MinerJo
   const pieces=nearbyCount(ore,65,ore.mineral),price=MINERALS[ore.mineral??'ferrite'].credits;
   // The focus is an order to deliver from this patch, not merely shoot it.
   const region=knownBiomeAt(w,ore);
-  const expedition=focus&&distance(focus,ore)<300?region==='scrap_fields'?25:region==='home_belt'?1:50:1;
+  const expedition=(focus&&distance(focus,ore)<300?region==='scrap_fields'?25:region==='home_belt'?1:50:1)*
+   (w.continuous&&ore.mineral==='nickel'&&distance(ore,HOME)>700&&w.scouts.some(s=>s.state==='exploring')?4:1);
   const rate=expedition*workRate({credits:price,pieces,travel,returnDistance,actionSeconds:.55*pieces+.2,risk:risk(ore),focusDistance:focus?distance(focus,ore):undefined,areaDistance:area?distance(area,ore):undefined});
   jobs.push({kind:'ore',ore,rate});
  }
@@ -858,13 +860,15 @@ function updateRivals(w:World,dt:number){
    const signature='targetUntil' in unit?(t(w.company,'lowSignature')&&(!investigating||t(w.company,'ghostSurvey'))?100:Math.max(165,stats.sensors-25)):stats.sensors;
    return distance(e,unit)<signature&&clearSegment(e,unit,w.rocks,-1,0);
   });
-  const score=(unit:typeof units[number])=>distance(e,unit)+(guards.includes(unit as Guard)?-65:(e.kind==='interceptor'||e.kind==='enforcer')&&'cargoItems' in unit?-(unit.cargo>0?70:30):0);
-  const held=candidates.find(unit=>unitKey(unit)===e.targetKey);
-  let target:typeof units[number]|Beacon|undefined=held??candidates.sort((a,b)=>score(a)-score(b))[0];
+  const baseTarget=w.continuous&&e.kind?.startsWith('rogue')&&(w.hqHp??0)>0&&distance(e,w.base)<stats.sensors&&clearSegment(e,w.base,w.rocks,-1,0)?{base:true as const,id:-1,x:w.base.x,y:w.base.y,hp:w.hqHp!}:null;
+  const targets=[...candidates,...(baseTarget?[baseTarget]:[])];
+  const score=(unit:typeof targets[number])=>distance(e,unit)+('base' in unit?70:guards.includes(unit as Guard)?-65:(e.kind==='interceptor'||e.kind==='enforcer')&&'cargoItems' in unit?-(unit.cargo>0?70:30):0);
+  const held=targets.find(unit=>('base' in unit?'hq':unitKey(unit))===e.targetKey);
+  let target:typeof targets[number]|Beacon|undefined=held??targets.sort((a,b)=>score(a)-score(b))[0];
   const decoy=w.decoys.find(d=>distance(e,d)<105&&permitted(d)&&clearSegment(e,d,w.rocks,-1,0));
   target=decoy??target;
   if(target){
-   const key='expires' in target?'decoy:'+target.id:unitKey(target);
+   const key='expires' in target?'decoy:'+target.id:'base' in target?'hq':unitKey(target);
    if(!e.targetKey){e.alertUntil=w.time+stats.warning;e.mode='alert';e.pathKey='';}
    e.targetKey=key;e.lastSeen={x:target.x,y:target.y};e.searchUntil=w.time+3;
    if(w.time>=(e.alertUntil??0))e.mode='pursue';
@@ -880,6 +884,8 @@ function updateRivals(w:World,dt:number){
    goal=site.route[index];
   }
   goal??=e.home;
+  const minRange=w.continuous&&e.kind?.startsWith('rogue')?(e.kind==='rogueBoss'?95:75):0;
+  if(target&&distance(e,target)<minRange+18){const away=distance(e,target)||1;goal={x:e.x+(e.x-target.x)/away*90,y:e.y+(e.y-target.y)/away*90};}
   if(!goal){e.vx*=.96;e.vy*=.96;continue;}
   const dist=distance(e,goal),point=clearSegment(e,goal,w.rocks,-1,12)?goal:waypoint(w,e,goal,e.mode+':'+(e.targetKey??e.routeIndex??''));
   const len=distance(e,point),dx=(point.x-e.x)/Math.max(1,len),dy=(point.y-e.y)/Math.max(1,len);
@@ -894,7 +900,7 @@ function updateRivals(w:World,dt:number){
    e.x=before.x;e.y=before.y;e.vx=e.vy=0;e.mode='return';e.targetKey=undefined;target=undefined;
   }
   e.cooldown-=dt*(w.time<(e.suppressedUntil??0)?.7:1);
-  if(target&&e.mode==='pursue'&&distance(e,target)<stats.range&&e.cooldown<=0&&!disabled&&clearSegment(e,target,w.rocks,-1,0)){
+  if(target&&e.mode==='pursue'&&distance(e,target)<stats.range&&distance(e,target)>=minRange&&e.cooldown<=0&&!disabled&&clearSegment(e,target,w.rocks,-1,0)){
    const guns=enemyHardpoints(e.kind);
    for(const offset of guns){
    if(!target||'hp' in target&&target.hp<=0)break;
@@ -911,8 +917,10 @@ function updateRivals(w:World,dt:number){
     const shield=w.shields.find(s=>s.targetId===target!.id&&s.expires>w.time&&s.remaining>0);
     if(shield){const stopped=Math.min(shield.remaining,damage);shield.remaining-=stopped;damage-=stopped;}
     target.hp-=damage;
+    if('base' in target)w.hqHp=Math.max(0,target.hp);
     if(target.hp<=0){target.hp=0;
-     if('attached' in target)destroyCart(w,target as Cart);
+     if('base' in target){effect(w,{type:'dead',x:target.x,y:target.y},1);}
+     else if('attached' in target)destroyCart(w,target as Cart);
      else if('cargoItems' in target){
       if('targetRock' in target&&'setup' in target){salvageItems(w,target,target.cargoItems);target.state='dead';}
       else{const victim=target as Drone|Hauler;dropCargo(w,victim);victim.state='dead';if('assignedMiner' in victim){const d=w.drones.find(d=>d.id===victim.assignedMiner);if(d?.state==='handoff')d.handoffUntil=0;}}
@@ -934,8 +942,8 @@ function updateRivals(w:World,dt:number){
    continue;
   }
   // Chart visibility is not an order to abandon the fleet and hunt across the map.
-  const active=w.enemies.filter(e=>e.hp>0&&(visibleAt(w,e)||distance(g,e)<g.gear.guardRange)&&
-   (distance(g,e)<220||[...w.drones,...w.haulers,...w.rigs,...w.scouts].some(d=>d.state!=='dead'&&d.state!=='docked'&&distance(d,g)<260&&distance(d,e)<180)));
+  const active=w.enemies.filter(e=>e.hp>0&&(visibleAt(w,e)||distance(g,e)<g.gear.guardRange||w.continuous&&distance(e,w.base)<290)&&
+   (distance(g,e)<220||w.continuous&&distance(e,w.base)<290||[...w.drones,...w.haulers,...w.rigs,...w.scouts].some(d=>d.state!=='dead'&&d.state!=='docked'&&distance(d,g)<260&&distance(d,e)<180)));
   const miners=[...w.drones.filter(d=>d.state==='mine'||d.state==='full'||d.state==='handoff'||d.state==='return'||d.state==='unload'),...w.haulers.filter(h=>h.state==='work'||h.state==='return'||h.state==='unload'),...w.rigs.filter(r=>r.state==='drill'||r.state==='blocked'||r.state==='return')];
   if(t(w.company,'shieldProjector')&&w.time>=g.abilityReady){
    const threatened=miners.filter(d=>distance(d,g)<(t(w.company,'guardianFrame')?175:130)&&
@@ -945,18 +953,19 @@ function updateRivals(w:World,dt:number){
    for(const worker of threatened.slice(0,count))w.shields.push({targetId:worker.id,remaining:t(w.company,'personalBodyguard')?7:count===3?2:4,expires:w.time+4});
    if(threatened.length)g.abilityReady=w.time+10;
   }
-  const foe=w.doctrine==='convoy'||g.gear.threatTracking?active.sort((a,b)=>{
+  const hqThreat=w.continuous?active.filter(e=>distance(e,w.base)<240).sort((a,b)=>distance(a,w.base)-distance(b,w.base))[0]:undefined;
+  const foe=hqThreat??(w.doctrine==='convoy'||g.gear.threatTracking?active.sort((a,b)=>{
    const urgency=(e:Enemy)=>Math.min(...miners.map(d=>distance(e,d)),300)*(g.gear.threatTracking?1.65:1.25)+distance(e,g)*.35;
    return urgency(a)-urgency(b);
-  })[0]:active.sort((a,b)=>distance(a,g)-distance(b,g))[0];
+  })[0]:active.sort((a,b)=>distance(a,g)-distance(b,g))[0]);
   const fallback=w.definition.pois.find(p=>p.id==='derelict_excavation_platform'&&w.discoveredPois.has(p.id)&&!investigated(w,p.id)&&
    !w.scouts.some(s=>s.state==='exploring')&&distance(g,p)<320&&w.missionDuration-w.time>distance(g,p)/120+INVESTIGATION_DURATION-(w.poiProgress[p.id]??0)+1);
   const site=w.phase==='mining'?(w.activeTarget?w.definition.pois.find(p=>p.id===w.activeTarget):fallback):undefined;
   if(site&&!w.investigatorClaims.has(site.id)&&w.investigatorId<0){const eligible=w.guards.filter(p=>p.hp>0).sort((a,b)=>distance(a,site)-distance(b,site)||a.id-b.id);w.investigatorId=eligible[0]?.id??-1;}
   const patrol=!!site&&w.investigatorId===g.id&&!w.investigatorClaims.has(site.id);
-  const urgent=!!foe&&(distance(foe,g)<115||miners.some(d=>distance(foe,d)<100));
-  const protect=miners.length?(foe?miners.reduce((best,d)=>distance(d,foe)<distance(best,foe)?d:best):miners[g.id%miners.length]):w.base;
-  const anchor=foe&&distance(foe,protect)<205&&distance(foe,g)<260?foe:protect;
+  const urgent=!!foe&&(distance(foe,g)<115||miners.some(d=>distance(foe,d)<100)||foe===hqThreat);
+  const protect=hqThreat&&foe===hqThreat?w.base:miners.length?(foe?miners.reduce((best,d)=>distance(d,foe)<distance(best,foe)?d:best):miners[g.id%miners.length]):w.base;
+  const anchor=hqThreat&&foe===hqThreat?foe:foe&&distance(foe,protect)<205&&distance(foe,g)<260?foe:protect;
   const offset=foe?35:25;
   const goal=patrol&&!urgent?site!:{x:anchor.x+Math.cos(w.time*1.5+g.id*Math.PI)*offset,y:anchor.y+Math.sin(w.time*1.5+g.id*Math.PI)*offset};
   const point=clearSegment(g,goal,w.rocks,-1,10)?goal:waypoint(w,g,goal,patrol&&!urgent?'investigate:'+site!.id:'guard'+(foe?.id??-1)+':'+('id' in protect?protect.id:-1));
@@ -992,7 +1001,7 @@ function updateRivals(w:World,dt:number){
 }
 export function step(w:World,dt=STEP){
  if(w.phase==='done')return;
- w.time+=dt;w.effects.forEach(e=>{e.life-=dt;if(e.type==='transfer'&&e.life<=0){const items=e.items??Array.from({length:e.amount??0},(_,i)=>({mineral:'ferrite' as const,legacyRich:i<(e.richAmount??0)}));w.delivered+=cargoValue(items);w.deliveredFragments+=items.length;for(const item of items)w.deliveredByMineral[item.mineral]++;if(items.some(item=>item.mineral!=='ferrite'||item.legacyRich)&&!w.progress.richSampled){w.progress.richSampled=true;discover(w,'first_rich_sample');}}});w.effects=w.effects.filter(e=>e.life>0);
+ w.time+=dt;w.effects.forEach(e=>{e.life-=dt;if(e.type==='transfer'&&e.life<=0){const items:CargoItem[]=e.items??Array.from({length:e.amount??0},(_,i)=>({mineral:'ferrite' as const,legacyRich:i<(e.richAmount??0)}));w.delivered+=cargoValue(items);w.deliveredFragments+=items.length;for(const item of items)w.deliveredByMineral[item.mineral]++;if(w.continuous)w.rogueOuterDelivered=(w.rogueOuterDelivered??0)+items.filter(item=>(item.originDistance??0)>=700).length;if(items.some(item=>item.mineral!=='ferrite'||item.legacyRich)&&!w.progress.richSampled){w.progress.richSampled=true;discover(w,'first_rich_sample');}}});w.effects=w.effects.filter(e=>e.life>0);
  w.beacons=w.beacons.filter(b=>b.expires>w.time);w.decoys=w.decoys.filter(b=>b.expires>w.time);w.shields=w.shields.filter(s=>s.expires>w.time&&s.remaining>0);
  for(const o of w.ores)o.age=(o.age??1)+dt;
  if(w.phase==='aftermath'){w.aftermath+=dt;if(w.aftermath>=2.5&&!w.effects.some(e=>e.type==='transfer'))w.phase='done';return;}
@@ -1184,7 +1193,7 @@ export function step(w:World,dt=STEP){
   for(let i=w.ores.length-1;i>=0;i--){const ore=w.ores[i];if((ore.mineral!=='voidite'||w.company.environmentUpgrades.includes('radiationShielding'))&&((ore.age??1)>=ORE_PICKUP_DELAY||w.time<d.magnetUntil)&&distance(d,ore)<(w.time<d.magnetUntil?55:18)&&d.cargo+ore.value<=d.gear.cargo&&availableTo(w,ore.id,'miner',d.id)){
    // Passing directly through an unclaimed fragment is free work. Preserve
    // another collector's reservation, and release any displaced queue slot.
-   d.cargoItems.push({mineral:ore.mineral,legacyRich:ore.rich});w.minerPickups++;if(ore.rich&&!w.progress.farSurveyed){w.progress.farSurveyed=true;discover(w,'far_belt_charted');}effect(w,{type:'ore',x:ore.x,y:ore.y,amount:ore.value,items:[{mineral:ore.mineral,legacyRich:ore.rich}]},.7);w.ores.splice(i,1);releaseClaim(w,ore.id);trimMinerClaims(w,d);
+   d.cargoItems.push({mineral:ore.mineral,legacyRich:ore.rich,originDistance:w.continuous?distance({x:ore.originX??ore.x,y:ore.originY??ore.y},HOME):undefined});w.minerPickups++;if(ore.rich&&!w.progress.farSurveyed){w.progress.farSurveyed=true;discover(w,'far_belt_charted');}effect(w,{type:'ore',x:ore.x,y:ore.y,amount:ore.value,items:[{mineral:ore.mineral,legacyRich:ore.rich}]},.7);w.ores.splice(i,1);releaseClaim(w,ore.id);trimMinerClaims(w,d);
   }}
   if(d.state==='return'&&distance(d,berthFor(w,d))<2&&Math.hypot(d.vx,d.vy)<8){
    d.state='unload';d.unloadTime=0;d.unloadCargo=d.cargo;d.vx=0;d.vy=0;

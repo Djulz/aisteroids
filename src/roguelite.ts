@@ -6,11 +6,11 @@ import type {TalentId} from './research.ts';
 
 // A run owns its hulls, permanent capacity, discoveries and RNG. Classic's
 // preparation, settlement and storage APIs are never used by this mode.
-export const ROGUE_SAVE_KEY='aisteroids-roguelite-pass01-v1';
+export const ROGUE_SAVE_KEY='aisteroids-roguelite-pass02-v1';
 // Future hulls share the same model-specific price/slot accounting; only the
-// three complete types below are purchasable in Pass 01.
-export const HULL_CATALOG={miner:{name:'Miner',price:20,slots:1},scout:{name:'Scout',price:30,slots:1},hauler:{name:'Hauler',price:40,slots:1},fighter:{name:'Fighter',price:55,slots:1},rig:{name:'Mining Rig',price:100,slots:2}} as const;
-export const ECONOMY={slots:[0,20,50,125,300,700],hulls:{miner:HULL_CATALOG.miner,scout:HULL_CATALOG.scout,fighter:HULL_CATALOG.fighter},repairPerSecond:2,firstRaid:240,bossAt:600,maxEnemies:10};
+// three complete types below are purchasable in this prototype.
+export const HULL_CATALOG={miner:{name:'Miner',price:20,slots:1},scout:{name:'Scout',price:25,slots:0},hauler:{name:'Hauler',price:40,slots:1},fighter:{name:'Fighter',price:55,slots:1},rig:{name:'Mining Rig',price:100,slots:2}} as const;
+export const ECONOMY={slots:[0,20,35,60,100,160],hulls:{miner:HULL_CATALOG.miner,scout:HULL_CATALOG.scout,fighter:HULL_CATALOG.fighter},turret:35,repairPerSecond:2,firstRaid:240,bossAt:720,bossLimit:840,maxEnemies:10};
 export type Hull=keyof typeof ECONOMY.hulls;
 export const TECH={
  chain:{name:'Chain Shatter',effect:'Rams split a second nearby asteroid.',talent:'ramSplitter',hull:'miner'},
@@ -29,7 +29,7 @@ export const TECH={
 export type Tech=keyof typeof TECH;
 type Unit=Drone|Scout|Guard;
 export type TechItem=Point&{id:number;state:'ground'|'carried'|'delivered'|'lost';carrier:number|null};
-export type Run={version:1;seed:number;rngState:number;world:World;credits:number;slots:number;hulls:Record<string,Hull>;tech:Tech[];items:TechItem[];draft:Tech[];paused:boolean;result:'Victory'|'Bankruptcy'|null;nextRaid:number;bossId:number|null;nextTechAt:number;nextShipId:number;lost:number;deliveredCredits:number;income:{time:number;credits:number}[];events:string[];metrics:{firstTech:number|null;secondShip:number|null;firstLoss:number|null;boss:number|null};seenDead:number[];reactiveReady:Record<string,number>;droneReady:Record<string,number>};
+export type Run={version:1;seed:number;rngState:number;world:World;credits:number;slots:number;hulls:Record<string,Hull>;tech:Tech[];items:TechItem[];draft:Tech[];paused:boolean;result:'Victory'|'Bankruptcy'|'HQ Lost'|null;nextRaid:number;bossId:number|null;nextTechAt:number;nextShipId:number;lost:number;deliveredCredits:number;outerCharted?:boolean;income:{time:number;credits:number}[];events:string[];metrics:{firstTech:number|null;secondShip:number|null;firstLoss:number|null;boss:number|null};seenDead:number[];reactiveReady:Record<string,number>;droneReady:Record<string,number>};
 export const units=(r:Run):Unit[]=>[...r.world.drones,...r.world.scouts,...r.world.guards];
 export const alive=(u:Unit)=>u.hp>0&&(!('state' in u)||u.state!=='dead');
 export const usedCapacity=(r:Run)=>units(r).filter(alive).reduce((n,u)=>n+ECONOMY.hulls[r.hulls[u.id]].slots,0);
@@ -42,19 +42,27 @@ export function newRun(seed=7):Run{
  const w=createWorld(company(seed));w.continuous=true;w.missionDuration=1e9;w.enemies=[];
  // One authored-size local belt, using existing seeded deposits, collision,
  // extraction and cargo systems. No five-biome campaign or recurring shifts.
- w.rocks=w.rocks.filter(rock=>dist(rock,HOME)<1050&&dist(rock,HOME)>115);
- for(const rock of w.rocks){rock.mineral='ferrite';rock.hp=rock.max=Math.max(20,rock.max*4);}
- w.definition={...w.definition,pois:[],scenery:w.definition.scenery.filter(p=>dist(p,HOME)<1100)};
- const r:Run={version:1,seed:seed>>>0,rngState:seed>>>0,world:w,credits:0,slots:1,hulls:{0:'miner'},tech:[],items:[],draft:[],paused:false,result:null,nextRaid:ECONOMY.firstRaid,bossId:null,nextTechAt:10,nextShipId:1,lost:0,deliveredCredits:0,income:[],events:[],metrics:{firstTech:null,secondShip:null,firstLoss:null,boss:null},seenDead:[],reactiveReady:{},droneReady:{}};
+ w.rocks=w.rocks.filter(rock=>dist(rock,HOME)<1450&&dist(rock,HOME)>115);
+ for(const rock of w.rocks){
+  const radius=dist(rock,HOME),outer=radius>=700,middle=radius>=350;
+  rock.mineral=outer||middle&&rock.id%3===0?'nickel':'ferrite';
+  rock.hp=rock.max=outer?Math.max(12,Math.round(rock.max*1.6)):middle?Math.max(8,Math.round(rock.max*1.2)):Math.max(5,Math.round(rock.max*.7));
+ }
+ w.definition={...w.definition,pois:[],scenery:w.definition.scenery.filter(p=>dist(p,HOME)<1500)};
+ w.hqHp=w.hqMaxHp=40;w.rogueOuterDelivered=0;w.drones[0].gear.speed*=1.2;
+ const r:Run={version:1,seed:seed>>>0,rngState:seed>>>0,world:w,credits:0,slots:1,hulls:{0:'miner'},tech:[],items:[],draft:[],paused:false,result:null,nextRaid:ECONOMY.firstRaid,bossId:null,nextTechAt:10,nextShipId:1,lost:0,deliveredCredits:0,outerCharted:false,income:[],events:[],metrics:{firstTech:null,secondShip:null,firstLoss:null,boss:null},seenDead:[],reactiveReady:{},droneReady:{}};
  w.rng=()=>rng(r);note(r,'One free Miner. Deliver cargo, buy capacity, then buy hulls.');return r;
 }
 export function buySlot(r:Run){const cost=ECONOMY.slots[r.slots];if(r.result||r.draft.length||cost===undefined||r.credits<cost)return false;r.credits-=cost;r.slots++;note(r,`Fleet capacity purchased: ${r.slots}`);return true;}
+export function buyTurret(r:Run){if(r.result||r.draft.length||r.world.company.turret||r.credits<ECONOMY.turret)return false;r.credits-=ECONOMY.turret;r.world.company.turret=true;note(r,'HQ Turret installed');return true;}
 function applyHullTech(r:Run,u:Unit){
+ if('oreQueue' in u)u.gear.speed*=1.2;
  if(has(r,'overdrive')){u.maxHp*=.8;u.hp=u.maxHp;if('gear' in u)u.gear.speed*=1.3;}
  if('oreQueue' in u){if(has(r,'kinetic')){u.gear.ramCooldown*=.65;u.gear.ramRecoil*=.65;}if(has(r,'emergency')){u.gear.retreatAccel*=1.4;u.gear.returnSpeed=1.4;}}
 }
 export function buyHull(r:Run,type:Hull){
  if(!Object.hasOwn(ECONOMY.hulls,type)||r.result||r.draft.length)return false;
+ if(type==='scout'&&r.world.scouts.some(alive))return false;
  const spec=ECONOMY.hulls[type];if(r.credits<spec.price||usedCapacity(r)+spec.slots>r.slots)return false;
  const c=company(r.seed);c.fleetCapacity=2;c.talents=[...r.world.company.talents];c.fleetComposition={impactMiner:1,laserMiner:0,hauler:0,scout:0,escort:0,miningRig:0};if(type==='scout')c.fleetComposition.scout=1;if(type==='fighter')c.fleetComposition.escort=1;
  const template=createWorld(c),u=type==='miner'?template.drones[0]:type==='scout'?template.scouts[0]:template.guards[0];
@@ -86,7 +94,7 @@ export function threat(r:Run){
  const age=Math.max(0,r.world.time-ECONOMY.firstRaid);
  return {budget:Math.min(ECONOMY.maxEnemies,1+Math.floor(age/85)+Math.floor(r.tech.length/3)),tier:r.deliveredCredits>=280&&age>=210?3:r.deliveredCredits>=160&&age>=90?2:1};
 }
-export function raidsReady(r:Run){return r.world.time>=ECONOMY.firstRaid&&(units(r).some(u=>alive(u)&&r.hulls[u.id]==='fighter')||r.deliveredCredits>=145||r.world.time>=480);}
+export function raidsReady(r:Run){return r.world.time>=ECONOMY.firstRaid&&(r.world.company.turret||units(r).some(u=>alive(u)&&r.hulls[u.id]==='fighter')||r.deliveredCredits>=145||r.world.time>=480);}
 export function spawnEnemy(r:Run,kind:EnemyKind):Enemy|null{
  const w=r.world;
  if(w.enemies.filter(e=>e.hp>0).length>=ECONOMY.maxEnemies){if(kind!=='rogueBoss')return null;const withdrawing=w.enemies.find(e=>e.hp>0&&e.id!==r.bossId);if(withdrawing)w.enemies=w.enemies.filter(e=>e!==withdrawing);}
@@ -98,7 +106,7 @@ export function spawnEnemy(r:Run,kind:EnemyKind):Enemy|null{
  }return null;
 }
 function director(r:Run){const w=r.world,t=threat(r);
- if(w.time>=ECONOMY.bossAt&&r.bossId===null){const boss=spawnEnemy(r,'rogueBoss');if(boss){r.bossId=boss.id;r.metrics.boss=w.time;}}
+ if(w.time>=ECONOMY.bossAt&&((w.rogueOuterDelivered??0)>=10||w.time>=ECONOMY.bossLimit)&&r.bossId===null){const boss=spawnEnemy(r,'rogueBoss');if(boss){r.bossId=boss.id;r.metrics.boss=w.time;}}
  // Opening attacks wait for a defensible economy. A player can build a Fighter
  // first, or invest in mining and face the raid after earning enough to fund
  // that route. The time cap prevents waiting forever on a stalled seed.
@@ -129,9 +137,14 @@ function physicalTech(r:Run){const w=r.world;
  }
  for(const s of w.scouts.filter(s=>alive(s)&&s.state==='exploring')){
   const target=r.items.filter(i=>i.state==='ground'&&hasCell(w.explored,i.x,i.y)).sort((a,b)=>dist(s,a)-dist(s,b))[0];
-  // Scouts survey the local belt. The prototype deliberately excludes distant campaign sites.
+  // A Scout charts the next resource ring while Miners continue earning.
   if(target){s.targetX=target.x;s.targetY=target.y;s.targetUntil=w.time+2;}
-  else if(dist(s,HOME)>850){s.targetX=HOME.x;s.targetY=HOME.y;s.targetUntil=w.time+15;}
+  else{
+   const sites=[800,1100,1350].flatMap(radius=>Array.from({length:8},(_,i)=>({x:HOME.x+Math.cos(i*Math.PI/4)*radius,y:HOME.y+Math.sin(i*Math.PI/4)*radius})));
+   const next=sites.filter(p=>!hasCell(w.explored,p.x,p.y)).sort((a,b)=>dist(s,a)-dist(s,b))[0];
+   if(next){s.targetX=next.x;s.targetY=next.y;s.targetUntil=w.time+15;}
+   else if(dist(s,HOME)>1350){s.targetX=HOME.x;s.targetY=HOME.y;s.targetUntil=w.time+15;}
+  }
  }
 }
 export function hasIncomeRoute(r:Run){
@@ -145,7 +158,7 @@ export function hasIncomeRoute(r:Run){
  if(resources&&miners.length)return true;
  return resources&&r.credits>=ECONOMY.hulls.miner.price&&usedCapacity(r)<r.slots;
 }
-export function checkResult(r:Run){if(r.result)return;if(r.bossId!==null&&r.world.enemies.some(e=>e.id===r.bossId&&e.hp<=0)){r.result='Victory';note(r,'Siege Captain destroyed. Operation victorious.');}else if(!hasIncomeRoute(r)){r.result='Bankruptcy';note(r,'No viable income route or affordable Miner.');}}
+export function checkResult(r:Run){if(r.result)return;if((r.world.hqHp??40)<=0){r.result='HQ Lost';note(r,'HQ destroyed. Operation lost.');}else if(r.bossId!==null&&r.world.enemies.some(e=>e.id===r.bossId&&e.hp<=0)){r.result='Victory';note(r,'Siege Captain destroyed. Operation victorious.');}else if(!hasIncomeRoute(r)){r.result='Bankruptcy';note(r,'No viable income route or affordable Miner.');}}
 export function stepRun(r:Run,dt=STEP,active=true){
  if(!active||r.paused||r.draft.length||r.result)return;
  const w=r.world,health=new Map(units(r).map(u=>[u.id,u.hp]));
@@ -168,6 +181,7 @@ export function stepRun(r:Run,dt=STEP,active=true){
  }
  const unload=w.drones.filter(d=>d.state==='unload'&&d.unloadCargo>0).map(d=>d.id),intercepts=w.intercepts;
  step(w,dt);
+ if(!r.outerCharted&&w.rocks.some(rock=>rock.hp>0&&rock.mineral==='nickel'&&dist(rock,HOME)>700&&w.identifiedRocks.has(rock.id))){r.outerCharted=true;note(r,'Outer Nickel Belt charted. Miners can work richer deposits.');}
  // Only completed physical transfers are income. Ordinary ore never drafts Tech.
  const delivered=w.delivered-r.deliveredCredits;
  if(delivered>0){r.credits+=delivered;r.deliveredCredits=w.delivered;r.income.push({time:w.time,credits:delivered});note(r,`Cargo delivered · +${delivered} Credits`);}
@@ -208,7 +222,9 @@ export function restoreRun(raw:string):Run|null{
   if(raw.length>2_000_000)return null;
   const r=JSON.parse(raw,(_key,v)=>v?.$set?new Set(v.$set):v?.$map?new Map(v.$map):v?.$bytes?new Uint8Array(v.$bytes):v) as Run;
   if(r.version!==1||!Number.isSafeInteger(r.seed)||!Number.isFinite(r.world.time)||r.world.time<0||!Number.isFinite(r.credits)||r.credits<0||!Number.isInteger(r.slots)||r.slots<1||r.slots>6||!r.world.continuous||!Array.isArray(r.tech)||r.tech.some(t=>!Object.hasOwn(TECH,t))||!Array.isArray(r.draft)||r.draft.some(t=>!Object.hasOwn(TECH,t)))return null;
-  if(!(r.world.explored instanceof Uint8Array)||!(r.world.oreClaims instanceof Map)||!Number.isInteger(r.rngState)||r.result!==null&&!['Victory','Bankruptcy'].includes(r.result))return null;
+  if(!(r.world.explored instanceof Uint8Array)||!(r.world.oreClaims instanceof Map)||!Number.isInteger(r.rngState)||r.result!==null&&!['Victory','Bankruptcy','HQ Lost'].includes(r.result))return null;
+  r.world.hqHp??=40;r.world.hqMaxHp??=40;r.world.rogueOuterDelivered??=0;
+  r.outerCharted??=false;
   for(const u of units(r))if(!Object.hasOwn(ECONOMY.hulls,r.hulls[u.id])||![u.hp,u.maxHp,u.x,u.y].every(Number.isFinite))return null;
   for(const d of r.world.drones)hold(d);
   r.world.rng=()=>rng(r);r.world.phase='mining';r.paused=true;

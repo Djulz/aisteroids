@@ -1,5 +1,7 @@
 # Aisteroids Roguelite Prototype · Pass 01
 
+Historical report. The current progression and defense update is described in [Pass 02](roguelite-pass02.md).
+
 Implemented against verified current `main` **1d734ce4f901d401ccf635ac661ee861f5b177d6**, Alpha 0.33.0. Dedicated branch: `feature/roguelite-prototype-01`. No changes to `main`, Pages workflows, or Classic save formats/keys. The experiment is opt-in through the Classic menu or `?roguelite`.
 
 ## Play and reproduce

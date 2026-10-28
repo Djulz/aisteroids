@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newRun,stepRun,buySlot,buyHull,chooseTech,units,alive,usedCapacity,ECONOMY,TECH,ROGUE_SAVE_KEY,serializeRun,restoreRun,spawnEnemy,hasIncomeRoute,checkResult,eligibleTech,raidsReady,threat,type Run,type Tech} from '../src/roguelite.ts';
+import {newRun,stepRun,buySlot,buyHull,buyTurret,chooseTech,units,alive,usedCapacity,ECONOMY,TECH,ROGUE_SAVE_KEY,serializeRun,restoreRun,spawnEnemy,hasIncomeRoute,checkResult,eligibleTech,raidsReady,threat,type Run,type Tech} from '../src/roguelite.ts';
 import {STEP,HOME,step,dockingSpots} from '../src/sim.ts';
 import {ENEMY_TYPES} from '../src/patrols.ts';
 import {SAVE_KEY} from '../src/storage.ts';
@@ -32,7 +32,7 @@ test('enemy archetypes have fixed stats and a real two-hardpoint attack doubles 
  const single=newRun(7),twin=newRun(7);let hp:number[]=[];
  for(const [r,kind] of [[single,'rogueRaider'],[twin,'rogueTwin']] as const){
   const w=r.world,d=w.drones[0];w.rocks=[];w.scouts=[];w.guards=[];d.state='mine';d.hp=d.maxHp=100;d.x=HOME.x;d.y=HOME.y;
-  w.enemies=[{id:999,kind,x:HOME.x,y:HOME.y-60,vx:0,vy:0,hp:ENEMY_TYPES[kind].hp,cooldown:0,suppressedUntil:0,disabledUntil:0,path:[],pathKey:'',pathAge:0,mode:'pursue',targetKey:'miner:0',alertUntil:0}];
+  w.enemies=[{id:999,kind,x:HOME.x,y:HOME.y-95,vx:0,vy:0,hp:ENEMY_TYPES[kind].hp,cooldown:0,suppressedUntil:0,disabledUntil:0,path:[],pathKey:'',pathAge:0,mode:'pursue',targetKey:'miner:0',alertUntil:0}];
   stepRun(r);hp.push(d.hp);const shots=w.effects.filter(e=>e.type==='enemyShot');assert.equal(shots.length,kind==='rogueTwin'?2:1);if(shots.length===2)assert.notEqual(shots[0].x,shots[1].x);
  }
  assert.equal(100-hp[1],(100-hp[0])*2);
@@ -46,7 +46,7 @@ test('a repairable empty Miner and an affordable replacement are viable income r
 });
 test('pause, inactive tabs, Tech choice and save/resume stop threat without offline catch-up',()=>{
  const r=newRun();advance(r,10);const before=r.world.time;r.paused=true;advance(r,120);assert.equal(r.world.time,before);r.paused=false;stepRun(r,STEP,false);assert.equal(r.world.time,before);r.draft=['chain','nanite','relay'];advance(r,120);assert.equal(r.world.time,before);
- const loaded=restoreRun(serializeRun(r))!;assert.ok(loaded);assert.equal(loaded.world.time,before);assert.deepEqual(loaded.draft,r.draft);assert.equal(loaded.paused,true);advance(loaded,120);assert.equal(loaded.world.time,before);assert.notEqual(ROGUE_SAVE_KEY,SAVE_KEY);assert.equal(restoreRun('{bad'),null);assert.equal(restoreRun('{}'),null);
+ const loaded=restoreRun(serializeRun(r))!;assert.ok(loaded);assert.equal(loaded.world.time,before);assert.deepEqual(loaded.draft,r.draft);assert.equal(loaded.paused,true);advance(loaded,120);assert.equal(loaded.world.time,before);assert.notEqual(ROGUE_SAVE_KEY,SAVE_KEY);assert.notEqual(ROGUE_SAVE_KEY,'aisteroids-roguelite-pass01-v1');assert.equal(restoreRun('{bad'),null);assert.equal(restoreRun('{}'),null);
 });
 test('mid-trip save restores physical cargo, ledgers, repair, seed and deterministic next steps',()=>{
  const r=newRun(42);advance(r,1500);r.draft=[];r.world.drones[0].cargo=2;const copy=restoreRun(serializeRun(r))!;assert.ok(copy);copy.paused=false;advance(r,180);advance(copy,180);assert.equal(copy.world.time,r.world.time);assert.equal(copy.credits,r.credits);assert.equal(copy.world.drones[0].cargo,r.world.drones[0].cargo);assert.ok(Math.abs(copy.world.drones[0].x-r.world.drones[0].x)<5);assert.equal(copy.seed,42);
@@ -65,7 +65,7 @@ import {hasCell} from '../src/knowledge.ts';
 test('Fighter Twin Guns, Escort Drones and Reactive Hull each deal actual distinct damage',()=>{
  for(const tech of ['twin','drones','reactive'] as const){
   const r=newRun();r.credits=100;buySlot(r);buyHull(r,'fighter');const w=r.world,d=w.drones[0],g=w.guards[0];w.rocks=[];d.x=HOME.x;d.y=HOME.y;d.hp=d.maxHp=100;g.x=HOME.x;g.y=HOME.y;g.cooldown=tech==='drones'?100:0;
-  const e={id:999,kind:'rogueRaider' as const,x:HOME.x,y:HOME.y-60,vx:0,vy:0,hp:100,cooldown:tech==='reactive'?0:100,suppressedUntil:0,disabledUntil:0,path:[],pathKey:'',pathAge:0,mode:'pursue' as const,targetKey:'miner:0',alertUntil:0};w.enemies=[e];install(r,tech);stepRun(r);
+  const e={id:999,kind:'rogueRaider' as const,x:HOME.x,y:HOME.y-95,vx:0,vy:0,hp:100,cooldown:tech==='reactive'?0:100,suppressedUntil:0,disabledUntil:0,path:[],pathKey:'',pathAge:0,mode:'pursue' as const,targetKey:'miner:0',alertUntil:0};w.enemies=[e];install(r,tech);stepRun(r);
   if(tech==='twin'){assert.equal(e.hp,98);const shots=w.effects.filter(e=>e.type==='guardShot');assert.equal(shots.length,2);assert.ok(Math.hypot(shots[0].x-shots[1].x,shots[0].y-shots[1].y)>10);}
   if(tech==='drones'){assert.equal(e.hp,99);assert.equal(w.effects.filter(e=>e.type==='guardShot').length,2);}
   if(tech==='reactive'){assert.ok(e.hp<=97);assert.ok(Object.keys(r.reactiveReady).length>0);assert.ok(e.disabledUntil>w.time);}
@@ -113,6 +113,38 @@ test('opening grace follows delivered economy, and threat ramps from the first r
  r.deliveredCredits=160;r.world.time+=90;assert.equal(threat(r).tier,2);
  r.deliveredCredits=280;r.world.time+=120;assert.equal(threat(r).tier,3);
  const slow=newRun(1337);slow.world.time=479;assert.equal(raidsReady(slow),false);slow.world.time=480;assert.equal(raidsReady(slow),true);
+});
+test('near rocks shatter quickly while surveyed outer Nickel supports a second economy',()=>{
+ const r=newRun(7),near=r.world.rocks.filter(x=>Math.hypot(x.x-HOME.x,x.y-HOME.y)<350),outer=r.world.rocks.filter(x=>Math.hypot(x.x-HOME.x,x.y-HOME.y)>700);
+ assert.ok(near.length>15&&near.every(x=>x.hp<=10));
+ assert.ok(outer.length>20&&outer.every(x=>x.mineral==='nickel'));
+ assert.ok(outer.reduce((n,x)=>n+x.hp*3,0)>near.reduce((n,x)=>n+x.hp,0));
+});
+test('Captain progress counts physical outer cargo, not nearby Nickel',()=>{
+ const r=newRun(7),w=r.world,d=w.drones[0];w.rocks=[];d.state='unload';d.unloadTime=1.14;d.unloadCargo=2;d.cargoItems=[{mineral:'nickel',originDistance:500},{mineral:'nickel',originDistance:820}];
+ advance(r,30);assert.equal(w.deliveredByMineral.nickel,2);assert.equal(w.rogueOuterDelivered,1);assert.equal(r.deliveredCredits,6);
+});
+test('Scout has a separate recon bay, and HQ Turret is a paid defensive route',()=>{
+ const r=newRun(7);r.credits=100;
+ assert.equal(buyHull(r,'scout'),true);assert.equal(usedCapacity(r),1);assert.equal(buyHull(r,'scout'),false);
+ assert.equal(buyTurret(r),true);assert.equal(r.credits,40);assert.equal(r.world.company.turret,true);assert.equal(buyTurret(r),false);
+ r.world.time=ECONOMY.firstRaid;assert.equal(raidsReady(r),true);
+});
+test('pirates keep firing distance and attack a vulnerable HQ',()=>{
+ const close=newRun(7),far=newRun(7);
+ for(const [r,offset] of [[close,25],[far,100]] as const){
+  const w=r.world;w.rocks=[];w.drones[0].x=HOME.x+600;w.drones[0].y=HOME.y;w.enemies=[{id:999,kind:'rogueRaider',x:HOME.x,y:HOME.y-offset,vx:0,vy:0,hp:4,cooldown:0,suppressedUntil:0,disabledUntil:0,path:[],pathKey:'',pathAge:0,mode:'pursue',targetKey:'hq',alertUntil:0}];stepRun(r);
+ }
+ assert.equal(close.world.hqHp,40);assert.ok((far.world.hqHp??40)<40);
+ const lost=newRun();lost.world.hqHp=0;checkResult(lost);assert.equal(lost.result,'HQ Lost');
+});
+test('a Fighter returns to intercept a pirate threatening HQ while the Miner works elsewhere',()=>{
+ const r=newRun(7),w=r.world;r.credits=75;buySlot(r);buyHull(r,'fighter');
+ w.rocks=[];w.ores=[{id:900,x:HOME.x+600,y:HOME.y,value:1,mineral:'ferrite',age:1}];
+ w.drones[0].x=HOME.x+600;w.drones[0].y=HOME.y;
+ const g=w.guards[0];g.x=HOME.x;g.y=HOME.y;
+ const e={id:999,kind:'rogueRaider' as const,x:HOME.x+180,y:HOME.y,vx:0,vy:0,hp:4,cooldown:100,suppressedUntil:0,disabledUntil:0,path:[],pathKey:'',pathAge:0,home:{x:HOME.x+180,y:HOME.y},mode:'patrol' as const};w.enemies=[e];
+ advance(r,480);assert.ok(w.intercepts>0);assert.ok(e.hp<4);
 });
 test('exhausted unique Tech choices offer working levels and never strand the cache carrier',()=>{
  const r=newRun(),d=r.world.drones[0];r.tech=['chain','magnetic','kinetic','nanite','emergency','relay','overdrive','salvage','reactive'];
